@@ -1,4 +1,3 @@
-```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -266,7 +265,6 @@
       font-size:12px;
       background:#0f0f10;
     }
-    /* clickable exercise text in log */
     .clickEx{cursor:pointer; text-decoration:underline; text-decoration-color:#2a2b2f;}
     .clickEx:hover{opacity:.85;}
   </style>
@@ -340,9 +338,7 @@
         </div>
       </div>
 
-      <div class="calendar" id="calGrid">
-        <!-- rendered -->
-      </div>
+      <div class="calendar" id="calGrid"></div>
 
       <div class="btnRow">
         <span class="pill"><span class="muted">This month:</span> <strong class="mono" id="calCount">0</strong></span>
@@ -410,8 +406,8 @@
       <h2>Lift Progress Log (Searchable History)</h2>
 
       <div class="row">
-        <label>Search
-          <input id="liftSearch" placeholder="type exercise name..." />
+        <label>Exercise
+          <select id="liftSearch"></select>
         </label>
 
         <label>Date Range
@@ -544,20 +540,53 @@ const KEY_BW = "gym_bw_logs_v1";
 const KEY_ATT = "gym_attendance_v1";
 const KEY_PRO = "gym_protein_v1";
 const KEY_LIFTS = "gym_lifts_v1";
-const KEY_TARGETS = "gym_targets_v1"; // kept for compatibility, no longer used in UI
+const KEY_TARGETS = "gym_targets_v1"; // compatibility
 
 /* ---------------------------
-   Date utils
+   LOCAL date utils (fixes the 1-day offset issue)
 ---------------------------- */
-function iso(d){ return new Date(d).toISOString().slice(0,10); }
-function todayISO(){ return iso(new Date()); }
-function parseISO(s){ const [y,m,dd]=s.split("-").map(Number); return new Date(y, m-1, dd); }
+function pad2(n){ return String(n).padStart(2,"0"); }
+function localISODate(d){
+  const dt = (d instanceof Date) ? d : new Date(d);
+  return `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}-${pad2(dt.getDate())}`;
+}
+function todayISO(){ return localISODate(new Date()); }
+function parseISO(s){
+  const [y,m,dd]=s.split("-").map(Number);
+  return new Date(y, m-1, dd);
+}
 function daysAgo(n){
   const d = new Date();
   d.setDate(d.getDate()-n);
   return d;
 }
 function sameMonth(d, y, m){ return d.getFullYear()===y && d.getMonth()===m; }
+
+/* ---------------------------
+   Week-date helper for PPL tabs
+   - If today Thu 2/5, Mon resolves to 2/2, Sat resolves to 2/7
+---------------------------- */
+const DOW_MAP = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
+
+function weekStartMonday(baseDate=new Date()){
+  const d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+  const dow = d.getDay(); // 0 Sun..6 Sat
+  const delta = (dow === 0) ? 6 : (dow - 1); // days since Monday
+  d.setDate(d.getDate() - delta);
+  return d; // Monday of current week
+}
+
+function dateForPplTab(tabLabel){
+  // tabLabel like "Push (Mon)" "Legs (Sat)"
+  const m = /\((Mon|Tue|Wed|Thu|Fri|Sat|Sun)\)/.exec(tabLabel || "");
+  const abbr = m ? m[1] : "Mon";
+  const targetDow = DOW_MAP[abbr] ?? 1;
+
+  const start = weekStartMonday(new Date()); // Monday
+  const out = new Date(start);
+  out.setDate(start.getDate() + (targetDow - 1)); // Mon=0 offset, Sat=5 offset
+  return localISODate(out);
+}
 
 /* ---------------------------
    Seed PPL routine (Mon–Sat)
@@ -799,7 +828,7 @@ function renderCal(){
   let count=0;
   for(let d=1; d<=daysInMonth; d++){
     const date = new Date(calY, calM, d);
-    const s = iso(date);
+    const s = localISODate(date);
     const cell=document.createElement("div");
     cell.className="day";
     cell.innerHTML = `<div>${d}</div>`;
@@ -880,7 +909,7 @@ document.getElementById("pSaveBtn").addEventListener("click", ()=>{
 /* ---------------------------
    Lifts + PR helpers
 ---------------------------- */
-let lifts = LS.get(KEY_LIFTS, []); // [{id, date, ex, sets, reps, weight, pr, details?}]
+let lifts = LS.get(KEY_LIFTS, []);
 
 function uid(){
   return Math.random().toString(16).slice(2) + Date.now().toString(16);
@@ -973,27 +1002,50 @@ function renderPPL(){
     const logBtn = card.querySelector('button[data-log]');
     if(logBtn){
       logBtn.addEventListener("click", ()=>{
-        openLogModal(ex, item.sets || 3);
+        openLogModal(ex, item.sets || 3, activeTab);
       });
     }
 
     pplList.appendChild(card);
   });
+
+  renderLiftSearchDropdown();
 }
 
 /* ---------------------------
-   Lift Progress Log (Search + Filters)
+   Lift Progress Log (Dropdown + Filters)
 ---------------------------- */
 const liftTable = document.getElementById("liftTable");
 const liftSearch = document.getElementById("liftSearch");
 const liftFilterRange = document.getElementById("liftFilterRange");
 const liftLimit = document.getElementById("liftLimit");
 
+function renderLiftSearchDropdown(){
+  const prev = liftSearch.value || "";
+  const set = new Set();
+
+  Object.values(PPL).flat().forEach(x=>set.add(x.ex));
+  lifts.forEach(x=>set.add(x.ex));
+
+  const items = ["", ...[...set].sort()]; // "" = All
+  liftSearch.innerHTML = "";
+
+  items.forEach(v=>{
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v === "" ? "All exercises" : v;
+    liftSearch.appendChild(opt);
+  });
+
+  if(items.includes(prev)) liftSearch.value = prev;
+  else liftSearch.value = "";
+}
+
 function getFilteredLifts(){
   let arr = [...lifts];
 
-  const q = (liftSearch?.value || "").trim().toLowerCase();
-  if(q) arr = arr.filter(x => (x.ex || "").toLowerCase().includes(q));
+  const selected = (liftSearch?.value || "").trim();
+  if(selected) arr = arr.filter(x => x.ex === selected);
 
   const days = Number(liftFilterRange?.value || 30);
   if(days > 0){
@@ -1009,9 +1061,9 @@ function getFilteredLifts(){
   return arr;
 }
 
-if(liftSearch) liftSearch.addEventListener("input", renderLifts);
-if(liftFilterRange) liftFilterRange.addEventListener("change", renderLifts);
-if(liftLimit) liftLimit.addEventListener("change", renderLifts);
+liftSearch.addEventListener("change", renderLifts);
+liftFilterRange.addEventListener("change", renderLifts);
+liftLimit.addEventListener("change", renderLifts);
 
 function renderLifts(){
   liftTable.innerHTML = "";
@@ -1036,6 +1088,7 @@ function renderLifts(){
       const id = btn.getAttribute("data-dellift");
       lifts = lifts.filter(x=>x.id!==id);
       LS.set(KEY_LIFTS, lifts);
+      renderLiftSearchDropdown();
       renderLifts();
       renderPPL();
     });
@@ -1068,12 +1121,14 @@ const logViewHistoryBtn = document.getElementById("logViewHistoryBtn");
 let modalExerciseName = null;
 let modalLastLift = null;
 
-function openLogModal(exName, defaultSets=3){
+function openLogModal(exName, defaultSets=3, tabLabel=""){
   modalExerciseName = exName;
   logModalExercise.textContent = exName;
-  logModalDate.value = todayISO();
 
-  // show previous session for this exercise (so you don’t have to search)
+  // ✅ AUTO date based on which workout day you clicked (Mon/Tue/Wed/Thu/Fri/Sat)
+  // still editable because it’s a normal date input
+  logModalDate.value = dateForPplTab(tabLabel) || todayISO();
+
   modalLastLift = getLastLiftForExercise(exName);
   if(modalLastLift){
     logPrevBox.style.display = "block";
@@ -1126,11 +1181,7 @@ function addSetRow(weight="", reps=""){
 
 logAddSetBtn.addEventListener("click", ()=> addSetRow());
 logModalClose.addEventListener("click", closeLogModal);
-
-// Close if you click outside the modal card
-logModal.addEventListener("click", (e)=>{
-  if(e.target === logModal) closeLogModal();
-});
+logModal.addEventListener("click", (e)=>{ if(e.target === logModal) closeLogModal(); });
 
 logCopyLastBtn.addEventListener("click", ()=>{
   if(!modalLastLift) return;
@@ -1139,7 +1190,6 @@ logCopyLastBtn.addEventListener("click", ()=>{
   if(Array.isArray(modalLastLift.details) && modalLastLift.details.length){
     modalLastLift.details.forEach(s=> addSetRow(String(s.weight ?? ""), String(s.reps ?? "")));
   } else {
-    // fallback: copy the top set only if details weren’t saved
     addSetRow(String(modalLastLift.weight ?? ""), String(modalLastLift.reps ?? ""));
   }
   renumberSetPills();
@@ -1170,7 +1220,6 @@ logSaveBtn.addEventListener("click", ()=>{
     return;
   }
 
-  // pick the heaviest set for the main log
   let top = setsArr[0];
   for(const s of setsArr){
     if(s.weight > top.weight) top = s;
@@ -1194,10 +1243,10 @@ logSaveBtn.addEventListener("click", ()=>{
   LS.set(KEY_LIFTS, lifts);
 
   closeLogModal();
+  renderLiftSearchDropdown();
   renderLifts();
   renderPPL();
 
-  // scroll to log section
   document.getElementById("liftTable").scrollIntoView({behavior:"smooth", block:"start"});
 });
 
@@ -1209,14 +1258,9 @@ const histCloseBtn = document.getElementById("histCloseBtn");
 const histExercise = document.getElementById("histExercise");
 const histTable = document.getElementById("histTable");
 
-function closeHistoryModal(){
-  histModal.style.display = "none";
-}
-
+function closeHistoryModal(){ histModal.style.display = "none"; }
 histCloseBtn.addEventListener("click", closeHistoryModal);
-histModal.addEventListener("click", (e)=>{
-  if(e.target === histModal) closeHistoryModal();
-});
+histModal.addEventListener("click", (e)=>{ if(e.target === histModal) closeHistoryModal(); });
 
 function openHistoryModal(exName){
   histExercise.textContent = exName;
@@ -1224,7 +1268,7 @@ function openHistoryModal(exName){
   const exLifts = lifts
     .filter(x=>x.ex === exName)
     .sort((a,b)=>b.date.localeCompare(a.date))
-    .slice(0, 12); // keep it minimal
+    .slice(0, 12);
 
   histTable.innerHTML = "";
 
@@ -1264,7 +1308,6 @@ function buildExportPayload(){
     lifts: LS.get(KEY_LIFTS, [])
   };
 }
-
 function downloadJSON(filename, obj){
   const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -1276,18 +1319,15 @@ function downloadJSON(filename, obj){
   a.remove();
   URL.revokeObjectURL(url);
 }
-
 exportBtn.addEventListener("click", ()=>{
   const payload = buildExportPayload();
-  const stamp = new Date().toISOString().slice(0,10);
+  const stamp = localISODate(new Date());
   downloadJSON(`gym-dashboard-${stamp}.json`, payload);
 });
-
 importBtn.addEventListener("click", ()=>{
   importFile.value = "";
   importFile.click();
 });
-
 importFile.addEventListener("change", async ()=>{
   const file = importFile.files?.[0];
   if(!file) return;
@@ -1296,7 +1336,6 @@ importFile.addEventListener("change", async ()=>{
     const text = await file.text();
     const data = JSON.parse(text);
 
-    // minimal validation
     const bw = Array.isArray(data.bwLogs) ? data.bwLogs : null;
     const att = Array.isArray(data.attendance) ? data.attendance : null;
     const pro = (data.proteinMap && typeof data.proteinMap === "object") ? data.proteinMap : null;
@@ -1315,7 +1354,6 @@ importFile.addEventListener("change", async ()=>{
     LS.set(KEY_PRO, pro);
     LS.set(KEY_LIFTS, lf);
 
-    // refresh in-memory copies
     bwLogs = LS.get(KEY_BW, []);
     attendance = new Set(LS.get(KEY_ATT, []));
     proteinMap = LS.get(KEY_PRO, {});
@@ -1324,6 +1362,7 @@ importFile.addEventListener("change", async ()=>{
     renderBW();
     renderCal();
     loadProteinDay(todayISO());
+    renderLiftSearchDropdown();
     renderLifts();
     renderPPL();
 
@@ -1353,6 +1392,8 @@ document.getElementById("wipeAllBtn").addEventListener("click", ()=>{
 renderBW();
 renderCal();
 loadProteinDay(todayISO());
+
+renderLiftSearchDropdown();
 renderLifts();
 renderPPL();
 
@@ -1364,4 +1405,3 @@ document.getElementById("startTodayBtn").addEventListener("click", ()=>{
 </script>
 </body>
 </html>
-```
