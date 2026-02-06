@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -381,7 +382,12 @@
   <div class="grid2">
     <!-- PPL ROUTINE -->
     <section class="card">
-      <h2>PPL Routine (Mon–Wed) — repeats Thu–Sat</h2>
+      <div class="topRight">
+  <h2>PPL Routine (Mon–Wed) — repeats Thu–Sat</h2>
+  <div class="row" style="gap:6px;">
+    <button id="startTodayBtn">Start Today</button>
+  </div>
+</div>
       <div class="splitTabs" id="pplTabs"></div>
       <div class="exerciseList" id="pplList"></div>
  
@@ -416,7 +422,7 @@
  
       <div class="btnRow">
         <span class="pill"><span class="muted">Selected exercise:</span> <strong id="liftSel">—</strong></span>
-        <span class="pill"><span class="muted">Last 7 days max:</span> <strong class="mono" id="lift7">—</strong></span>
+        <span class="pill"><span class="muted">This week max:</span> <strong class="mono" id="lift7">—</strong></span>
         <span class="pill"><span class="muted">Lifetime max:</span> <strong class="mono" id="liftLife">—</strong></span>
       </div>
  
@@ -522,6 +528,16 @@ function allExercises(){
   return [...set].sort();
 }
  
+function getTodaySplitTab(){
+  // 0 Sun, 1 Mon, 2 Tue, 3 Wed, 4 Thu, 5 Fri, 6 Sat
+  const dow = new Date().getDay();
+  if(dow === 1 || dow === 4) return "Push (Mon)";
+  if(dow === 2 || dow === 5) return "Pull (Tue)";
+  if(dow === 3 || dow === 6) return "Legs (Wed)";
+  // Sunday: default to Push (you said rest days hidden)
+  return "Push (Mon)";
+}
+
 /* ---------------------------
    Weight Tracker
 ---------------------------- */
@@ -786,13 +802,26 @@ const tabs = Object.keys(PPL);
 let activeTab = tabs[0];
  
 function liftStatsForExercise(ex){
-  const now = new Date();
-  const cutoff = daysAgo(7);
   const exLifts = lifts.filter(x=>x.ex===ex);
+
   const life = exLifts.length ? Math.max(...exLifts.map(x=>x.weight)) : null;
-  const last7 = exLifts.filter(x=>parseISO(x.date) >= cutoff);
-  const weekMax = last7.length ? Math.max(...last7.map(x=>x.weight)) : null;
-  return {life, weekMax};
+
+  const thisWeekStart = daysAgo(7);   // last 0–7 days
+  const lastWeekStart = daysAgo(14);  // last 7–14 days window
+
+  const thisWeek = exLifts.filter(x=>{
+    const d = parseISO(x.date);
+    return d >= thisWeekStart;
+  });
+  const lastWeek = exLifts.filter(x=>{
+    const d = parseISO(x.date);
+    return d >= lastWeekStart && d < thisWeekStart;
+  });
+
+  const thisWeekMax = thisWeek.length ? Math.max(...thisWeek.map(x=>x.weight)) : null;
+  const lastWeekMax = lastWeek.length ? Math.max(...lastWeek.map(x=>x.weight)) : null;
+
+  return { life, thisWeekMax, lastWeekMax };
 }
  
 function renderTabs(){
@@ -816,7 +845,7 @@ function renderPPL(){
   list.forEach(item=>{
     const ex = item.ex;
     const target = (targets[ex] ?? "");
-    const {life, weekMax} = liftStatsForExercise(ex);
+    const {life, thisWeekMax, lastWeekMax} = liftStatsForExercise(ex);
     const isPR = (target!=="" && life!==null && Number(target) > life);
     const prBadge = isPR ? `<span class="badge">🏆 PR</span>` : ``;
  
@@ -828,13 +857,19 @@ function renderPPL(){
         <div class="meta">${item.sets} sets • ${item.reps} reps</div>
       </div>
       <div class="right">
-        <div class="line2">Last 7 days: <span class="mono">${weekMax===null?"—":weekMax}</span> lbs</div>
+        <div class="line2">This week: <span class="mono">${thisWeekMax===null?"—":thisWeekMax}</span> lbs</div>
+        <div class="line2">Last week: <span class="mono">${lastWeekMax===null?"—":lastWeekMax}</span> lbs</div>
         <div class="line2">Lifetime max: <span class="mono">${life===null?"—":life}</span> lbs</div>
         <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
           ${prBadge}
-          <input style="max-width:140px;" type="number" inputmode="decimal" step="0.5"
-                 placeholder="Target lbs" value="${target}"
-                 data-target="${ex}" />
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+            <button type="button" data-inc="2.5" data-ex="${ex}">+2.5</button>
+            <button type="button" data-inc="5" data-ex="${ex}">+5</button>
+            <button type="button" data-inc="10" data-ex="${ex}">+10</button>
+            <input style="max-width:140px;" type="number" inputmode="decimal" step="0.5"
+                   placeholder="Target lbs" value="${target}"
+                   data-target="${ex}" />
+          </div>
         </div>
       </div>
     `;
@@ -846,6 +881,17 @@ function renderPPL(){
       LS.set(KEY_TARGETS, targets);
       renderPPL(); // refresh badges
     });
+
+    card.querySelectorAll('button[data-inc]').forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const inc = Number(btn.getAttribute("data-inc"));
+        const cur = Number(targets[ex] ?? 0);
+        targets[ex] = cur + inc;
+        LS.set(KEY_TARGETS, targets);
+        renderPPL();
+      });
+    });
+
     pplList.appendChild(card);
   });
  
@@ -890,8 +936,8 @@ function renderLiftStatsForInput(){
     liftLife.textContent = "—";
     return;
   }
-  const {life, weekMax} = liftStatsForExercise(ex);
-  lift7.textContent = weekMax===null ? "—" : String(weekMax);
+  const {life, thisWeekMax} = liftStatsForExercise(ex);
+  lift7.textContent = thisWeekMax===null ? "—" : String(thisWeekMax);
   liftLife.textContent = life===null ? "—" : String(life);
 }
 liftExercise.addEventListener("input", renderLiftStatsForInput);
@@ -976,8 +1022,15 @@ renderCal();
 loadProteinDay(todayISO());
 renderLifts();
 renderPPL();
+document.getElementById("startTodayBtn").addEventListener("click", ()=>{
+  activeTab = getTodaySplitTab();
+  renderPPL();
+  // scroll into view on mobile
+  document.getElementById("pplList").scrollIntoView({behavior:"smooth", block:"start"});
+});
 renderExerciseDatalist();
 renderLiftStatsForInput();
 </script>
 </body>
 </html>
+```
