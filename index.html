@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -265,25 +266,33 @@
       font-size:12px;
       background:#0f0f10;
     }
+    /* clickable exercise text in log */
+    .clickEx{cursor:pointer; text-decoration:underline; text-decoration-color:#2a2b2f;}
+    .clickEx:hover{opacity:.85;}
   </style>
 </head>
- 
+
 <body>
 <header>
   <h1>Gym Dashboard</h1>
   <div class="sub">Minimal tracker • lbs only • Protein goal 240g • No cardio • Rest days hidden</div>
 </header>
- 
+
 <main>
- 
+
   <div class="grid2">
     <!-- WEIGHT -->
     <section class="card">
       <div class="topRight">
         <h2>Weekly Weight Tracker</h2>
-        <button class="ghost" id="wipeAllBtn" title="Deletes everything saved in this app">Reset All Data</button>
+        <div class="row" style="gap:6px;">
+          <button class="ghost" id="exportBtn" title="Download your data as a file">Export</button>
+          <button class="ghost" id="importBtn" title="Import previously exported data">Import</button>
+          <input id="importFile" type="file" accept="application/json" style="display:none;" />
+          <button class="ghost" id="wipeAllBtn" title="Deletes everything saved in this app">Reset All Data</button>
+        </div>
       </div>
- 
+
       <div class="row">
         <label>Date
           <input type="date" id="bwDate" />
@@ -293,17 +302,17 @@
         </label>
         <button id="bwAddBtn">Add Weight</button>
       </div>
- 
+
       <div class="btnRow">
         <span class="pill"><span class="muted">Latest:</span> <strong class="mono" id="bwLatest">—</strong></span>
         <span class="pill"><span class="muted">Last Δ:</span> <strong class="mono" id="bwDelta">—</strong></span>
         <span class="pill"><span class="muted">7-day avg:</span> <strong class="mono" id="bwAvg">—</strong></span>
       </div>
- 
+
       <div style="margin-top:10px;">
         <canvas id="bwChart" height="120"></canvas>
       </div>
- 
+
       <div style="margin-top:10px; overflow:auto;">
         <table>
           <thead>
@@ -319,7 +328,7 @@
         </table>
       </div>
     </section>
- 
+
     <!-- ATTENDANCE -->
     <section class="card">
       <div class="topRight">
@@ -330,22 +339,22 @@
           <button id="nextMonthBtn">▶</button>
         </div>
       </div>
- 
+
       <div class="calendar" id="calGrid">
         <!-- rendered -->
       </div>
- 
+
       <div class="btnRow">
         <span class="pill"><span class="muted">This month:</span> <strong class="mono" id="calCount">0</strong></span>
         <button id="clearMonthBtn">Clear This Month</button>
       </div>
- 
+
       <div class="notice" style="margin-top:10px;">
         Rest days are hidden because we only record the days you actually went.
       </div>
     </section>
   </div>
- 
+
   <!-- PROTEIN -->
   <section class="card">
     <h2>Protein Intake (Goal 240g)</h2>
@@ -370,14 +379,14 @@
       </label>
       <button id="pSaveBtn">Save</button>
     </div>
- 
+
     <div class="btnRow">
       <span class="pill"><span class="muted">Total:</span> <strong class="mono" id="pTotal">0</strong>g</span>
       <span class="pill"><span class="muted">Remaining:</span> <strong class="mono" id="pRemain">240</strong>g</span>
       <span class="pill"><span class="muted">Status:</span> <strong id="pStatus">—</strong></span>
     </div>
   </section>
- 
+
   <div class="grid2">
     <!-- PPL ROUTINE -->
     <section class="card">
@@ -390,60 +399,60 @@
 
       <div class="splitTabs" id="pplTabs"></div>
       <div class="exerciseList" id="pplList"></div>
- 
+
       <div class="notice" style="margin-top:10px;">
         Tip: Tap “Log Sets” on an exercise to record sets/reps/weight. PR is based on your lifetime max for that exercise.
       </div>
     </section>
- 
+
     <!-- LIFT PROGRESS LOG -->
     <section class="card">
-  <h2>Lift Progress Log (Searchable History)</h2>
+      <h2>Lift Progress Log (Searchable History)</h2>
 
-  <div class="row">
-    <label>Search
-      <input id="liftSearch" placeholder="type exercise name..." />
-    </label>
+      <div class="row">
+        <label>Search
+          <input id="liftSearch" placeholder="type exercise name..." />
+        </label>
 
-    <label>Date Range
-      <select id="liftFilterRange">
-        <option value="7">Last 7 days</option>
-        <option value="30" selected>Last 30 days</option>
-        <option value="90">Last 90 days</option>
-        <option value="0">All time</option>
-      </select>
-    </label>
+        <label>Date Range
+          <select id="liftFilterRange">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="0">All time</option>
+          </select>
+        </label>
 
-    <label>Rows
-      <select id="liftLimit">
-        <option value="25" selected>25</option>
-        <option value="50">50</option>
-        <option value="100">100</option>
-        <option value="0">All</option>
-      </select>
-    </label>
-  </div>
+        <label>Rows
+          <select id="liftLimit">
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="0">All</option>
+          </select>
+        </label>
+      </div>
 
-  <div style="margin-top:10px; overflow:auto;">
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Exercise</th>
-          <th>Top Set</th>
-          <th>Sets</th>
-          <th>PR</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="liftTable"></tbody>
-    </table>
-  </div>
+      <div style="margin-top:10px; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Exercise</th>
+              <th>Top Set</th>
+              <th>Sets</th>
+              <th>PR</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="liftTable"></tbody>
+        </table>
+      </div>
 
-  <div class="notice" style="margin-top:10px;">
-    This log is your searchable history. Use PPL “Log Sets” to add entries.
-  </div>
-</section>
+      <div class="notice" style="margin-top:10px;">
+        Tap an exercise name in the log to view history.
+      </div>
+    </section>
   </div>
 
   <!-- LOG SETS MODAL -->
@@ -457,6 +466,15 @@
       <div class="notice" style="margin-top:10px;">
         <div><strong id="logModalExercise">—</strong></div>
         <div class="small muted">Enter what you actually did. Add/remove sets as needed.</div>
+      </div>
+
+      <div id="logPrevBox" class="notice" style="margin-top:10px; display:none;">
+        <div class="small muted">Last time:</div>
+        <div id="logPrevText" class="mono">—</div>
+        <div class="btnRow" style="margin-top:8px;">
+          <button id="logCopyLastBtn" type="button">Copy last time</button>
+          <button id="logViewHistoryBtn" type="button" class="ghost">View history</button>
+        </div>
       </div>
 
       <div class="row" style="margin-top:10px;">
@@ -473,9 +491,38 @@
       </div>
     </div>
   </div>
- 
+
+  <!-- HISTORY MODAL -->
+  <div id="histModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+    <div style="max-width:640px; margin:40px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+      <div class="topRight">
+        <h2 style="margin:0;">Exercise History</h2>
+        <button id="histCloseBtn">Close</button>
+      </div>
+
+      <div class="notice" style="margin-top:10px;">
+        <div><strong id="histExercise">—</strong></div>
+        <div class="small muted">Most recent first. Shows your saved set details (if available).</div>
+      </div>
+
+      <div style="margin-top:10px; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Top Set</th>
+              <th>All Sets</th>
+              <th>PR</th>
+            </tr>
+          </thead>
+          <tbody id="histTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </main>
- 
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 /* ---------------------------
@@ -492,13 +539,13 @@ const LS = {
     localStorage.setItem(key, JSON.stringify(value));
   }
 };
- 
+
 const KEY_BW = "gym_bw_logs_v1";
-const KEY_ATT = "gym_attendance_v1"; // array of ISO dates
-const KEY_PRO = "gym_protein_v1";    // map date -> meal numbers
-const KEY_LIFTS = "gym_lifts_v1";    // array
-const KEY_TARGETS = "gym_targets_v1";// kept for compatibility, no longer used in UI
- 
+const KEY_ATT = "gym_attendance_v1";
+const KEY_PRO = "gym_protein_v1";
+const KEY_LIFTS = "gym_lifts_v1";
+const KEY_TARGETS = "gym_targets_v1"; // kept for compatibility, no longer used in UI
+
 /* ---------------------------
    Date utils
 ---------------------------- */
@@ -511,7 +558,7 @@ function daysAgo(n){
   return d;
 }
 function sameMonth(d, y, m){ return d.getFullYear()===y && d.getMonth()===m; }
- 
+
 /* ---------------------------
    Seed PPL routine (Mon–Sat)
 ---------------------------- */
@@ -575,15 +622,8 @@ const PPL = {
     {ex:"Cable Crunches", sets:3, reps:"20"},
   ],
 };
- 
-function allExercises(){
-  const set = new Set();
-  Object.values(PPL).flat().forEach(x=>set.add(x.ex));
-  return [...set].sort();
-}
- 
+
 function getTodaySplitTab(){
-  // 0 Sun, 1 Mon, 2 Tue, 3 Wed, 4 Thu, 5 Fri, 6 Sat
   const dow = new Date().getDay();
   if(dow === 1) return "Push (Mon)";
   if(dow === 2) return "Pull (Tue)";
@@ -591,16 +631,15 @@ function getTodaySplitTab(){
   if(dow === 4) return "Push (Thu)";
   if(dow === 5) return "Pull (Fri)";
   if(dow === 6) return "Legs (Sat)";
-  // Sunday: default to Push (Mon)
   return "Push (Mon)";
 }
 
 /* ---------------------------
    Weight Tracker
 ---------------------------- */
-let bwLogs = LS.get(KEY_BW, []); // [{date, bw}]
+let bwLogs = LS.get(KEY_BW, []);
 function sortBW(){ bwLogs.sort((a,b)=>a.date.localeCompare(b.date)); }
- 
+
 const bwDate = document.getElementById("bwDate");
 const bwVal  = document.getElementById("bwVal");
 const bwAddBtn= document.getElementById("bwAddBtn");
@@ -608,14 +647,13 @@ const bwTable= document.getElementById("bwTable");
 const bwLatest= document.getElementById("bwLatest");
 const bwDelta= document.getElementById("bwDelta");
 const bwAvg= document.getElementById("bwAvg");
- 
+
 bwDate.value = todayISO();
- 
+
 bwAddBtn.addEventListener("click", ()=>{
   const d = bwDate.value || todayISO();
   const v = Number(bwVal.value);
   if(!d || !isFinite(v)) return alert("Please enter date + bodyweight.");
-  // replace same date entry
   bwLogs = bwLogs.filter(x=>x.date !== d);
   bwLogs.push({date:d, bw:v});
   sortBW();
@@ -623,25 +661,25 @@ bwAddBtn.addEventListener("click", ()=>{
   bwVal.value = "";
   renderBW();
 });
- 
+
 function bwStats(){
   sortBW();
   const latest = bwLogs[bwLogs.length-1];
   const prev = bwLogs[bwLogs.length-2];
   const delta = (latest && prev) ? (latest.bw - prev.bw) : null;
- 
+
   const cutoff = daysAgo(6);
   const last7 = bwLogs.filter(x=>parseISO(x.date) >= cutoff);
   const avg = last7.length ? (last7.reduce((s,x)=>s+x.bw,0)/last7.length) : null;
- 
+
   return {latest, prev, delta, avg, last7};
 }
- 
+
 let bwChart;
 function renderBW(){
   sortBW();
   const {latest, prev, delta, avg} = bwStats();
- 
+
   bwLatest.textContent = latest ? `${latest.bw.toFixed(1)} lbs (${latest.date})` : "—";
   if(delta === null) bwDelta.textContent = "—";
   else {
@@ -650,8 +688,7 @@ function renderBW(){
     bwDelta.className = "mono " + (delta>0 ? "bad" : (delta<0 ? "good" : ""));
   }
   bwAvg.textContent = avg ? `${avg.toFixed(1)} lbs` : "—";
- 
-  // table
+
   bwTable.innerHTML = "";
   for(let i=0;i<bwLogs.length;i++){
     const cur = bwLogs[i];
@@ -678,11 +715,10 @@ function renderBW(){
       renderBW();
     });
   });
- 
-  // chart
+
   const labels = bwLogs.map(x=>x.date);
   const data = bwLogs.map(x=>x.bw);
- 
+
   const ctx = document.getElementById("bwChart");
   if(bwChart) bwChart.destroy();
   bwChart = new Chart(ctx, {
@@ -698,10 +734,7 @@ function renderBW(){
     },
     options:{
       responsive:true,
-      plugins:{
-        legend:{display:false},
-        tooltip:{mode:"index", intersect:false}
-      },
+      plugins:{ legend:{display:false}, tooltip:{mode:"index", intersect:false} },
       scales:{
         x:{ticks:{color:"#9aa0a6"}, grid:{color:"#202124"}},
         y:{ticks:{color:"#9aa0a6"}, grid:{color:"#202124"}}
@@ -709,18 +742,18 @@ function renderBW(){
     }
   });
 }
- 
+
 /* ---------------------------
    Attendance Calendar
 ---------------------------- */
-let attendance = new Set(LS.get(KEY_ATT, [])); // ISO strings
- 
+let attendance = new Set(LS.get(KEY_ATT, []));
+
 let calY = new Date().getFullYear();
 let calM = new Date().getMonth();
 const calTitle = document.getElementById("calTitle");
 const calGrid = document.getElementById("calGrid");
 const calCount = document.getElementById("calCount");
- 
+
 document.getElementById("prevMonthBtn").addEventListener("click", ()=>{
   calM--; if(calM<0){calM=11; calY--;}
   renderCal();
@@ -738,11 +771,11 @@ document.getElementById("clearMonthBtn").addEventListener("click", ()=>{
   LS.set(KEY_ATT, [...attendance]);
   renderCal();
 });
- 
+
 function renderCal(){
   const monthName = new Date(calY,calM,1).toLocaleString(undefined,{month:"long"});
   calTitle.textContent = `${monthName} ${calY}`;
- 
+
   calGrid.innerHTML = "";
   const heads = ["S","M","T","W","T","F","S"];
   heads.forEach(h=>{
@@ -751,19 +784,18 @@ function renderCal(){
     el.textContent=h;
     calGrid.appendChild(el);
   });
- 
+
   const first = new Date(calY, calM, 1);
   const startDay = first.getDay();
   const daysInMonth = new Date(calY, calM+1, 0).getDate();
- 
-  // blanks
+
   for(let i=0;i<startDay;i++){
     const blank=document.createElement("div");
     blank.className="day off";
     blank.textContent="";
     calGrid.appendChild(blank);
   }
- 
+
   let count=0;
   for(let d=1; d<=daysInMonth; d++){
     const date = new Date(calY, calM, d);
@@ -777,7 +809,6 @@ function renderCal(){
       count++;
     }
     cell.addEventListener("click", ()=>{
-      // toggle attended
       if(attendance.has(s)) attendance.delete(s);
       else attendance.add(s);
       LS.set(KEY_ATT, [...attendance]);
@@ -787,7 +818,7 @@ function renderCal(){
   }
   calCount.textContent = String(count);
 }
- 
+
 /* ---------------------------
    Protein
 ---------------------------- */
@@ -801,10 +832,10 @@ const pBed = document.getElementById("pBed");
 const pTotal = document.getElementById("pTotal");
 const pRemain= document.getElementById("pRemain");
 const pStatus= document.getElementById("pStatus");
-let proteinMap = LS.get(KEY_PRO, {}); // date -> {morning,lunch,pre,dinner,bed}
- 
+let proteinMap = LS.get(KEY_PRO, {});
+
 pDate.value = todayISO();
- 
+
 function loadProteinDay(d){
   const obj = proteinMap[d] || {morning:0,lunch:0,pre:0,dinner:0,bed:0};
   pMorning.value = obj.morning;
@@ -832,7 +863,7 @@ function renderProteinTotals(){
 }
 [pMorning,pLunch,pPre,pDinner,pBed].forEach(inp=>inp.addEventListener("input", renderProteinTotals));
 pDate.addEventListener("change", ()=>loadProteinDay(pDate.value));
- 
+
 document.getElementById("pSaveBtn").addEventListener("click", ()=>{
   const d = pDate.value || todayISO();
   proteinMap[d] = {
@@ -845,30 +876,24 @@ document.getElementById("pSaveBtn").addEventListener("click", ()=>{
   LS.set(KEY_PRO, proteinMap);
   alert("Saved ✅");
 });
- 
+
 /* ---------------------------
-   PPL display + PR
+   Lifts + PR helpers
 ---------------------------- */
-let lifts = LS.get(KEY_LIFTS, []);     // [{id, date, ex, sets, reps, weight, pr, details?}]
- 
-const pplTabs = document.getElementById("pplTabs");
-const pplList = document.getElementById("pplList");
- 
-const tabs = Object.keys(PPL);
-let activeTab = tabs[0];
- 
+let lifts = LS.get(KEY_LIFTS, []); // [{id, date, ex, sets, reps, weight, pr, details?}]
+
+function uid(){
+  return Math.random().toString(16).slice(2) + Date.now().toString(16);
+}
+
 function liftStatsForExercise(ex){
   const exLifts = lifts.filter(x=>x.ex===ex);
-
   const life = exLifts.length ? Math.max(...exLifts.map(x=>x.weight)) : null;
 
-  const thisWeekStart = daysAgo(7);   // last 0–7 days
-  const lastWeekStart = daysAgo(14);  // last 7–14 days window
+  const thisWeekStart = daysAgo(7);
+  const lastWeekStart = daysAgo(14);
 
-  const thisWeek = exLifts.filter(x=>{
-    const d = parseISO(x.date);
-    return d >= thisWeekStart;
-  });
+  const thisWeek = exLifts.filter(x=>parseISO(x.date) >= thisWeekStart);
   const lastWeek = exLifts.filter(x=>{
     const d = parseISO(x.date);
     return d >= lastWeekStart && d < thisWeekStart;
@@ -879,7 +904,29 @@ function liftStatsForExercise(ex){
 
   return { life, thisWeekMax, lastWeekMax };
 }
- 
+
+function getLastLiftForExercise(ex){
+  const exLifts = lifts.filter(x=>x.ex===ex).sort((a,b)=>b.date.localeCompare(a.date));
+  return exLifts[0] || null;
+}
+
+function formatSetsDetail(lift){
+  if(!lift) return "—";
+  const topSet = (lift.weight && lift.reps) ? `${lift.weight} x ${lift.reps}` : "—";
+  const details = Array.isArray(lift.details) && lift.details.length
+    ? lift.details.map((s,i)=>`S${i+1}:${s.weight}x${s.reps}`).join("  ")
+    : null;
+  return `${lift.date} • Top: ${topSet}${details ? " • " + details : ""}`;
+}
+
+/* ---------------------------
+   PPL display
+---------------------------- */
+const pplTabs = document.getElementById("pplTabs");
+const pplList = document.getElementById("pplList");
+const tabs = Object.keys(PPL);
+let activeTab = tabs[0];
+
 function renderTabs(){
   pplTabs.innerHTML = "";
   tabs.forEach(t=>{
@@ -893,7 +940,7 @@ function renderTabs(){
     pplTabs.appendChild(b);
   });
 }
- 
+
 function renderPPL(){
   renderTabs();
   const list = PPL[activeTab];
@@ -904,7 +951,7 @@ function renderPPL(){
 
     const isPRThisWeek = (life !== null && thisWeekMax !== null && thisWeekMax === life);
     const prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
- 
+
     const card = document.createElement("div");
     card.className = "exerciseItem";
     card.innerHTML = `
@@ -932,100 +979,58 @@ function renderPPL(){
 
     pplList.appendChild(card);
   });
- 
-  // update datalist for lift logging
-  renderExerciseDatalist();
 }
- 
+
 /* ---------------------------
-   Lift logger
+   Lift Progress Log (Search + Filters)
 ---------------------------- */
-function uid(){
-  return Math.random().toString(16).slice(2) + Date.now().toString(16);
-}
-const liftExercise = document.getElementById("liftExercise");
-const liftDate = document.getElementById("liftDate");
-const liftSets = document.getElementById("liftSets");
-const liftReps = document.getElementById("liftReps");
-const liftWeight = document.getElementById("liftWeight");
-const liftAddBtn = document.getElementById("liftAddBtn");
 const liftTable = document.getElementById("liftTable");
-const liftSel = document.getElementById("liftSel");
-const lift7 = document.getElementById("lift7");
-const liftLife = document.getElementById("liftLife");
- 
-liftDate.value = todayISO();
- 
-function renderExerciseDatalist(){
-  const dl = document.getElementById("exerciseDatalist");
-  dl.innerHTML = "";
-  allExercises().forEach(ex=>{
-    const opt = document.createElement("option");
-    opt.value = ex;
-    dl.appendChild(opt);
-  });
-}
- 
-function renderLiftStatsForInput(){
-  const ex = liftExercise.value.trim();
-  liftSel.textContent = ex || "—";
-  if(!ex){
-    lift7.textContent = "—";
-    liftLife.textContent = "—";
-    return;
+const liftSearch = document.getElementById("liftSearch");
+const liftFilterRange = document.getElementById("liftFilterRange");
+const liftLimit = document.getElementById("liftLimit");
+
+function getFilteredLifts(){
+  let arr = [...lifts];
+
+  const q = (liftSearch?.value || "").trim().toLowerCase();
+  if(q) arr = arr.filter(x => (x.ex || "").toLowerCase().includes(q));
+
+  const days = Number(liftFilterRange?.value || 30);
+  if(days > 0){
+    const cutoff = daysAgo(days);
+    arr = arr.filter(x => parseISO(x.date) >= cutoff);
   }
-  const {life, thisWeekMax} = liftStatsForExercise(ex);
-  lift7.textContent = thisWeekMax===null ? "—" : String(thisWeekMax);
-  liftLife.textContent = life===null ? "—" : String(life);
+
+  arr.sort((a,b)=>b.date.localeCompare(a.date));
+
+  const lim = Number(liftLimit?.value || 25);
+  if(lim > 0) arr = arr.slice(0, lim);
+
+  return arr;
 }
-liftExercise.addEventListener("input", renderLiftStatsForInput);
- 
-liftAddBtn.addEventListener("click", ()=>{
-  const ex = liftExercise.value.trim();
-  const date = liftDate.value || todayISO();
-  const sets = Number(liftSets.value);
-  const reps = Number(liftReps.value);
-  const weight = Number(liftWeight.value);
- 
-  if(!ex) return alert("Type an exercise name.");
-  if(!date) return alert("Pick a date.");
-  if(!isFinite(sets) || sets<=0) return alert("Enter sets (number).");
-  if(!isFinite(reps) || reps<=0) return alert("Enter reps (number).");
-  if(!isFinite(weight) || weight<=0) return alert("Enter weight (lbs).");
- 
-  const {life} = liftStatsForExercise(ex);
-  const isPR = (life===null) ? true : (weight > life);
- 
-  lifts.push({id:uid(), date, ex, sets, reps, weight, pr:isPR});
-  lifts.sort((a,b)=>b.date.localeCompare(a.date));
-  LS.set(KEY_LIFTS, lifts);
- 
-  // clear form
-  liftSets.value = "";
-  liftReps.value = "";
-  liftWeight.value = "";
- 
-  renderLifts();
-  renderPPL();
-  renderLiftStatsForInput();
-});
- 
+
+if(liftSearch) liftSearch.addEventListener("input", renderLifts);
+if(liftFilterRange) liftFilterRange.addEventListener("change", renderLifts);
+if(liftLimit) liftLimit.addEventListener("change", renderLifts);
+
 function renderLifts(){
   liftTable.innerHTML = "";
-  lifts.sort((a,b)=>b.date.localeCompare(a.date));
-  lifts.forEach(x=>{
+  const visible = getFilteredLifts();
+
+  visible.forEach(x=>{
+    const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="mono">${x.date}</td>
-      <td>${x.ex}</td>
-      <td class="mono">${x.sets}</td>
-      <td class="mono">${x.reps}</td>
-      <td class="mono">${x.weight}</td>
+      <td><span class="clickEx" data-hist="${x.ex}">${x.ex}</span></td>
+      <td class="mono">${topSet}</td>
+      <td class="mono">${x.sets ?? "—"}</td>
       <td>${x.pr ? '<span class="badge">🏆</span>' : ''}</td>
       <td><button data-dellift="${x.id}">Delete</button></td>
     `;
     liftTable.appendChild(tr);
   });
+
   liftTable.querySelectorAll("button[data-dellift]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const id = btn.getAttribute("data-dellift");
@@ -1033,7 +1038,13 @@ function renderLifts(){
       LS.set(KEY_LIFTS, lifts);
       renderLifts();
       renderPPL();
-      renderLiftStatsForInput();
+    });
+  });
+
+  liftTable.querySelectorAll("[data-hist]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const ex = el.getAttribute("data-hist");
+      openHistoryModal(ex);
     });
   });
 }
@@ -1049,12 +1060,28 @@ const logModalSets = document.getElementById("logModalSets");
 const logAddSetBtn = document.getElementById("logAddSetBtn");
 const logSaveBtn = document.getElementById("logSaveBtn");
 
+const logPrevBox = document.getElementById("logPrevBox");
+const logPrevText = document.getElementById("logPrevText");
+const logCopyLastBtn = document.getElementById("logCopyLastBtn");
+const logViewHistoryBtn = document.getElementById("logViewHistoryBtn");
+
 let modalExerciseName = null;
+let modalLastLift = null;
 
 function openLogModal(exName, defaultSets=3){
   modalExerciseName = exName;
   logModalExercise.textContent = exName;
   logModalDate.value = todayISO();
+
+  // show previous session for this exercise (so you don’t have to search)
+  modalLastLift = getLastLiftForExercise(exName);
+  if(modalLastLift){
+    logPrevBox.style.display = "block";
+    logPrevText.textContent = formatSetsDetail(modalLastLift);
+  } else {
+    logPrevBox.style.display = "none";
+    logPrevText.textContent = "—";
+  }
 
   logModalSets.innerHTML = "";
   for(let i=0;i<defaultSets;i++) addSetRow();
@@ -1065,6 +1092,14 @@ function openLogModal(exName, defaultSets=3){
 function closeLogModal(){
   logModal.style.display = "none";
   modalExerciseName = null;
+  modalLastLift = null;
+}
+
+function renumberSetPills(){
+  [...logModalSets.children].forEach((child, i)=>{
+    const pillStrong = child.querySelector(".pill strong");
+    if(pillStrong) pillStrong.textContent = String(i+1);
+  });
 }
 
 function addSetRow(weight="", reps=""){
@@ -1084,11 +1119,7 @@ function addSetRow(weight="", reps=""){
   `;
   row.querySelector(".removeSetBtn").addEventListener("click", ()=>{
     row.remove();
-    // re-number set pills
-    [...logModalSets.children].forEach((child, i)=>{
-      const pillStrong = child.querySelector(".pill strong");
-      if(pillStrong) pillStrong.textContent = String(i+1);
-    });
+    renumberSetPills();
   });
   logModalSets.appendChild(row);
 }
@@ -1099,6 +1130,24 @@ logModalClose.addEventListener("click", closeLogModal);
 // Close if you click outside the modal card
 logModal.addEventListener("click", (e)=>{
   if(e.target === logModal) closeLogModal();
+});
+
+logCopyLastBtn.addEventListener("click", ()=>{
+  if(!modalLastLift) return;
+  logModalSets.innerHTML = "";
+
+  if(Array.isArray(modalLastLift.details) && modalLastLift.details.length){
+    modalLastLift.details.forEach(s=> addSetRow(String(s.weight ?? ""), String(s.reps ?? "")));
+  } else {
+    // fallback: copy the top set only if details weren’t saved
+    addSetRow(String(modalLastLift.weight ?? ""), String(modalLastLift.reps ?? ""));
+  }
+  renumberSetPills();
+});
+
+logViewHistoryBtn.addEventListener("click", ()=>{
+  if(!modalExerciseName) return;
+  openHistoryModal(modalExerciseName);
 });
 
 logSaveBtn.addEventListener("click", ()=>{
@@ -1144,10 +1193,6 @@ logSaveBtn.addEventListener("click", ()=>{
   lifts.sort((a,b)=>b.date.localeCompare(a.date));
   LS.set(KEY_LIFTS, lifts);
 
-  // OPTIONAL slick behavior: auto-focus the history on what you just logged
-  liftExercise.value = modalExerciseName;
-  renderLiftStatsForInput();
-
   closeLogModal();
   renderLifts();
   renderPPL();
@@ -1155,7 +1200,139 @@ logSaveBtn.addEventListener("click", ()=>{
   // scroll to log section
   document.getElementById("liftTable").scrollIntoView({behavior:"smooth", block:"start"});
 });
- 
+
+/* ---------------------------
+   History Modal
+---------------------------- */
+const histModal = document.getElementById("histModal");
+const histCloseBtn = document.getElementById("histCloseBtn");
+const histExercise = document.getElementById("histExercise");
+const histTable = document.getElementById("histTable");
+
+function closeHistoryModal(){
+  histModal.style.display = "none";
+}
+
+histCloseBtn.addEventListener("click", closeHistoryModal);
+histModal.addEventListener("click", (e)=>{
+  if(e.target === histModal) closeHistoryModal();
+});
+
+function openHistoryModal(exName){
+  histExercise.textContent = exName;
+
+  const exLifts = lifts
+    .filter(x=>x.ex === exName)
+    .sort((a,b)=>b.date.localeCompare(a.date))
+    .slice(0, 12); // keep it minimal
+
+  histTable.innerHTML = "";
+
+  exLifts.forEach(x=>{
+    const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
+    const allSets = Array.isArray(x.details) && x.details.length
+      ? x.details.map((s,i)=>`S${i+1}:${s.weight}x${s.reps}`).join("  ")
+      : "—";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${x.date}</td>
+      <td class="mono">${topSet}</td>
+      <td class="mono">${allSets}</td>
+      <td>${x.pr ? '<span class="badge">🏆</span>' : ''}</td>
+    `;
+    histTable.appendChild(tr);
+  });
+
+  histModal.style.display = "block";
+}
+
+/* ---------------------------
+   Export / Import
+---------------------------- */
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
+const importFile = document.getElementById("importFile");
+
+function buildExportPayload(){
+  return {
+    v: 1,
+    exportedAt: new Date().toISOString(),
+    bwLogs: LS.get(KEY_BW, []),
+    attendance: LS.get(KEY_ATT, []),
+    proteinMap: LS.get(KEY_PRO, {}),
+    lifts: LS.get(KEY_LIFTS, [])
+  };
+}
+
+function downloadJSON(filename, obj){
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+exportBtn.addEventListener("click", ()=>{
+  const payload = buildExportPayload();
+  const stamp = new Date().toISOString().slice(0,10);
+  downloadJSON(`gym-dashboard-${stamp}.json`, payload);
+});
+
+importBtn.addEventListener("click", ()=>{
+  importFile.value = "";
+  importFile.click();
+});
+
+importFile.addEventListener("change", async ()=>{
+  const file = importFile.files?.[0];
+  if(!file) return;
+
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    // minimal validation
+    const bw = Array.isArray(data.bwLogs) ? data.bwLogs : null;
+    const att = Array.isArray(data.attendance) ? data.attendance : null;
+    const pro = (data.proteinMap && typeof data.proteinMap === "object") ? data.proteinMap : null;
+    const lf = Array.isArray(data.lifts) ? data.lifts : null;
+
+    if(!bw || !att || !pro || !lf){
+      alert("That file doesn’t look like a valid export from this dashboard.");
+      return;
+    }
+
+    const ok = confirm("Import will overwrite your current saved data on this browser. Continue?");
+    if(!ok) return;
+
+    LS.set(KEY_BW, bw);
+    LS.set(KEY_ATT, att);
+    LS.set(KEY_PRO, pro);
+    LS.set(KEY_LIFTS, lf);
+
+    // refresh in-memory copies
+    bwLogs = LS.get(KEY_BW, []);
+    attendance = new Set(LS.get(KEY_ATT, []));
+    proteinMap = LS.get(KEY_PRO, {});
+    lifts = LS.get(KEY_LIFTS, []);
+
+    renderBW();
+    renderCal();
+    loadProteinDay(todayISO());
+    renderLifts();
+    renderPPL();
+
+    alert("Imported ✅");
+  }catch(e){
+    alert("Import failed. Make sure you selected a valid JSON export file.");
+  }
+});
+
 /* ---------------------------
    Reset all
 ---------------------------- */
@@ -1169,7 +1346,7 @@ document.getElementById("wipeAllBtn").addEventListener("click", ()=>{
   localStorage.removeItem(KEY_TARGETS);
   location.reload();
 });
- 
+
 /* ---------------------------
    Init
 ---------------------------- */
@@ -1178,13 +1355,13 @@ renderCal();
 loadProteinDay(todayISO());
 renderLifts();
 renderPPL();
+
 document.getElementById("startTodayBtn").addEventListener("click", ()=>{
   activeTab = getTodaySplitTab();
   renderPPL();
   document.getElementById("pplList").scrollIntoView({behavior:"smooth", block:"start"});
 });
-renderExerciseDatalist();
-renderLiftStatsForInput();
 </script>
 </body>
 </html>
+```
