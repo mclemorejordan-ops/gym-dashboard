@@ -732,9 +732,9 @@ function uid(){
    Default Routine Seed
 ---------------------------- */
 function defaultRoutine(){
-  return {
+  const r = {
     id: uid(),
-    name: "PPL (Mon–Sat)",
+    name: "PPL",
     days: {
       Mon: { label:"Push", rest:false, exercises:[
         {name:"Incline Dumbbell Press", sets:4, reps:"8–10", notes:""},
@@ -765,12 +765,23 @@ function defaultRoutine(){
         {name:"Leg Extensions", sets:3, reps:"12–15", notes:""},
         {name:"Cable Crunches", sets:3, reps:"20", notes:"Core"},
       ]},
+
+      // will be filled by deep-copies below
       Thu: { label:"Push", rest:false, exercises:[] },
       Fri: { label:"Pull", rest:false, exercises:[] },
       Sat: { label:"Legs", rest:false, exercises:[] },
+
+      // Sunday rest
       Sun: { label:"Rest", rest:true, exercises:[] }
     }
   };
+
+  // ✅ Duplicate Mon→Thu, Tue→Fri, Wed→Sat (deep copy so edits won’t link)
+  r.days.Thu.exercises = JSON.parse(JSON.stringify(r.days.Mon.exercises));
+  r.days.Fri.exercises = JSON.parse(JSON.stringify(r.days.Tue.exercises));
+  r.days.Sat.exercises = JSON.parse(JSON.stringify(r.days.Wed.exercises));
+
+  return r;
 }
 
 /* ---------------------------
