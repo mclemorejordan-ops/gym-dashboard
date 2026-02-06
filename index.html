@@ -15,6 +15,41 @@
       --bad:#ff6b6b;
       --warn:#ffd166;
     }
+    /* ... ALL your existing CSS stays here ... */
+
+    .danger{
+      border-color: rgba(255, 107, 107, .35);
+      color: var(--bad);
+    }
+
+    /* ---------------------------
+       MODAL SCROLL FIX (mobile + desktop)
+       - keeps modal within screen
+       - allows scrolling inside the modal
+    ---------------------------- */
+    #logModal,
+    #histModal,
+    #rtModal{
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    /* the modal "card" (your inner <div>) */
+    #logModal > div,
+    #histModal > div,
+    #rtModal > div{
+      max-height:90vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* allow the long lists inside modals to scroll */
+    #logModalSets,
+    #rtExList{
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      max-height:50vh;
+    }
     *{box-sizing:border-box}
     body{
       margin:0;
@@ -288,90 +323,6 @@
       border-color: rgba(255, 107, 107, .35);
       color: var(--bad);
     }
-  /* ---------------------------
-   Mobile-friendly tweaks (no layout rewrite)
----------------------------- */
-@media (max-width: 640px){
-
-  /* More breathing room */
-  header{ padding:14px 12px 8px; }
-  main{ padding:12px 10px 90px; gap:10px; }
-
-  /* Cards a little tighter */
-  .card{ padding:12px; border-radius:14px; }
-
-  /* Make rows stack (one field per line) */
-  .row{
-    flex-direction:column;
-    align-items:stretch;
-    gap:10px;
-  }
-  label{ min-width:0; flex:1 1 auto; }
-
-  /* Bigger tap targets */
-  input, select, button{
-    width:100%;
-    padding:12px 12px;
-    font-size:16px;            /* prevents iOS zoom on focus */
-    border-radius:12px;
-  }
-
-  /* Buttons inside mixed rows (like Export/Import/Reset) */
-  .topRight .row{
-    width:100%;
-  }
-
-  /* Tabs become horizontally scrollable */
-  .splitTabs{
-    flex-wrap:nowrap;
-    overflow:auto;
-    -webkit-overflow-scrolling:touch;
-    padding-bottom:6px;
-  }
-  .tab{
-    flex:0 0 auto;
-    white-space:nowrap;
-    padding:10px 12px;
-    font-size:13px;
-  }
-
-  /* Exercise cards stack right column under left */
-  .exerciseItem{
-    flex-direction:column;
-    align-items:stretch;
-  }
-  .exerciseItem .right{
-    text-align:left;
-    min-width:0;
-  }
-  .exerciseItem .right > div{
-    justify-content:flex-start;
-  }
-
-  /* Calendar cells a bit tighter */
-  .day{ padding:10px 0; border-radius:12px; }
-
-  /* Tables: keep readable with horizontal scroll */
-  table{ min-width: 640px; }
-
-  /* Modals: full-screen feel */
-  #logModal, #histModal{
-    padding:10px;
-  }
-  #logModal > div, #histModal > div{
-    margin:10px auto;
-    max-width: 100%;
-    border-radius:14px;
-  }
-
-  /* Sticky bottom action bar inside Log Sets modal (so Save is always reachable) */
-  #logModal .btnRow{
-    position:sticky;
-    bottom:0;
-    padding-top:10px;
-    background:linear-gradient(to bottom, rgba(18,18,20,0), rgba(18,18,20,1) 35%);
-  }
-}
   </style>
 </head>
 
