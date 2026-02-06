@@ -438,23 +438,43 @@
 
     <!-- LIFT PROGRESS LOG -->
     <section class="card">
-      <h2>Lift Progress Log (Searchable History)</h2>
+      <div class="topRight">
+        <h2>Lift Progress Log</h2>
+        <div class="row" style="gap:6px;">
+          <button id="liftViewTableBtn" class="miniBtn">Table</button>
+          <button id="liftViewGraphBtn" class="miniBtn ghost">Graph</button>
+          <button id="liftDownloadBtn" class="miniBtn ghost" title="Download current graph">Download PNG</button>
+        </div>
+      </div>
 
       <div class="row">
         <label>Exercise
           <select id="liftSearch"></select>
         </label>
 
-        <label>Date Range
-          <select id="liftFilterRange">
-            <option value="7">Last 7 days</option>
-            <option value="30" selected>Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="0">All time</option>
+        <label>Routine
+          <select id="liftRoutine"></select>
+        </label>
+
+        <label>Date From
+          <input type="date" id="liftFrom" />
+        </label>
+
+        <label>Date To
+          <input type="date" id="liftTo" />
+        </label>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <label>Metric (Graph)
+          <select id="liftMetric">
+            <option value="top" selected>Top Weight</option>
+            <option value="e1rm">Estimated 1RM (Epley)</option>
+            <option value="vol">Volume</option>
           </select>
         </label>
 
-        <label>Rows
+        <label>Rows (Table)
           <select id="liftLimit">
             <option value="25" selected>25</option>
             <option value="50">50</option>
@@ -462,9 +482,13 @@
             <option value="0">All</option>
           </select>
         </label>
+
+        <button id="liftSearchBtn">Search</button>
+        <button id="liftClearBtn" class="ghost">Clear</button>
       </div>
 
-      <div style="margin-top:10px; overflow:auto;">
+      <!-- TABLE -->
+      <div id="liftTableWrap" style="margin-top:10px; overflow:auto;">
         <table>
           <thead>
             <tr>
@@ -480,8 +504,16 @@
         </table>
       </div>
 
+      <!-- GRAPH -->
+      <div id="liftGraphWrap" style="margin-top:10px; display:none;">
+        <canvas id="liftChart" height="140"></canvas>
+        <div class="notice" style="margin-top:10px;">
+          Weekly separators are shown as vertical lines for easier progress blocks.
+        </div>
+      </div>
+
       <div class="notice" style="margin-top:10px;">
-        Tap an exercise name in the log to view history.
+        Tap an exercise name in the table to view history.
       </div>
     </section>
   </div>
@@ -644,13 +676,13 @@ const KEY_BW = "gym_bw_logs_v1";
 const KEY_ATT = "gym_attendance_v1";
 const KEY_PRO = "gym_protein_v1";
 const KEY_LIFTS = "gym_lifts_v1";
-const KEY_TARGETS = "gym_targets_v1"; // compatibility (unused UI)
+const KEY_TARGETS = "gym_targets_v1";
 
 const KEY_ROUTINES = "gym_routines_v1";
 const KEY_ACTIVE_ROUTINE = "gym_active_routine_id_v1";
 
 /* ---------------------------
-   LOCAL date utils (fixes 1-day offset issue)
+   LOCAL date utils
 ---------------------------- */
 function pad2(n){ return String(n).padStart(2,"0"); }
 function localISODate(d){
@@ -662,19 +694,14 @@ function parseISO(s){
   const [y,m,dd]=s.split("-").map(Number);
   return new Date(y, m-1, dd);
 }
-function daysAgo(n){
-  const d = new Date();
-  d.setDate(d.getDate()-n);
-  return d;
-}
 function sameMonth(d, y, m){ return d.getFullYear()===y && d.getMonth()===m; }
 
 function weekStartMonday(baseDate=new Date()){
   const d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
   const dow = d.getDay(); // 0 Sun..6 Sat
-  const delta = (dow === 0) ? 6 : (dow - 1); // days since Monday
+  const delta = (dow === 0) ? 6 : (dow - 1);
   d.setDate(d.getDate() - delta);
-  return d; // Monday of current week
+  return d;
 }
 const DAY_KEYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 function dateForWeekdayIndex(dayIndex, baseDate=new Date()){
@@ -685,7 +712,7 @@ function dateForWeekdayIndex(dayIndex, baseDate=new Date()){
 }
 
 /* ---------------------------
-   Normalization (exercise continuity across routines)
+   Normalization
 ---------------------------- */
 function normExName(s){
   return String(s||"")
@@ -695,7 +722,14 @@ function normExName(s){
 }
 
 /* ---------------------------
-   Default Routine Seed (your original PPL + Sunday rest)
+   UID helper
+---------------------------- */
+function uid(){
+  return Math.random().toString(16).slice(2) + Date.now().toString(16);
+}
+
+/* ---------------------------
+   Default Routine Seed
 ---------------------------- */
 function defaultRoutine(){
   return {
@@ -748,7 +782,6 @@ function loadRoutines(){
     routines = [defaultRoutine()];
     LS.set(KEY_ROUTINES, routines);
   }
-  // backfill all days for older data
   routines.forEach(r=>{
     if(!r.days) r.days = {};
     DAY_KEYS.forEach(k=>{
@@ -756,7 +789,6 @@ function loadRoutines(){
       if(!Array.isArray(r.days[k].exercises)) r.days[k].exercises = [];
       if(typeof r.days[k].rest !== "boolean") r.days[k].rest = !!r.days[k].rest;
       if(typeof r.days[k].label !== "string") r.days[k].label = String(r.days[k].label||"");
-      // normalize exercise objects
       r.days[k].exercises = r.days[k].exercises.map(e=>({
         name: String(e.name||e.ex||""),
         sets: Number(e.sets)||0,
@@ -779,22 +811,13 @@ function loadRoutines(){
 }
 let {routines, activeId: activeRoutineId} = loadRoutines();
 
-function saveRoutines(){
-  LS.set(KEY_ROUTINES, routines);
-}
+function saveRoutines(){ LS.set(KEY_ROUTINES, routines); }
 function setActiveRoutine(id){
   activeRoutineId = id;
   LS.set(KEY_ACTIVE_ROUTINE, id);
 }
 function getActiveRoutine(){
   return routines.find(r=>r.id===activeRoutineId) || routines[0];
-}
-
-/* ---------------------------
-   UID helper
----------------------------- */
-function uid(){
-  return Math.random().toString(16).slice(2) + Date.now().toString(16);
 }
 
 /* ---------------------------
@@ -831,7 +854,7 @@ function bwStats(){
   const prev = bwLogs[bwLogs.length-2];
   const delta = (latest && prev) ? (latest.bw - prev.bw) : null;
 
-  const cutoff = daysAgo(6);
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-6);
   const last7 = bwLogs.filter(x=>parseISO(x.date) >= cutoff);
   const avg = last7.length ? (last7.reduce((s,x)=>s+x.bw,0)/last7.length) : null;
 
@@ -1038,7 +1061,6 @@ document.getElementById("pSaveBtn").addEventListener("click", ()=>{
 let lifts = LS.get(KEY_LIFTS, []);
 
 function ensureLiftCompatibility(){
-  // backfill normalization + routine fields for older entries
   lifts = lifts.map(x=>{
     const ex = String(x.ex || x.exercise || "");
     const exNorm = x.exNorm || normExName(ex);
@@ -1061,8 +1083,8 @@ function liftStatsForExercise(exName){
 
   const life = exLifts.length ? Math.max(...exLifts.map(x=>Number(x.weight)||0)) : null;
 
-  const thisWeekStart = daysAgo(7);
-  const lastWeekStart = daysAgo(14);
+  const thisWeekStart = new Date(); thisWeekStart.setDate(thisWeekStart.getDate()-7);
+  const lastWeekStart = new Date(); lastWeekStart.setDate(lastWeekStart.getDate()-14);
 
   const thisWeek = exLifts.filter(x=>parseISO(x.date) >= thisWeekStart);
   const lastWeek = exLifts.filter(x=>{
@@ -1123,25 +1145,24 @@ function renderRoutineDropdown(){
 
 routineSelect.addEventListener("change", ()=>{
   setActiveRoutine(routineSelect.value);
-  // keep the same day tab index when switching
   renderRoutineDropdown();
   renderPPL();
+  renderLiftRoutineDropdown(); // keeps routine filters in sync
 });
 
 newRoutineBtn.addEventListener("click", ()=>{
   const base = defaultRoutine();
   base.name = `New Routine ${routines.length+1}`;
-  // start empty but keep days
   DAY_KEYS.forEach(k=>{
     base.days[k].exercises = [];
-    base.days[k].rest = (k==="Sun"); // default Sunday rest
+    base.days[k].rest = (k==="Sun");
     if(k==="Sun") base.days[k].label = "Rest";
   });
   routines.push(base);
   saveRoutines();
   setActiveRoutine(base.id);
   renderRoutineDropdown();
-  openRoutineEditor(base.id); // auto-open editor
+  openRoutineEditor(base.id);
 });
 
 dupRoutineBtn.addEventListener("click", ()=>{
@@ -1154,6 +1175,7 @@ dupRoutineBtn.addEventListener("click", ()=>{
   setActiveRoutine(copy.id);
   renderRoutineDropdown();
   renderPPL();
+  renderLiftRoutineDropdown();
 });
 
 delRoutineBtn.addEventListener("click", ()=>{
@@ -1169,24 +1191,24 @@ delRoutineBtn.addEventListener("click", ()=>{
   setActiveRoutine(routines[0].id);
   renderRoutineDropdown();
   renderPPL();
+  renderLiftRoutineDropdown();
 });
 
 editRoutineBtn.addEventListener("click", ()=>{
   openRoutineEditor(getActiveRoutine().id);
 });
 
-/* ---------------------------
-   PPL display (Mon–Sun)
----------------------------- */
-const pplTabs = document.getElementById("pplTabs");
-const pplList = document.getElementById("pplList");
-
 function getTodaySplitIndex(){
-  // Mon=0..Sun=6
   const dow = new Date().getDay(); // Sun=0..Sat=6
   if(dow === 0) return 6;
   return dow - 1;
 }
+
+/* ---------------------------
+   PPL display
+---------------------------- */
+const pplTabs = document.getElementById("pplTabs");
+const pplList = document.getElementById("pplList");
 
 function renderDayTabs(){
   pplTabs.innerHTML = "";
@@ -1294,16 +1316,38 @@ document.getElementById("startTodayBtn").addEventListener("click", ()=>{
 });
 
 /* ---------------------------
-   Lift Progress Log (Dropdown + Filters)
+   Lift Progress Log (Phase 4)
 ---------------------------- */
 const liftTable = document.getElementById("liftTable");
 const liftSearch = document.getElementById("liftSearch");
-const liftFilterRange = document.getElementById("liftFilterRange");
+const liftRoutine = document.getElementById("liftRoutine");
+const liftFrom = document.getElementById("liftFrom");
+const liftTo = document.getElementById("liftTo");
+const liftMetric = document.getElementById("liftMetric");
 const liftLimit = document.getElementById("liftLimit");
+
+const liftSearchBtn = document.getElementById("liftSearchBtn");
+const liftClearBtn = document.getElementById("liftClearBtn");
+
+const liftViewTableBtn = document.getElementById("liftViewTableBtn");
+const liftViewGraphBtn = document.getElementById("liftViewGraphBtn");
+const liftDownloadBtn = document.getElementById("liftDownloadBtn");
+
+const liftTableWrap = document.getElementById("liftTableWrap");
+const liftGraphWrap = document.getElementById("liftGraphWrap");
+
+let liftView = "table"; // "table" | "graph"
+let appliedLiftFilters = {
+  ex: "",
+  routineId: "",
+  from: "",
+  to: "",
+  metric: "top",
+  limit: 25
+};
 
 function collectAllExerciseNames(){
   const set = new Set();
-  // from routines
   routines.forEach(r=>{
     DAY_KEYS.forEach(k=>{
       (r.days?.[k]?.exercises || []).forEach(e=>{
@@ -1311,58 +1355,101 @@ function collectAllExerciseNames(){
       });
     });
   });
-  // from logs
-  lifts.forEach(x=>{
-    if(x.ex) set.add(x.ex);
-  });
+  lifts.forEach(x=>{ if(x.ex) set.add(x.ex); });
   return [...set].sort();
 }
 
 function renderLiftSearchDropdown(){
   const prev = liftSearch.value || "";
-  const items = ["", ...collectAllExerciseNames()]; // "" = All
+  const items = ["", ...collectAllExerciseNames()];
   liftSearch.innerHTML = "";
-
   items.forEach(v=>{
     const opt = document.createElement("option");
     opt.value = v;
     opt.textContent = v === "" ? "All exercises" : v;
     liftSearch.appendChild(opt);
   });
-
   liftSearch.value = items.includes(prev) ? prev : "";
 }
 
-function getFilteredLifts(){
+function renderLiftRoutineDropdown(){
+  const prev = liftRoutine.value || "";
+  liftRoutine.innerHTML = "";
+
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "All routines";
+  liftRoutine.appendChild(optAll);
+
+  routines.forEach(r=>{
+    const opt = document.createElement("option");
+    opt.value = r.id;
+    opt.textContent = r.name;
+    liftRoutine.appendChild(opt);
+  });
+
+  liftRoutine.value = (prev && routines.some(r=>r.id===prev)) ? prev : "";
+}
+
+function applyLiftFiltersFromUI(){
+  appliedLiftFilters = {
+    ex: (liftSearch.value || "").trim(),
+    routineId: (liftRoutine.value || "").trim(),
+    from: (liftFrom.value || "").trim(),
+    to: (liftTo.value || "").trim(),
+    metric: (liftMetric.value || "top"),
+    limit: Number(liftLimit.value || 25)
+  };
+}
+
+function clearLiftFiltersUI(){
+  liftSearch.value = "";
+  liftRoutine.value = "";
+  liftFrom.value = "";
+  liftTo.value = "";
+  liftMetric.value = "top";
+  liftLimit.value = "25";
+}
+
+function getLiftFilteredData(){
   let arr = [...lifts];
 
-  const selected = (liftSearch?.value || "").trim();
-  if(selected){
-    const n = normExName(selected);
+  // exercise filter (normalized)
+  if(appliedLiftFilters.ex){
+    const n = normExName(appliedLiftFilters.ex);
     arr = arr.filter(x => (x.exNorm || normExName(x.ex)) === n);
   }
 
-  const days = Number(liftFilterRange?.value || 30);
-  if(days > 0){
-    const cutoff = daysAgo(days);
-    arr = arr.filter(x => parseISO(x.date) >= cutoff);
+  // routine filter
+  if(appliedLiftFilters.routineId){
+    arr = arr.filter(x => String(x.routineId || "") === appliedLiftFilters.routineId);
   }
 
+  // date range filter
+  if(appliedLiftFilters.from){
+    const f = parseISO(appliedLiftFilters.from);
+    arr = arr.filter(x => parseISO(x.date) >= f);
+  }
+  if(appliedLiftFilters.to){
+    const t = parseISO(appliedLiftFilters.to);
+    arr = arr.filter(x => parseISO(x.date) <= t);
+  }
+
+  // sort newest for table, oldest for graph later
   arr.sort((a,b)=>b.date.localeCompare(a.date));
 
-  const lim = Number(liftLimit?.value || 25);
-  if(lim > 0) arr = arr.slice(0, lim);
+  // limit (table)
+  if(liftView === "table"){
+    const lim = Number(appliedLiftFilters.limit || 25);
+    if(lim > 0) arr = arr.slice(0, lim);
+  }
 
   return arr;
 }
 
-liftSearch.addEventListener("change", renderLifts);
-liftFilterRange.addEventListener("change", renderLifts);
-liftLimit.addEventListener("change", renderLifts);
-
-function renderLifts(){
+function renderLiftsTable(){
   liftTable.innerHTML = "";
-  const visible = getFilteredLifts();
+  const visible = getLiftFilteredData();
 
   visible.forEach(x=>{
     const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
@@ -1384,7 +1471,7 @@ function renderLifts(){
       lifts = lifts.filter(x=>x.id!==id);
       LS.set(KEY_LIFTS, lifts);
       renderLiftSearchDropdown();
-      renderLifts();
+      renderLifts();   // rerun with applied filters
       renderPPL();
       buildRoutineExerciseSuggestions();
     });
@@ -1398,8 +1485,182 @@ function renderLifts(){
   });
 }
 
+/* ---- Graph helpers ---- */
+function estEpley1RM(weight, reps){
+  const w = Number(weight)||0;
+  const r = Number(reps)||0;
+  if(!w || !r) return 0;
+  return w * (1 + (r/30));
+}
+function calcVolume(lift){
+  // Prefer details if present
+  if(Array.isArray(lift.details) && lift.details.length){
+    return lift.details.reduce((sum,s)=>sum + (Number(s.weight)||0)*(Number(s.reps)||0), 0);
+  }
+  const w = Number(lift.weight)||0;
+  const r = Number(lift.reps)||0;
+  const sets = Number(lift.sets)||1;
+  return w * r * sets;
+}
+function weekKey(d){
+  const ws = weekStartMonday(d);
+  return `${ws.getFullYear()}-${pad2(ws.getMonth()+1)}-${pad2(ws.getDate())}`;
+}
+
+let liftChart; // chart.js instance
+
+const weekSeparatorsPlugin = {
+  id: "weekSeparators",
+  beforeDraw(chart, args, pluginOptions){
+    const cfg = chart?.config?.options?.plugins?.weekSeparators;
+    if(!cfg || cfg.enabled !== true) return;
+
+    const {ctx, chartArea} = chart;
+    const xScale = chart.scales?.x;
+    if(!ctx || !chartArea || !xScale) return;
+
+    const labels = chart.data.labels || [];
+    if(labels.length < 2) return;
+
+    // find week boundaries by comparing week keys across consecutive points
+    const boundaries = [];
+    let prevKey = null;
+    for(let i=0;i<labels.length;i++){
+      const d = parseISO(labels[i]);
+      const key = weekKey(d);
+      if(prevKey !== null && key !== prevKey){
+        boundaries.push(i);
+      }
+      prevKey = key;
+    }
+
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(154,160,166,0.22)";
+
+    boundaries.forEach(i=>{
+      const x = xScale.getPixelForValue(labels[i]);
+      ctx.beginPath();
+      ctx.moveTo(x, chartArea.top);
+      ctx.lineTo(x, chartArea.bottom);
+      ctx.stroke();
+    });
+
+    ctx.restore();
+  }
+};
+
+function renderLiftsGraph(){
+  const visible = getLiftFilteredData()
+    .slice() // copy
+    .sort((a,b)=>a.date.localeCompare(b.date)); // oldest -> newest
+
+  const labels = visible.map(x=>x.date);
+
+  const metric = appliedLiftFilters.metric || "top";
+  const data = visible.map(x=>{
+    if(metric === "e1rm") return estEpley1RM(x.weight, x.reps);
+    if(metric === "vol") return calcVolume(x);
+    return Number(x.weight)||0; // top
+  });
+
+  const yLabel =
+    metric === "e1rm" ? "Est. 1RM (lbs)" :
+    metric === "vol" ? "Volume" :
+    "Top Weight (lbs)";
+
+  const ctx = document.getElementById("liftChart");
+  if(liftChart) liftChart.destroy();
+
+  liftChart = new Chart(ctx, {
+    type:"line",
+    data:{
+      labels,
+      datasets:[{
+        label: yLabel,
+        data,
+        tension:.25,
+        pointRadius:3,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{mode:"index", intersect:false},
+        weekSeparators:{enabled:true}
+      },
+      scales:{
+        x:{ticks:{color:"#9aa0a6"}, grid:{color:"#202124"}},
+        y:{ticks:{color:"#9aa0a6"}, grid:{color:"#202124"}}
+      }
+    },
+    plugins:[weekSeparatorsPlugin]
+  });
+
+  // If no data, show a friendly message
+  if(labels.length === 0){
+    // chart will just be empty; that's fine
+  }
+}
+
+function setLiftView(next){
+  liftView = next;
+
+  if(liftView === "table"){
+    liftTableWrap.style.display = "";
+    liftGraphWrap.style.display = "none";
+    liftViewTableBtn.classList.remove("ghost");
+    liftViewGraphBtn.classList.add("ghost");
+    liftDownloadBtn.classList.add("ghost");
+    renderLiftsTable();
+  } else {
+    liftTableWrap.style.display = "none";
+    liftGraphWrap.style.display = "";
+    liftViewTableBtn.classList.add("ghost");
+    liftViewGraphBtn.classList.remove("ghost");
+    liftDownloadBtn.classList.remove("ghost");
+    renderLiftsGraph();
+  }
+}
+
+function renderLifts(){
+  // uses appliedLiftFilters + current liftView
+  if(liftView === "table") renderLiftsTable();
+  else renderLiftsGraph();
+}
+
+liftViewTableBtn.addEventListener("click", ()=> setLiftView("table"));
+liftViewGraphBtn.addEventListener("click", ()=> setLiftView("graph"));
+
+liftSearchBtn.addEventListener("click", ()=>{
+  applyLiftFiltersFromUI();
+  renderLifts();
+});
+
+liftClearBtn.addEventListener("click", ()=>{
+  clearLiftFiltersUI();
+  applyLiftFiltersFromUI();
+  setLiftView("table");
+  renderLifts();
+});
+
+liftDownloadBtn.addEventListener("click", ()=>{
+  if(!liftChart){
+    alert("Switch to Graph view first.");
+    return;
+  }
+  const url = liftChart.toBase64Image("image/png", 1);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lift-graph-${localISODate(new Date())}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+});
+
 /* ---------------------------
-   Log Sets Modal (Routine -> Lift Progress)
+   Log Sets Modal
 ---------------------------- */
 const logModal = document.getElementById("logModal");
 const logModalClose = document.getElementById("logModalClose");
@@ -1428,11 +1689,7 @@ function openLogModal(exName, defaultSets=3, routineObj=null, dayKey="", dayInde
   modalDayIndex = dayIndex;
 
   logModalExercise.textContent = exName;
-  logRoutineLine.textContent = routineObj
-    ? `${routineObj.name} • ${dayKey}`
-    : "—";
-
-  // ✅ date = this week’s weekday (Mon..Sun), still editable
+  logRoutineLine.textContent = routineObj ? `${routineObj.name} • ${dayKey}` : "—";
   logModalDate.value = dateForWeekdayIndex(dayIndex, new Date()) || todayISO();
 
   modalLastLift = getLastLiftForExercise(exName);
@@ -1556,8 +1813,9 @@ logSaveBtn.addEventListener("click", ()=>{
   LS.set(KEY_LIFTS, lifts);
 
   closeLogModal();
+
   renderLiftSearchDropdown();
-  renderLifts();
+  renderLifts();      // Phase 4 respects applied filters
   renderPPL();
   buildRoutineExerciseSuggestions();
 
@@ -1607,7 +1865,7 @@ function openHistoryModal(exName){
 }
 
 /* ---------------------------
-   Routine Editor
+   Routine Editor (unchanged)
 ---------------------------- */
 const rtModal = document.getElementById("rtModal");
 const rtCloseBtn = document.getElementById("rtCloseBtn");
@@ -1646,8 +1904,8 @@ function openRoutineEditor(routineId){
   if(!r) return;
 
   editRoutineId = routineId;
-  editDayIndex = activeDayIndex; // open on currently viewed day
-  draftRoutine = JSON.parse(JSON.stringify(r)); // safe draft copy
+  editDayIndex = activeDayIndex;
+  draftRoutine = JSON.parse(JSON.stringify(r));
 
   rtName.value = draftRoutine.name;
 
@@ -1658,16 +1916,16 @@ function openRoutineEditor(routineId){
   rtModal.style.display = "block";
 }
 
-function closeRoutineEditor(discard=true){
+function closeRoutineEditor(){
   rtModal.style.display = "none";
   editRoutineId = null;
   editDayIndex = 0;
   draftRoutine = null;
 }
 
-rtCloseBtn.addEventListener("click", ()=>closeRoutineEditor(true));
-rtCancelBtn.addEventListener("click", ()=>closeRoutineEditor(true));
-rtModal.addEventListener("click", (e)=>{ if(e.target === rtModal) closeRoutineEditor(true); });
+rtCloseBtn.addEventListener("click", closeRoutineEditor);
+rtCancelBtn.addEventListener("click", closeRoutineEditor);
+rtModal.addEventListener("click", (e)=>{ if(e.target === rtModal) closeRoutineEditor(); });
 
 function renderRtDayTabs(){
   rtDayTabs.innerHTML = "";
@@ -1746,7 +2004,6 @@ function renderRtDayPanel(){
       </div>
     `;
 
-    // bind input changes
     wrap.querySelectorAll("[data-field]").forEach(inp=>{
       inp.addEventListener("input", ()=>{
         const field = inp.getAttribute("data-field");
@@ -1793,7 +2050,6 @@ function renderRtDayPanel(){
   });
 }
 
-// Day-level fields
 rtDayLabel.addEventListener("input", ()=>{
   const k = DAY_KEYS[editDayIndex];
   draftRoutine.days[k].label = rtDayLabel.value;
@@ -1802,7 +2058,6 @@ rtDayLabel.addEventListener("input", ()=>{
 rtRestToggle.addEventListener("change", ()=>{
   const k = DAY_KEYS[editDayIndex];
   draftRoutine.days[k].rest = (rtRestToggle.value === "1");
-  // optional: auto-label rest if blank
   if(draftRoutine.days[k].rest && !draftRoutine.days[k].label){
     draftRoutine.days[k].label = "Rest";
     rtDayLabel.value = "Rest";
@@ -1811,7 +2066,6 @@ rtRestToggle.addEventListener("change", ()=>{
   renderRtDayTabs();
 });
 
-// Add exercise
 rtAddExBtn.addEventListener("click", ()=>{
   const k = DAY_KEYS[editDayIndex];
   const day = draftRoutine.days[k];
@@ -1831,6 +2085,7 @@ rtAddExBtn.addEventListener("click", ()=>{
 
   renderRtDayPanel();
   buildRoutineExerciseSuggestions();
+  renderLiftSearchDropdown();
 });
 
 rtSaveBtn.addEventListener("click", ()=>{
@@ -1840,24 +2095,23 @@ rtSaveBtn.addEventListener("click", ()=>{
   if(!name) return alert("Routine needs a name.");
   draftRoutine.name = name;
 
-  // write draft back into routines array
   const idx = routines.findIndex(r=>r.id===editRoutineId);
   if(idx < 0) return;
 
   routines[idx] = draftRoutine;
   saveRoutines();
 
-  // keep active routine pointing here
   setActiveRoutine(draftRoutine.id);
 
-  closeRoutineEditor(true);
+  closeRoutineEditor();
   renderRoutineDropdown();
   renderPPL();
+  renderLiftRoutineDropdown();
   buildRoutineExerciseSuggestions();
 });
 
 /* ---------------------------
-   Export / Import (now includes routines + active routine)
+   Export / Import / Reset
 ---------------------------- */
 const exportBtn = document.getElementById("exportBtn");
 const importBtn = document.getElementById("importBtn");
@@ -1925,7 +2179,6 @@ importFile.addEventListener("change", async ()=>{
     LS.set(KEY_ROUTINES, rts);
     LS.set(KEY_ACTIVE_ROUTINE, arId);
 
-    // reload state
     bwLogs = LS.get(KEY_BW, []);
     attendance = new Set(LS.get(KEY_ATT, []));
     proteinMap = LS.get(KEY_PRO, {});
@@ -1943,7 +2196,10 @@ importFile.addEventListener("change", async ()=>{
     renderPPL();
 
     renderLiftSearchDropdown();
-    renderLifts();
+    renderLiftRoutineDropdown();
+    clearLiftFiltersUI();
+    applyLiftFiltersFromUI();
+    setLiftView("table");
 
     buildRoutineExerciseSuggestions();
 
@@ -1953,9 +2209,6 @@ importFile.addEventListener("change", async ()=>{
   }
 });
 
-/* ---------------------------
-   Reset all (now wipes routines too)
----------------------------- */
 document.getElementById("wipeAllBtn").addEventListener("click", ()=>{
   const ok = confirm("Reset ALL saved gym data on this device/browser?");
   if(!ok) return;
@@ -1981,7 +2234,9 @@ activeDayIndex = getTodaySplitIndex();
 renderPPL();
 
 renderLiftSearchDropdown();
-renderLifts();
+renderLiftRoutineDropdown();
+applyLiftFiltersFromUI();
+setLiftView("table"); // default view
 
 buildRoutineExerciseSuggestions();
 </script>
