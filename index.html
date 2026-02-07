@@ -811,7 +811,76 @@ function normExName(s){
     .replace(/\s+/g," ")
     .trim();
 }
+/* ---------------------------
+   Canonical Exercise Library
+---------------------------- */
+const EXERCISE_LIBRARY = [
+  // Barbell
+  "Barbell Bench Press",
+  "Incline Barbell Bench Press",
+  "Barbell Squat",
+  "Front Squat",
+  "Deadlift (Conventional)",
+  "Romanian Deadlift",
 
+  // Machines
+  "Leg Press",
+  "Hack Squat",
+  "Smith Machine Squat",
+  "Lat Pulldown",
+  "Seated Cable Row",
+  "Chest Fly Machine",
+  "Shoulder Press Machine",
+  "Leg Extension",
+  "Hamstring Curl",
+  "Standing Calf Raise (Machine)",
+  "Seated Calf Raise",
+
+  // Dumbbell
+  "Dumbbell Bench Press",
+  "Incline Dumbbell Press",
+  "Dumbbell Shoulder Press",
+  "Dumbbell Lateral Raises",
+  "Dumbbell Front Raises",
+  "Dumbbell Chest Fly",
+  "Dumbbell Row",
+  "One-Arm Dumbbell Row",
+  "Dumbbell Shrugs",
+  "Dumbbell Bicep Curl",
+  "Hammer Curl",
+  "Concentration Curl",
+  "Dumbbell Tricep Kickback",
+  "Overhead Dumbbell Tricep Extension",
+  "Goblet Squat",
+  "Dumbbell Lunges",
+  "Bulgarian Split Squat",
+  "Dumbbell Romanian Deadlift",
+
+  // Core
+  "Plank",
+  "Side Plank",
+  "Leg Raises",
+  "Cable Crunch",
+  "Bicycle Crunch",
+  "Russian Twist",
+  "Ab Wheel Rollout",
+  "Mountain Climbers",
+
+  // Cardio / Conditioning
+  "Treadmill Walk / Run",
+  "Incline Treadmill Walk",
+  "Stair Climber",
+  "Stationary Bike",
+  "Spin Bike",
+  "Elliptical",
+  "Rowing Machine",
+  "Jump Rope",
+  "Battle Ropes",
+  "Kettlebell Swings",
+  "Sled Push / Pull",
+  "Box Jumps",
+  "Burpees"
+];
 /* ---------------------------
    UID helper
 ---------------------------- */
@@ -1472,6 +1541,11 @@ let appliedLiftFilters = {
 
 function collectAllExerciseNames(){
   const set = new Set();
+
+  // 1️⃣ Canonical library first
+  EXERCISE_LIBRARY.forEach(n => set.add(n));
+
+  // 2️⃣ Routine exercises
   routines.forEach(r=>{
     DAY_KEYS.forEach(k=>{
       (r.days?.[k]?.exercises || []).forEach(e=>{
@@ -1479,8 +1553,13 @@ function collectAllExerciseNames(){
       });
     });
   });
-  lifts.forEach(x=>{ if(x.ex) set.add(x.ex); });
-  return [...set].sort();
+
+  // 3️⃣ Logged lifts
+  lifts.forEach(x=>{
+    if(x.ex) set.add(x.ex);
+  });
+
+  return [...set].sort((a,b)=>a.localeCompare(b));
 }
 
 function renderLiftSearchDropdown(){
