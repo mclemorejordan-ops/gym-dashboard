@@ -554,7 +554,7 @@
 </section>
 
   <!-- HOME SCREEN -->
-  <section id="screen-home" class="screen active">
+  <section id="screen-home" class="screen">
 
   <!-- Quick View -->
   <section class="card">
@@ -3192,13 +3192,15 @@ rtSaveBtn.addEventListener("click", ()=>{
   renderPPL();
   renderLiftRoutineDropdown();
   buildRoutineExerciseSuggestions();
-});
 
   // If onboarding is not done yet, finish it and send to Home
 if(!isOnboardingDone()){
   setOnboardingDone();
   refreshHome();
   showScreen("home");
+}
+});
+
 }
 
   function renderLastBackup(){
@@ -3336,6 +3338,10 @@ document.getElementById("settingsResetBtn").addEventListener("click", ()=>{
   localStorage.removeItem(KEY_ROUTINES);
   localStorage.removeItem(KEY_ACTIVE_ROUTINE);
   localStorage.removeItem(KEY_ACTIVE_SCREEN);
+
+   // ✅ STEP 5 — reset onboarding state
+  localStorage.removeItem(KEY_ONBOARD_DONE);
+  
   location.reload();
 });
 
@@ -3392,49 +3398,9 @@ buildRoutineExerciseSuggestions();
 // 🔹 NAVIGATION WIRES HERE (only once)
 bindNavigation();
 
-if(shouldOnboard()){
-  runOnboarding();
-} else {
-  showScreen(localStorage.getItem(KEY_ACTIVE_SCREEN) || "home");
-}
-
-function shouldOnboard(){
-  const p = LS.get(KEY_PROFILE, null);
-  const hasName = p && typeof p === "object" && String(p.name||"").trim().length > 0;
-  const hasRoutine = Array.isArray(LS.get(KEY_ROUTINES, [])) && LS.get(KEY_ROUTINES, []).length > 0;
-  return (!hasName) || (!hasRoutine);
-}
-
-function runOnboarding(){
-  // Step 1: open Settings so they can save profile
-  showScreen("settings");
-
-  // Step 2: if they already have a routine, skip routine editor
-  const rts = LS.get(KEY_ROUTINES, []);
-  if(!Array.isArray(rts) || rts.length === 0){
-    // wait a tick so screen renders, then open routine editor after profile
-    setTimeout(()=>{
-      // create a blank routine to force editor
-      const base = defaultRoutine();
-      base.name = "My Routine";
-      DAY_KEYS.forEach(k=>{
-        base.days[k].exercises = [];
-        base.days[k].rest = false;
-        base.days[k].label = "";
-      });
-      routines.push(base);
-      saveRoutines();
-      setActiveRoutine(base.id);
-      renderRoutineDropdown();
-      openRoutineEditor(base.id);
-    }, 250);
-  } else {
-    // If routine exists but profile missing, just show settings
-  }
-}
-
-showScreen(localStorage.getItem(KEY_ACTIVE_SCREEN) || "home");
-
+// ✅ new onboarding routing
+hydrateOnboardingInputs();
+routeInitialScreen();
 
 </script>
 </body>
