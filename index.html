@@ -2477,41 +2477,7 @@ function renderRoutineDropdown(forceId){
     activeRoutineMeta.textContent = `${ar.name} • ${DAY_KEYS.length} days`;
   }
 }
-  routineSelect.appendChild(ogCreated);
-
-  /* -------------------------
-     Default / Template Workouts
-  -------------------------- */
-  const ogTemplates = document.createElement("optgroup");
-  ogTemplates.label = "Default / Template Workouts";
-
-  ROUTINE_TEMPLATES.forEach(t=>{
-    const opt = document.createElement("option");
-    opt.value = t.id;     // e.g. "tpl_upperlower"
-    opt.textContent = t.name;
-    ogTemplates.appendChild(opt);
-  });
-
-  routineSelect.appendChild(ogTemplates);
-
-  /* -------------------------
-     Select active routine
-  -------------------------- */
-  const allValues = [...routineSelect.options].map(o=>o.value);
-  const finalVal = allValues.includes(selected)
-    ? selected
-    : routines[0]?.id;
-
-  routineSelect.value = finalVal;
-
-  // Only set active routine if it's NOT a template
-  if(finalVal && !finalVal.startsWith("tpl_")){
-    setActiveRoutine(finalVal);
-    const ar = getActiveRoutine();
-    activeRoutineMeta.textContent = `${ar.name} • 7 days`;
-  }
-}
-
+  
 routineSelect.addEventListener("change", ()=>{
   const val = routineSelect.value;
 
