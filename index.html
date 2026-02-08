@@ -381,31 +381,170 @@
   border-radius:14px;
   text-align:left;
 }
+
+
+  .bullets{
+  margin:10px 0 0;
+  padding-left:18px;
+}
+.bullets li{
+  margin:6px 0;
+  font-size:13px;
+}
+
+.homeHeaderCard{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-end;
+}
+
+.homeTitle{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.bigTime{
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.4px;
+}
+
+.smallDate{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.homeStack{
+  display:grid;
+  gap:12px;
+  margin-top:12px;
+}
+
+.weekRow{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:10px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.weekDots{
+  display:flex;
+  justify-content:center;
+  gap:18px;
+  margin-top:8px;
+  align-items:center;
+}
+
+.wdot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  border:1px solid var(--line);
+  background:transparent;
+  opacity:.9;
+}
+
+.wdot.on{
+  background:var(--good);
+  border-color: rgba(124,252,0,.35);
+}
+
+.wdot.off{
+  opacity:.35;
+}
+
+.kpiLine{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+  margin-top:10px;
+}
+
+.kpiLine .muted{font-size:12px;}
+
   </style>
 </head>
 
 <body>
 <header>
   <h1>Gym Dashboard</h1>
-  <div class="sub">Minimal tracker • lbs only • Protein goal 240g • No cardio • Rest days hidden</div>
+  <div class="sub" id="headerSub">—</div>
 </header>
 
 <main>
 
   <!-- HOME SCREEN -->
   <section id="screen-home" class="screen active">
-    <div class="homeGrid">
-      <button class="card" data-go="weight">📉 Weight</button>
-      <button class="card" data-go="attendance">📅 Attendance</button>
-      <button class="card" data-go="protein">🍗 Protein</button>
-      <button class="card" data-go="routine">🗓️ Routine</button>
-      <button class="card" data-go="lifts">📈 Progress</button>
-    </div>
 
-    <div class="notice" style="margin-top:12px;">
-      Tap a section to open it. Everything auto-saves on this device.
+  <!-- Quick View -->
+  <section class="card">
+    <div class="homeHeaderCard">
+      <div class="homeTitle">
+        <div class="bigTime" id="homeTime">—</div>
+        <div class="smallDate" id="homeDate">—</div>
+      </div>
+      <div class="pill">
+        <span class="muted">Welcome</span> <strong id="homeName">—</strong>
+      </div>
     </div>
   </section>
+
+  <div class="homeStack">
+
+    <!-- Today workout -->
+    <section class="card">
+      <div class="topRight">
+        <h2 id="homeTodayTitle">TODAY — —</h2>
+        <button class="ghost miniBtn" type="button" data-go="routine">Go to Routine →</button>
+      </div>
+      <ul class="bullets" id="homeTodayList"></ul>
+      <div class="notice" id="homeRestNotice" style="margin-top:10px; display:none;">
+        Today is marked as a Rest Day.
+      </div>
+    </section>
+
+    <!-- This week -->
+    <section class="card">
+      <h2>This Week</h2>
+
+      <div class="weekRow">
+        <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+      </div>
+
+      <div class="weekDots" id="homeWeekDots"></div>
+
+      <div class="kpiLine">
+        <span class="muted" id="homeWeekCount">—</span>
+        <button class="ghost miniBtn" type="button" data-go="attendance">Attendance →</button>
+      </div>
+    </section>
+
+    <!-- Focus -->
+    <section class="card">
+      <h2>Focus This Week</h2>
+      <div class="notice" id="homeFocus">—</div>
+    </section>
+
+    <!-- Navigation tiles -->
+    <section class="card">
+      <div class="homeGrid">
+        <button class="card" data-go="weight">📉 Weight</button>
+        <button class="card" data-go="attendance">📅 Attendance</button>
+        <button class="card" data-go="protein">🍗 Protein</button>
+        <button class="card" data-go="routine">🗓️ Routine</button>
+        <button class="card" data-go="lifts">📈 Progress</button>
+        <button class="card" data-go="settings">⚙️ Settings</button>
+      </div>
+    </section>
+
+  </div>
+</section>
+
 
   <!-- WEIGHT SCREEN -->
   <section id="screen-weight" class="screen">
@@ -419,10 +558,6 @@
       <div class="topRight">
         <h2>Weekly Weight Tracker</h2>
         <div class="row" style="gap:6px;">
-          <button class="ghost" id="exportBtn" title="Download your data as a file">Export</button>
-          <button class="ghost" id="importBtn" title="Import previously exported data">Import</button>
-          <input id="importFile" type="file" accept="application/json" style="display:none;" />
-          <button class="ghost" id="wipeAllBtn" title="Deletes everything saved in this app">Reset All Data</button>
         </div>
       </div>
 
@@ -501,7 +636,7 @@
     </div>
 
     <section class="card">
-      <h2>Protein Intake (Goal 240g)</h2>
+      <h2 id="proteinTitle">Protein Intake</h2>
       <div class="row">
         <label>Date
           <input type="date" id="pDate" />
@@ -526,7 +661,7 @@
 
       <div class="btnRow">
         <span class="pill"><span class="muted">Total:</span> <strong class="mono" id="pTotal">0</strong>g</span>
-        <span class="pill"><span class="muted">Remaining:</span> <strong class="mono" id="pRemain">240</strong>g</span>
+        <span class="pill"><span class="muted">Remaining:</span> <strong class="mono" id="pRemain">0</strong>g</span>
         <span class="pill"><span class="muted">Status:</span> <strong id="pStatus">—</strong></span>
       </div>
     </section>
@@ -655,6 +790,113 @@
       </div>
     </section>
   </section>
+
+  <!-- SETTINGS SCREEN -->
+<section id="screen-settings" class="screen">
+  <div class="screenTop">
+    <button class="ghost" type="button" data-home>← Back</button>
+    <h2 style="margin:0;">Settings</h2>
+  </div>
+
+  <!-- Profile -->
+  <section class="card">
+    <h2>Profile</h2>
+    <div class="row">
+      <label>Name (optional)
+        <input id="setName" placeholder="e.g., Jordan" />
+      </label>
+
+      <label>Units
+        <select id="setUnits">
+          <option value="lbs" selected>lbs</option>
+          <option value="kg">kg</option>
+        </select>
+      </label>
+
+      <label>Protein Goal (g)
+        <input id="setProteinGoal" type="number" min="0" placeholder="240" />
+      </label>
+
+      <label>Week Starts On
+        <select id="setWeekStart">
+          <option value="mon" selected>Monday</option>
+          <option value="sun">Sunday</option>
+        </select>
+      </label>
+
+      <label>Hide Rest Days
+        <select id="setHideRest">
+          <option value="1" selected>ON</option>
+          <option value="0">OFF</option>
+        </select>
+      </label>
+
+      <button id="saveProfileBtn">Save Profile</button>
+    </div>
+  </section>
+
+  <!-- Import / Backup -->
+  <section class="card">
+    <h2>Import / Backup</h2>
+    <div class="row" style="gap:6px;">
+      <button class="miniBtn" id="settingsImportBtn">Import</button>
+      <input id="settingsImportFile" type="file" accept="application/json" style="display:none;" />
+
+      <button class="miniBtn" id="backupNowBtn">Backup Now</button>
+
+      <span class="pill">
+        <span class="muted">Last Backup:</span>
+        <strong class="mono" id="lastBackupText">—</strong>
+      </span>
+    </div>
+
+    <div class="notice" style="margin-top:10px;">
+      <div><strong>Storage</strong></div>
+      <div class="small muted" id="storageInfo">—</div>
+      <div class="small warn" id="storageWarn" style="display:none;">Storage is getting large — consider backing up.</div>
+    </div>
+  </section>
+
+  <!-- Refresh -->
+  <section class="card">
+    <h2>Refresh</h2>
+    <div class="notice">Choose what to refresh (useful after an import or manual edits).</div>
+
+    <div class="row" style="margin-top:10px;">
+      <label><span class="muted">Routine</span>
+        <select id="rfRoutine"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Progress</span>
+        <select id="rfLifts"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Weight</span>
+        <select id="rfWeight"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Attendance</span>
+        <select id="rfAttendance"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Protein</span>
+        <select id="rfProtein"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+
+      <button id="runRefreshBtn">Refresh Selected</button>
+    </div>
+  </section>
+
+  <!-- Reset -->
+  <section class="card">
+    <h2>Reset</h2>
+    <div class="notice">
+      This clears everything on this device/browser.
+      <div class="small muted">Tip: Backup first.</div>
+    </div>
+
+    <div class="btnRow">
+      <button id="settingsResetBtn" class="danger">Reset ALL Data</button>
+    </div>
+  </section>
+</section>
+
 
   <!-- ✅ KEEP YOUR MODALS EXACTLY AS-IS BELOW -->
   <!-- LOG SETS MODAL -->
@@ -842,9 +1084,275 @@ const KEY_TARGETS = "gym_targets_v1";
 
 const KEY_ROUTINES = "gym_routines_v1";
 const KEY_ACTIVE_ROUTINE = "gym_active_routine_id_v1";
+const KEY_PROFILE = "gym_profile_v1";
+const KEY_LAST_BACKUP = "gym_last_backup_v1";
 
   /* ---------------------------
-   Screen Router (Option A)
+   SETTINGS bindings
+---------------------------- */
+const setName = document.getElementById("setName");
+const setUnits = document.getElementById("setUnits");
+const setProteinGoal = document.getElementById("setProteinGoal");
+const setWeekStart = document.getElementById("setWeekStart");
+const setHideRest = document.getElementById("setHideRest");
+const saveProfileBtn = document.getElementById("saveProfileBtn");
+
+const storageInfo = document.getElementById("storageInfo");
+const storageWarn = document.getElementById("storageWarn");
+const runRefreshBtn = document.getElementById("runRefreshBtn");
+
+function bytesToNice(n){
+  if(!isFinite(n)) return "0 B";
+  const u = ["B","KB","MB","GB"];
+  let i=0, v=n;
+  while(v>=1024 && i<u.length-1){ v/=1024; i++; }
+  return `${v.toFixed(i===0?0:1)} ${u[i]}`;
+}
+
+function renderStorageInfo(){
+  if(!storageInfo) return;
+
+  let totalBytes = 0;
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    const v = localStorage.getItem(k) || "";
+    totalBytes += (k.length + v.length) * 2; // rough UTF-16 bytes
+  }
+
+  storageInfo.textContent = `Approx localStorage size: ${bytesToNice(totalBytes)} • Keys: ${localStorage.length}`;
+
+  if(storageWarn){
+    storageWarn.style.display = (totalBytes > 3_000_000) ? "block" : "none"; // ~3MB warning
+  }
+}
+
+function hydrateSettingsUI(){
+  if(setName) setName.value = profile.name || "";
+  if(setUnits) setUnits.value = profile.units || "lbs";
+  if(setProteinGoal) setProteinGoal.value = String(getProteinGoal());
+  if(setWeekStart) setWeekStart.value = profile.weekStart || "mon";
+  if(setHideRest) setHideRest.value = profile.hideRestDays ? "1" : "0";
+}
+
+saveProfileBtn?.addEventListener("click", ()=>{
+  saveProfile({
+    name: String(setName?.value || "").trim(),
+    units: (setUnits?.value === "kg") ? "kg" : "lbs",
+    proteinGoal: Number(setProteinGoal?.value || 240) || 240,
+    weekStart: (setWeekStart?.value === "sun") ? "sun" : "mon",
+    hideRestDays: (setHideRest?.value === "0") ? false : true
+  });
+
+  // update protein screen title immediately
+  const pt = document.getElementById("proteinTitle");
+  if(pt) pt.textContent = `Protein Intake (Goal ${getProteinGoal()}g)`;
+
+  hydrateSettingsUI();
+  renderStorageInfo();
+  alert("Profile saved ✅");
+});
+
+runRefreshBtn?.addEventListener("click", ()=>{
+  const rRoutine = document.getElementById("rfRoutine")?.value === "1";
+  const rLifts   = document.getElementById("rfLifts")?.value === "1";
+  const rWeight  = document.getElementById("rfWeight")?.value === "1";
+  const rAtt     = document.getElementById("rfAttendance")?.value === "1";
+  const rPro     = document.getElementById("rfProtein")?.value === "1";
+
+  if(rWeight) renderBW();
+  if(rAtt) renderCal();
+  if(rPro) loadProteinDay(pDate.value || todayISO());
+
+  if(rRoutine){
+    renderRoutineDropdown();
+    renderPPL();
+    buildRoutineExerciseSuggestions();
+  }
+  if(rLifts){
+    renderLiftSearchDropdown();
+    renderLiftRoutineDropdown();
+    applyLiftFiltersFromUI();
+    renderLifts();
+  }
+
+  refreshHome();
+  renderStorageInfo();
+  alert("Refreshed ✅");
+});
+
+
+  /* ---------------------------
+   Profile (Onboarding base)
+---------------------------- */
+function defaultProfile(){
+  return {
+    name: "",
+    units: "lbs",
+    proteinGoal: 240,
+    weekStart: "mon",     // "mon" | "sun"
+    hideRestDays: true
+  };
+}
+
+function loadProfile(){
+  const p = LS.get(KEY_PROFILE, null);
+  if(!p || typeof p !== "object"){
+    const seeded = defaultProfile();
+    LS.set(KEY_PROFILE, seeded);
+    return seeded;
+  }
+  // normalize
+  return {
+    name: String(p.name || ""),
+    units: (p.units === "kg") ? "kg" : "lbs",
+    proteinGoal: Number(p.proteinGoal || 240) || 240,
+    weekStart: (p.weekStart === "sun") ? "sun" : "mon",
+    hideRestDays: (p.hideRestDays === false) ? false : true
+  };
+}
+
+let profile = loadProfile();
+hydrateSettingsUI();
+renderHeaderSub();
+
+
+function saveProfile(next){
+  profile = {
+    ...profile,
+    ...next
+  };
+  LS.set(KEY_PROFILE, profile);
+  renderHeaderSub();
+  refreshHome(); // keep home synced
+}
+
+function renderHeaderSub(){
+  const sub = document.getElementById("headerSub");
+  if(!sub) return;
+  const restTxt = profile.hideRestDays ? "Rest days hidden" : "Rest days shown";
+  sub.textContent = `Minimal tracker • ${profile.units} • Protein goal ${profile.proteinGoal}g • ${restTxt}`;
+}
+
+// Replace PRO_GOAL usage with this
+function getProteinGoal(){
+  return Number(profile.proteinGoal || 240) || 240;
+}
+
+  /* ---------------------------
+   HOME screen logic
+---------------------------- */
+const homeTime = document.getElementById("homeTime");
+const homeDate = document.getElementById("homeDate");
+const homeName = document.getElementById("homeName");
+const homeTodayTitle = document.getElementById("homeTodayTitle");
+const homeTodayList = document.getElementById("homeTodayList");
+const homeRestNotice = document.getElementById("homeRestNotice");
+const homeWeekDots = document.getElementById("homeWeekDots");
+const homeWeekCount = document.getElementById("homeWeekCount");
+const homeFocus = document.getElementById("homeFocus");
+
+function fmtTimeNow(){
+  const d = new Date();
+  return d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+}
+function fmtDateNow(){
+  const d = new Date();
+  return d.toLocaleDateString([], { weekday:"long", month:"short", day:"numeric" });
+}
+
+function getWeekStartDate(){
+  // respects profile.weekStart
+  const base = new Date();
+  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  const dow = d.getDay(); // 0 Sun..6 Sat
+
+  if(profile.weekStart === "sun"){
+    d.setDate(d.getDate() - dow);
+  } else {
+    const delta = (dow === 0) ? 6 : (dow - 1);
+    d.setDate(d.getDate() - delta);
+  }
+  return d; // Date object
+}
+
+function dateISOFrom(baseDate, offsetDays){
+  const d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+  d.setDate(d.getDate() + offsetDays);
+  return localISODate(d);
+}
+
+function refreshHome(){
+  // time/date/name
+  if(homeTime) homeTime.textContent = fmtTimeNow();
+  if(homeDate) homeDate.textContent = fmtDateNow();
+  if(homeName) homeName.textContent = (profile.name || "—").trim() || "—";
+
+  // today routine
+  const ar = getActiveRoutine();
+  const todayIdx = getTodaySplitIndex(); // Mon=0..Sun=6
+  const dayKey = DAY_KEYS[todayIdx];
+  const day = ar.days?.[dayKey] || { label:"", rest:false, exercises:[] };
+
+  const label = (day.label || "").trim();
+  if(homeTodayTitle) homeTodayTitle.textContent = `TODAY — ${dayKey}${label ? " • " + label : ""}`;
+
+  if(homeTodayList) homeTodayList.innerHTML = "";
+  if(homeRestNotice) homeRestNotice.style.display = "none";
+
+  if(day.rest){
+    if(homeRestNotice) homeRestNotice.style.display = "block";
+  } else {
+    const list = Array.isArray(day.exercises) ? day.exercises : [];
+    if(homeTodayList){
+      if(list.length === 0){
+        homeTodayList.innerHTML = `<li class="muted">No exercises added for today.</li>`;
+      } else {
+        list.slice(0, 6).forEach(ex=>{
+          const li = document.createElement("li");
+          li.textContent = `${ex.name} — ${ex.sets || "—"} sets • ${ex.reps || "—"} reps`;
+          homeTodayList.appendChild(li);
+        });
+      }
+    }
+  }
+
+  // week dots + count
+  const weekStart = getWeekStartDate();
+  const dots = [];
+  for(let i=0;i<7;i++){
+    dots.push(dateISOFrom(weekStart, i));
+  }
+
+  const attendedCount = dots.filter(d => attendance.has(d)).length;
+
+  if(homeWeekDots){
+    homeWeekDots.innerHTML = "";
+    dots.forEach(d=>{
+      const dot = document.createElement("div");
+      dot.className = "wdot " + (attendance.has(d) ? "on" : "off");
+      dot.title = d;
+      homeWeekDots.appendChild(dot);
+    });
+  }
+
+  if(homeWeekCount){
+    homeWeekCount.textContent = `Workouts this week: ${attendedCount} / 7`;
+  }
+
+  // focus text (simple logic: pick label of today, or PR suggestion)
+  if(homeFocus){
+    if(day.rest){
+      homeFocus.textContent = "Recovery + mobility. Light walk if you feel good.";
+    } else if(label){
+      homeFocus.textContent = `Focus: ${label}`;
+    } else {
+      homeFocus.textContent = "Focus: execute clean sets + progressive overload.";
+    }
+  }
+}
+  
+/* ---------------------------
+   Screen Router (Option A) — FIXED
 ---------------------------- */
 const KEY_ACTIVE_SCREEN = "gym_active_screen_v1";
 
@@ -857,7 +1365,10 @@ function showScreen(name){
   localStorage.setItem(KEY_ACTIVE_SCREEN, name);
   window.scrollTo(0,0);
 
-  // ✅ refresh only what’s needed when a screen becomes visible
+  // refresh only what’s needed when a screen becomes visible
+  if(name === "home"){
+    refreshHome();
+  }
   if(name === "weight"){
     renderBW();
   }
@@ -866,13 +1377,14 @@ function showScreen(name){
   }
   if(name === "protein"){
     loadProteinDay(pDate.value || todayISO());
+    const pt = document.getElementById("proteinTitle");
+    if(pt) pt.textContent = `Protein Intake (Goal ${getProteinGoal()}g)`;
   }
   if(name === "routine"){
     renderRoutineDropdown();
     renderPPL();
   }
   if(name === "lifts"){
-    // make sure dropdowns are current, then render in current view
     renderLiftSearchDropdown();
     renderLiftRoutineDropdown();
     renderLifts();
@@ -880,28 +1392,19 @@ function showScreen(name){
 }
 
 function bindNavigation(){
-  document.querySelectorAll("[data-go]").forEach(btn=>{
-    btn.onclick = () => showScreen(btn.dataset.go);
-  });
-
-  document.querySelectorAll("[data-home]").forEach(btn=>{
-    btn.onclick = () => showScreen("home");
+  document.addEventListener("click", (e)=>{
+    const goBtn = e.target.closest("[data-go]");
+    if(goBtn){
+      showScreen(goBtn.dataset.go);
+      return;
+    }
+    const homeBtn = e.target.closest("[data-home]");
+    if(homeBtn){
+      showScreen("home");
+      return;
+    }
   });
 }
-
-document.addEventListener("click", (e)=>{
-  const goBtn = e.target.closest("[data-go]");
-  if(goBtn){
-    showScreen(goBtn.dataset.go);
-    return;
-  }
-
-  const homeBtn = e.target.closest("[data-home]");
-  if(homeBtn){
-    showScreen("home");
-    return;
-  }
-});
 
 /* ---------------------------
    LOCAL date utils
@@ -918,16 +1421,22 @@ function parseISO(s){
 }
 function sameMonth(d, y, m){ return d.getFullYear()===y && d.getMonth()===m; }
 
-function weekStartMonday(baseDate=new Date()){
+function weekStartDate(baseDate=new Date()){
   const d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
   const dow = d.getDay(); // 0 Sun..6 Sat
-  const delta = (dow === 0) ? 6 : (dow - 1);
-  d.setDate(d.getDate() - delta);
+
+  if(profile.weekStart === "sun"){
+    d.setDate(d.getDate() - dow);
+  } else {
+    const delta = (dow === 0) ? 6 : (dow - 1);
+    d.setDate(d.getDate() - delta);
+  }
   return d;
 }
+
 const DAY_KEYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 function dateForWeekdayIndex(dayIndex, baseDate=new Date()){
-  const start = weekStartMonday(baseDate);
+  const start = weekStartDate(baseDate);
   const out = new Date(start);
   out.setDate(start.getDate() + dayIndex);
   return localISODate(out);
@@ -1324,7 +1833,7 @@ function renderCal(){
 /* ---------------------------
    Protein
 ---------------------------- */
-const PRO_GOAL = 240;
+// goal is dynamic from profile
 const pDate = document.getElementById("pDate");
 const pMorning = document.getElementById("pMorning");
 const pLunch = document.getElementById("pLunch");
@@ -1350,12 +1859,12 @@ function loadProteinDay(d){
 function renderProteinTotals(){
   const total = (Number(pMorning.value)||0)+(Number(pLunch.value)||0)+(Number(pPre.value)||0)+(Number(pDinner.value)||0)+(Number(pBed.value)||0);
   pTotal.textContent = String(total);
-  const rem = PRO_GOAL - total;
+  const rem = getProteinGoal() - total;
   pRemain.textContent = String(rem);
-  if(total >= PRO_GOAL){
+  if(total >= getProteinGoal()){
     pStatus.textContent = "Hit goal ✅";
     pStatus.className = "good";
-  } else if(total >= PRO_GOAL*0.75){
+  } else if(total >= getProteinGoal()*0.75){
     pStatus.textContent = "Almost there";
     pStatus.className = "warn";
   } else {
@@ -1911,7 +2420,7 @@ function calcVolume(lift){
   return w * r * sets;
 }
 function weekKey(d){
-  const ws = weekStartMonday(d);
+  const ws = weekStartDate(d);
   return `${ws.getFullYear()}-${pad2(ws.getMonth()+1)}-${pad2(ws.getDate())}`;
 }
 
@@ -2533,17 +3042,34 @@ rtSaveBtn.addEventListener("click", ()=>{
   buildRoutineExerciseSuggestions();
 });
 
+  function renderLastBackup(){
+  const el = document.getElementById("lastBackupText");
+  if(!el) return;
+
+  const iso = localStorage.getItem(KEY_LAST_BACKUP);
+  if(!iso){
+    el.textContent = "—";
+    return;
+  }
+  const d = new Date(iso);
+  el.textContent = d.toLocaleString();
+}
+
 /* ---------------------------
    Export / Import / Reset
 ---------------------------- */
-const exportBtn = document.getElementById("exportBtn");
-const importBtn = document.getElementById("importBtn");
-const importFile = document.getElementById("importFile");
+const importBtn = document.getElementById("settingsImportBtn");
+const importFile = document.getElementById("settingsImportFile");
+const backupNowBtn = document.getElementById("backupNowBtn");
 
 function buildExportPayload(){
   return {
-    v: 2,
+    v: 3,
     exportedAt: new Date().toISOString(),
+    profile: LS.get(KEY_PROFILE, defaultProfile()),
+    lastBackup: localStorage.getItem(KEY_LAST_BACKUP) || null,
+    activeScreen: localStorage.getItem(KEY_ACTIVE_SCREEN) || "home",
+
     bwLogs: LS.get(KEY_BW, []),
     attendance: LS.get(KEY_ATT, []),
     proteinMap: LS.get(KEY_PRO, {}),
@@ -2563,10 +3089,14 @@ function downloadJSON(filename, obj){
   a.remove();
   URL.revokeObjectURL(url);
 }
-exportBtn.addEventListener("click", ()=>{
+backupNowBtn.addEventListener("click", ()=>{
   const payload = buildExportPayload();
   const stamp = localISODate(new Date());
   downloadJSON(`gym-dashboard-${stamp}.json`, payload);
+
+  // also save last backup time
+  localStorage.setItem(KEY_LAST_BACKUP, new Date().toISOString());
+  renderLastBackup();
 });
 importBtn.addEventListener("click", ()=>{
   importFile.value = "";
@@ -2613,6 +3143,7 @@ importFile.addEventListener("change", async ()=>{
     // ✅ init data + state first
 renderCal();
 loadProteinDay(todayISO());
+renderLastBackup();
 
 renderRoutineDropdown();
 activeDayIndex = getTodaySplitIndex();
@@ -2634,7 +3165,7 @@ showScreen(localStorage.getItem(KEY_ACTIVE_SCREEN) || "home");
   }
 });
 
-document.getElementById("wipeAllBtn").addEventListener("click", ()=>{
+document.getElementById("settingsResetBtn").addEventListener("click", ()=>{
   const ok = confirm("Reset ALL saved gym data on this device/browser?");
   if(!ok) return;
   localStorage.removeItem(KEY_BW);
@@ -2653,6 +3184,11 @@ document.getElementById("wipeAllBtn").addEventListener("click", ()=>{
 ---------------------------- */
 renderCal();
 loadProteinDay(todayISO());
+hydrateSettingsUI();
+renderStorageInfo();
+renderHeaderSub();
+refreshHome();
+renderLastBackup();
 
 renderRoutineDropdown();
 activeDayIndex = getTodaySplitIndex();
@@ -2665,8 +3201,12 @@ setLiftView("table");
 
 buildRoutineExerciseSuggestions();
 
+// 🔹 NAVIGATION WIRES HERE (only once)
+bindNavigation();
+
 // ✅ restore last visited screen (or home) LAST
 showScreen(localStorage.getItem(KEY_ACTIVE_SCREEN) || "home");
+
 
 </script>
 </body>
