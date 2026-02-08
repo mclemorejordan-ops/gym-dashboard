@@ -3201,8 +3201,6 @@ if(!isOnboardingDone()){
 }
 });
 
-}
-
   function renderLastBackup(){
   const el = document.getElementById("lastBackupText");
   if(!el) return;
@@ -3365,13 +3363,24 @@ function hasAtLeastOneRoutine(){
 }
 
 function routeInitialScreen(){
-  // HARD OVERRIDE restore behavior if onboarding not complete
-  if(!isOnboardingDone()){
+  hydrateOnboardingInputs();
+
+  // 1) If profile isn’t completed → Profile screen
+  if(!hasProfileCompleted()){
     showScreen("profile");
     return;
   }
+
+  // 2) If profile is done but onboarding not finished → Routine screen
+  if(!isOnboardingDone()){
+    showScreen("onboard-routine");
+    return;
+  }
+
+  // 3) Normal app restore
   showScreen(localStorage.getItem(KEY_ACTIVE_SCREEN) || "home");
 }
+
   
 /* ---------------------------
    Init
