@@ -499,7 +499,6 @@
       <label>Units
         <select id="obUnits">
           <option value="lbs" selected>lbs</option>
-          <option value="kg">kg</option>
         </select>
       </label>
 
@@ -710,7 +709,7 @@
       </div>
 
       <div class="notice" style="margin-top:10px;">
-        Rest days are hidden because we only record the days you actually went.
+        Tap days you trained. This calendar only tracks workout attendance.
       </div>
     </section>
   </section>
@@ -896,7 +895,6 @@
       <label>Units
         <select id="setUnits">
           <option value="lbs" selected>lbs</option>
-          <option value="kg">kg</option>
         </select>
       </label>
 
@@ -1179,8 +1177,6 @@ const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
   /* ---------------------------
    SETTINGS bindings
 ---------------------------- */
-const setName = document.getElementById("setName");
-const setUnits = document.getElementById("setUnits");
 const setProteinGoal = document.getElementById("setProteinGoal");
 const setWeekStart = document.getElementById("setWeekStart");
 const setHideRest = document.getElementById("setHideRest");
@@ -1217,7 +1213,6 @@ function renderStorageInfo(){
 
 function hydrateSettingsUI(){
   if(setName) setName.value = profile.name || "";
-  if(setUnits) setUnits.value = profile.units || "lbs";
   if(setProteinGoal) setProteinGoal.value = String(getProteinGoal());
   if(setWeekStart) setWeekStart.value = profile.weekStart || "mon";
   if(setHideRest) setHideRest.value = profile.hideRestDays ? "1" : "0";
@@ -1226,7 +1221,6 @@ function hydrateSettingsUI(){
 saveProfileBtn?.addEventListener("click", ()=>{
   saveProfile({
     name: String(setName?.value || "").trim(),
-    units: (setUnits?.value === "kg") ? "kg" : "lbs",
     proteinGoal: Number(setProteinGoal?.value || 240) || 240,
     weekStart: (setWeekStart?.value === "sun") ? "sun" : "mon",
     hideRestDays: (setHideRest?.value === "0") ? false : true
@@ -1285,7 +1279,6 @@ const obRoutineTemplate = document.getElementById("obRoutineTemplate");
 function hydrateOnboardingInputs(){
   if(!obName) return;
   obName.value = profile.name || "";
-  obUnits.value = profile.units || "lbs";
   obProteinGoal.value = String(getProteinGoal());
   obWeekStart.value = profile.weekStart || "mon";
   obHideRest.value = profile.hideRestDays ? "1" : "0";
@@ -1300,7 +1293,6 @@ obProfileNextBtn?.addEventListener("click", ()=>{
 
   saveProfile({
     name: nm,
-    units: (obUnits?.value === "kg") ? "kg" : "lbs",
     proteinGoal: Number(obProteinGoal?.value || 240) || 240,
     weekStart: (obWeekStart?.value === "sun") ? "sun" : "mon",
     hideRestDays: (obHideRest?.value === "0") ? false : true
@@ -1357,7 +1349,6 @@ obRoutineCreateBtn?.addEventListener("click", ()=>{
 function defaultProfile(){
   return {
     name: "",
-    units: "lbs",
     proteinGoal: 240,
     weekStart: "mon",     // "mon" | "sun"
     hideRestDays: true
@@ -1374,7 +1365,6 @@ function loadProfile(){
   // normalize
   return {
     name: String(p.name || ""),
-    units: (p.units === "kg") ? "kg" : "lbs",
     proteinGoal: Number(p.proteinGoal || 240) || 240,
     weekStart: (p.weekStart === "sun") ? "sun" : "mon",
     hideRestDays: (p.hideRestDays === false) ? false : true
@@ -1636,27 +1626,39 @@ const EXERCISE_LIBRARY = [
   "Incline Barbell Bench Press",
   "Barbell Squat",
   "Front Squat",
+  "Barbell Back Squat",
+  "Barbell Row",
   "Deadlift (Conventional)",
   "Romanian Deadlift",
+  "Barbell Curl",
 
-  // Machines
+  // Machines / Cables
   "Leg Press",
   "Hack Squat",
   "Smith Machine Squat",
   "Lat Pulldown",
+  "Underhand Lat Pulldown",
   "Seated Cable Row",
+  "Cable Chest Flys",
+  "Cable Crunch",
+  "Cable Crunches",
   "Chest Fly Machine",
   "Shoulder Press Machine",
   "Leg Extension",
+  "Leg Extensions",
   "Hamstring Curl",
+  "Leg Curl Machine",
   "Standing Calf Raise (Machine)",
+  "Standing Calf Raise",
   "Seated Calf Raise",
+  "Triceps Rope Pushdowns",
 
   // Dumbbell
   "Dumbbell Bench Press",
   "Incline Dumbbell Press",
   "Dumbbell Shoulder Press",
   "Dumbbell Lateral Raises",
+  "Lateral Raises",
   "Dumbbell Front Raises",
   "Dumbbell Chest Fly",
   "Dumbbell Row",
@@ -1667,16 +1669,26 @@ const EXERCISE_LIBRARY = [
   "Concentration Curl",
   "Dumbbell Tricep Kickback",
   "Overhead Dumbbell Tricep Extension",
+  "Overhead Dumbbell Triceps Extension",
   "Goblet Squat",
+  "Goblet Squats",
   "Dumbbell Lunges",
   "Bulgarian Split Squat",
   "Dumbbell Romanian Deadlift",
+  "Rear Delt Fly",
+  "Dumbbell Alternating Curl",
+
+  // Bodyweight / Misc
+  "Chest Dips",
+  "Pull-Ups / Assisted Pull-Ups",
+  "Hanging Leg Raises",
+  "Mobility + stretching",
+  "Light walking or stretching",
 
   // Core
   "Plank",
   "Side Plank",
   "Leg Raises",
-  "Cable Crunch",
   "Bicycle Crunch",
   "Russian Twist",
   "Ab Wheel Rollout",
@@ -1712,7 +1724,6 @@ function defaultRoutine(){
     id: uid(),
     name: "PPL",
     days: {
-
       Mon: { label:"Push", rest:false, exercises:[
         {name:"Incline Dumbbell Press", sets:4, reps:"8–10", notes:""},
         {name:"Dumbbell Bench Press", sets:4, reps:"8–10", notes:""},
@@ -1780,8 +1791,9 @@ function defaultRoutine(){
       Sun: { label:"Rest", rest:true, exercises:[] }
     }
   };
+}
 
-  function makeUpperLowerTemplate(){
+function makeUpperLowerTemplate(){
   const r = defaultRoutine();
   r.name = "Upper / Lower";
 
@@ -2529,20 +2541,20 @@ function collectAllExerciseNames(){
   const set = new Set();
 
   // 1️⃣ Canonical library first
-  EXERCISE_LIBRARY.forEach(n => set.add(n));
+  EXERCISE_LIBRARY.forEach(n => set.add(canonicalExerciseName(n)));
 
   // 2️⃣ Routine exercises
   routines.forEach(r=>{
     DAY_KEYS.forEach(k=>{
       (r.days?.[k]?.exercises || []).forEach(e=>{
-        if(e?.name) set.add(e.name);
+    if(e?.name) set.add(canonicalExerciseName(e.name));
       });
     });
   });
 
   // 3️⃣ Logged lifts
   lifts.forEach(x=>{
-    if(x.ex) set.add(x.ex);
+    if(x.ex) set.add(canonicalExerciseName(x.ex));
   });
 
   return [...set].sort((a,b)=>a.localeCompare(b));
