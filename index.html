@@ -2432,28 +2432,57 @@ const delRoutineBtn = document.getElementById("delRoutineBtn");
 let activeDayIndex = 0; // Mon=0..Sun=6
 
 function renderRoutineDropdown(forceId){
-  const chosen = forceId || activeRoutineId || routines[0]?.id;
+  const selected = forceId || activeRoutineId;
 
   routineSelect.innerHTML = "";
 
-  // Group definitions
-  const isDefaultGroup = (r) => ["default","template","onboarding"].includes(String(r.source||""));
+  /* -------------------------
+     Created Workouts
+  -------------------------- */
+  const ogCreated = document.createElement("optgroup");
+  ogCreated.label = "Created Workouts";
 
-  const defaults = routines.filter(isDefaultGroup);
-  const created  = routines.filter(r => !isDefaultGroup(r));
+  routines.forEach(r=>{
+    const opt = document.createElement("option");
+    opt.value = r.id;
+    opt.textContent = r.name;
+    ogCreated.appendChild(opt);
+  });
 
-  const addGroup = (label, items) => {
-    if(!items.length) return;
-    const og = document.createElement("optgroup");
-    og.label = label;
-    items.forEach(r=>{
-      const opt = document.createElement("option");
-      opt.value = r.id;
-      opt.textContent = r.name;
-      og.appendChild(opt);
-    });
-    routineSelect.appendChild(og);
-  };
+  routineSelect.appendChild(ogCreated);
+
+  /* -------------------------
+     Default / Template Workouts
+  -------------------------- */
+  const ogTemplates = document.createElement("optgroup");
+  ogTemplates.label = "Default / Template Workouts";
+
+  ROUTINE_TEMPLATES.forEach(t=>{
+    const opt = document.createElement("option");
+    opt.value = t.id;     // e.g. "tpl_upperlower"
+    opt.textContent = t.name;
+    ogTemplates.appendChild(opt);
+  });
+
+  routineSelect.appendChild(ogTemplates);
+
+  /* -------------------------
+     Select active routine
+  -------------------------- */
+  const allValues = [...routineSelect.options].map(o=>o.value);
+  const finalVal = allValues.includes(selected)
+    ? selected
+    : routines[0]?.id;
+
+  routineSelect.value = finalVal;
+
+  // Only set active routine if it's NOT a template
+  if(finalVal && !finalVal.startsWith("tpl_")){
+    setActiveRoutine(finalVal);
+    const ar = getActiveRoutine();
+    activeRoutineMeta.textContent = `${ar.name} • 7 days`;
+  }
+}
 
   addGroup("Default / Templates", defaults);
   addGroup("My Routines", created);
@@ -2469,11 +2498,38 @@ function renderRoutineDropdown(forceId){
 
 
 routineSelect.addEventListener("change", ()=>{
-  setActiveRoutine(routineSelect.value);
-  renderRoutineDropdown();
+  const val = routineSelect.value;
+
+  // If they picked a template -> convert it into a REAL saved routine
+  if(val.startsWith("tpl_")){
+    const tpl = ROUTINE_TEMPLATES.find(t=>t.id === val);
+    if(!tpl) return;
+
+    const built = tpl.build();
+    built.id = uid(); // ensure unique
+    built.name = tpl.name; // keep template name
+    routines.push(built);
+    saveRoutines();
+
+    setActiveRoutine(built.id);
+
+    // re-render dropdown and select the newly created routine
+    renderRoutineDropdown(built.id);
+    renderPPL();
+    renderLiftRoutineDropdown();
+    buildRoutineExerciseSuggestions();
+
+    return;
+  }
+
+  // Normal: user selected a real created routine
+  setActiveRoutine(val);
+  renderRoutineDropdown(val);
   renderPPL();
-  renderLiftRoutineDropdown(); // keeps routine filters in sync
+  renderLiftRoutineDropdown();
+  buildRoutineExerciseSuggestions();
 });
+
 
 newRoutineBtn.addEventListener("click", ()=>{
   const base = defaultRoutine();
