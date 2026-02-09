@@ -1921,7 +1921,7 @@ const onEnterScreen = {
   },
 
   protein: () => {
-    loadProteinDay(pDate?.value || todayISO());
+    loadProteinDay(if(pDate) pDate.value = todayISO();
     const pt = document.getElementById("proteinTitle");
     if (pt) pt.textContent = `Protein Intake (Goal ${getProteinGoal()}g)`;
   },
@@ -2760,7 +2760,7 @@ pRemain.textContent = String(rem);
   }
 }
 [pMorning,pLunch,pPre,pDinner,pBed].forEach(inp=>inp.addEventListener("input", renderProteinTotals));
-pDate.addEventListener("change", ()=>loadProteinDay(pDate.value));
+pDate?.addEventListener("change", ()=>loadProteinDay(pDate.value));
 
 document.getElementById("pSaveBtn").addEventListener("click", ()=>{
   const d = pDate.value || todayISO();
