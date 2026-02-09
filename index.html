@@ -3990,25 +3990,29 @@ rtSaveBtn.addEventListener("click", ()=>{
   const idx = routines.findIndex(r=>r.id===editRoutineId);
   if(idx < 0) return;
 
+  // save
   routines[idx] = draftRoutine;
   saveRoutines();
 
+  // make active
   setActiveRoutine(draftRoutine.id);
 
+  // close modal first (so you can see screen changes)
   closeRoutineEditor();
+
+  // ✅ ONBOARDING: if this routine came from onboarding, ALWAYS finish + go home
+  if(draftRoutine.source === "onboarding"){
+    setOnboardingDone();
+    refreshHome();
+    showScreen("home");
+    return;
+  }
+
+  // normal flow
   renderRoutineDropdown();
   renderPPL();
   renderLiftRoutineDropdown();
   buildRoutineExerciseSuggestions();
-
-  // ✅ If we are in onboarding flow, always finish + go Home
-const currentScreen = localStorage.getItem(KEY_ACTIVE_SCREEN) || "";
-
-if(currentScreen === "profile" || currentScreen === "onboard-routine" || !isOnboardingDone()){
-  setOnboardingDone();
-  refreshHome();
-  showScreen("home");
-}
 });
 
   function renderLastBackup(){
