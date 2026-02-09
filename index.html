@@ -6,9 +6,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Gym Dashboard</title>
   <style>
-    button.primary.tap:active{
-  transform: scale(0.96);
-}
     /* ---------------------------
    Hide main header on non-home screens
 ---------------------------- */
@@ -441,6 +438,14 @@ body.hideMainHeader header{
   border-radius:14px;
   text-align:left;
 }
+.primary{
+  background: rgba(124,252,0,.10);
+  border-color: rgba(124,252,0,.28);
+  color: var(--text);
+}
+.primary:hover{
+  border-color: rgba(124,252,0,.45);
+}
 
 
   .bullets{
@@ -642,7 +647,34 @@ header{
     transition: none;
   }
 }
-    
+      /* ---------------------------
+   Update Banner (Option 1)
+---------------------------- */
+.updateBanner{
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(86px + env(safe-area-inset-bottom)); /* sits above bottom nav */
+  padding: 0 12px;
+  z-index: 80;
+}
+
+.updateBannerInner{
+  max-width: 1100px;
+  margin: 0 auto;
+  background: rgba(18,18,20,.96);
+  border: 1px solid rgba(124,252,0,.22);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  backdrop-filter: blur(12px);
+}
+
+.updateText{display:flex; flex-direction:column; gap:2px;}
+.updateTitle{font-weight:800; font-size:13px;}
+.updateSub{font-size:11px; color:var(--muted);}
   </style>
 </head>
 
@@ -808,11 +840,11 @@ header{
     <section class="card">
       <div class="homeGrid">
         <button class="card tap" data-go="weight">📉 Weight</button>
-        <button class="card" data-go="attendance">📅 Attendance</button>
-        <button class="card" data-go="protein">🍗 Protein</button>
-        <button class="card" data-go="routine">🗓️ Routine</button>
-        <button class="card" data-go="lifts">📈 Progress</button>
-        <button class="card" data-go="settings">⚙️ Settings</button>
+        <button class="card tap" data-go="attendance">📅 Attendance</button>
+        <button class="card tap" data-go="protein">🍗 Protein</button>
+        <button class="card tap" data-go="routine">🗓️ Routine</button>
+        <button class="card tap" data-go="lifts">📈 Progress</button>
+        <button class="card tap" data-go="settings">⚙️ Settings</button>
       </div>
     </section>
 
@@ -1177,7 +1209,7 @@ header{
   <!-- ✅ KEEP YOUR MODALS EXACTLY AS-IS BELOW -->
   <!-- LOG SETS MODAL -->
   <div id="logModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
-    <div style="max-width:520px; margin:40px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+    <div style="max-width:520px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
       <div class="topRight">
         <div>
           <h2 style="margin:0;">Log Sets</h2>
@@ -1217,7 +1249,7 @@ header{
 
   <!-- HISTORY MODAL -->
   <div id="histModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
-    <div style="max-width:640px; margin:40px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+    <div style="max-width:640px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
       <div class="topRight">
         <h2 style="margin:0;">Exercise History</h2>
         <button id="histCloseBtn">Close</button>
@@ -1246,7 +1278,7 @@ header{
 
   <!-- ROUTINE EDITOR MODAL -->
   <div id="rtModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
-    <div style="max-width:760px; margin:40px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+    <div style="max-width:760px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
       <div class="topRight">
         <h2 style="margin:0;">Routine Editor</h2>
         <button id="rtCloseBtn">Close</button>
@@ -1315,7 +1347,7 @@ header{
 
   <!-- EXERCISE PICKER MODAL -->
 <div id="exPickModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
-  <div style="max-width:520px; margin:40px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+  <div style="max-width:520px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
     <div class="topRight">
       <h2 style="margin:0;" id="exPickTitle">Pick Exercise</h2>
       <button id="exPickCloseBtn">Close</button>
@@ -1338,7 +1370,7 @@ header{
 
   <!-- BATCH ADD MODAL (Multi-add sets/reps screen) -->
 <div id="batchAddModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
-  <div style="max-width:640px; margin:40px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+  <div style="max-width:640px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
     <div class="topRight">
       <h2 style="margin:0;">Add Multiple Exercises</h2>
       <button id="batchAddCloseBtn" type="button">Close</button>
@@ -4448,37 +4480,7 @@ function init(){
   routeInitialScreen();
 }
 
-init();
-
-  /* ---------------------------
-   Update Banner (Option 1)
----------------------------- */
-.updateBanner{
-  position: fixed;
-  left: 0; right: 0;
-  bottom: calc(86px + env(safe-area-inset-bottom)); /* sits above bottom nav */
-  padding: 0 12px;
-  z-index: 80;
-}
-
-.updateBannerInner{
-  max-width: 1100px;
-  margin: 0 auto;
-  background: rgba(18,18,20,.96);
-  border: 1px solid rgba(124,252,0,.22);
-  border-radius: 14px;
-  padding: 10px 12px;
-  display:flex;
-  gap:12px;
-  align-items:center;
-  justify-content:space-between;
-  backdrop-filter: blur(12px);
-}
-
-.updateText{display:flex; flex-direction:column; gap:2px;}
-.updateTitle{font-weight:800; font-size:13px;}
-.updateSub{font-size:11px; color:var(--muted);}
-
+window.addEventListener("DOMContentLoaded", init);
 
 </script>
 
