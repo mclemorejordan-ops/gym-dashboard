@@ -4472,16 +4472,24 @@ function hideUpdateBanner(){
   if(b) b.style.display = "none";
 }
 
-function checkForUpdate(){
-  const last = localStorage.getItem(KEY_APP_VERSION);
+async function checkForUpdate(){
+  try{
+    const res = await fetch("./version.json?ts=" + Date.now(), { cache: "no-store" });
+    const data = await res.json();
 
-  // if they've visited before and version changed -> show banner
-  if(last && last !== APP_VERSION){
-    showUpdateBanner();
+    const latest = String(data.version || "").trim();
+    if(!latest) return;
+
+    const last = localStorage.getItem(KEY_APP_VERSION);
+
+    if(last && last !== latest){
+      showUpdateBanner();
+    }
+
+    localStorage.setItem(KEY_APP_VERSION, latest);
+  }catch(e){
+    // fail silently (offline/cached/etc.)
   }
-
-  // store current version as last-seen
-  localStorage.setItem(KEY_APP_VERSION, APP_VERSION);
 }
 
 document.addEventListener("click", (e)=>{
