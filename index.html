@@ -344,6 +344,9 @@
       border-color: rgba(255, 107, 107, .35);
       color: var(--bad);
     }
+
+
+    
     /* Exercise picker list items */
 .exPickItem{
   padding:10px 12px;
@@ -1805,6 +1808,19 @@ function canonicalExerciseName(name){
   if(!raw) return "";
   const key = normExName(raw);
   return CANONICAL_EXERCISE_MAP[key] || raw;
+}
+  function cleanExerciseName(s){
+  const raw = String(s || "").trim();
+  if(!raw) return "";
+
+  // collapse extra spaces
+  const collapsed = raw.replace(/\s+/g, " ");
+
+  // Title Case for nice display
+  const titled = collapsed.replace(/\b\w/g, c => c.toUpperCase());
+
+  // normalize via canonical map (handles plurals, variants, etc.)
+  return canonicalExerciseName(titled);
 }
 /* ---------------------------
    Canonical Exercise Library
