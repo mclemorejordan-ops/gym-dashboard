@@ -23,26 +23,17 @@
 ---------------------------- */
 
 /* overlays */
-#logModal,
-#histModal,
-#rtModal,
-#exPickModal,
-#batchAddModal{
-  overflow: hidden;                 /* prevents overlay scroll fighting */
-  -webkit-overflow-scrolling: touch;
+:is(#logModal,#histModal,#rtModal,#exPickModal,#batchAddModal){
+  overflow:hidden;                 /* prevents overlay scroll fighting */
+  -webkit-overflow-scrolling:touch;
 }
 
-/* modal cards scroll as a whole */
-#logModal > div,
-#histModal > div,
-#rtModal > div,
-#exPickModal > div,
-#batchAddModal > div{
-  max-height: calc(100dvh - 32px);  /* ✅ true mobile viewport height */
-  overflow-y: auto;                 /* ✅ scroll the whole modal */
-  -webkit-overflow-scrolling: touch;
-  display: flex;
-  flex-direction: column;
+:is(#logModal,#histModal,#rtModal,#exPickModal,#batchAddModal) > div{
+  max-height: calc(100dvh - 32px); /* true mobile viewport height */
+  overflow-y:auto;                 /* scroll the whole modal */
+  -webkit-overflow-scrolling:touch;
+  display:flex;
+  flex-direction:column;
 }
 
 /* only Log Sets list can scroll (optional) */
@@ -739,7 +730,7 @@
         <span class="pill"><span class="muted">7-day avg:</span> <strong class="mono" id="bwAvg">—</strong></span>
       </div>
 
-      <div id="bwChartWrap" style="margin-top:10px;">
+  <div id="bwChartWrap" style="margin-top:10px; display:none;">
   <canvas id="bwChart" height="120"></canvas>
 </div>
 
@@ -1261,6 +1252,12 @@ const LS = {
   }
 };
 
+  /* ---------------------------
+   DOM helpers
+---------------------------- */
+const $  = (id)=>document.getElementById(id);
+const $$ = (sel, root=document)=>[...root.querySelectorAll(sel)];
+
 const KEY_BW = "gym_bw_logs_v1";
 const KEY_ATT = "gym_attendance_v1";
 const KEY_PRO = "gym_protein_v1";
@@ -1274,7 +1271,17 @@ const KEY_LAST_BACKUP = "gym_last_backup_v1";
 const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 const KEY_CUSTOM_EX = "gym_custom_ex_v1";
 
+  /* ---------------------------
+   Global State (safe defaults)
+---------------------------- */
+let profile = defaultProfile();
+let routines = [];
+let activeRoutineId = null;
 
+let bwLogs = [];
+let attendance = new Set();
+let proteinMap = {};
+let lifts = [];
 
   /* ---------------------------
    SETTINGS bindings
@@ -1478,10 +1485,6 @@ function loadProfile(){
 };
 }
 
-let profile = loadProfile();
-hydrateSettingsUI();
-renderHeaderSub();
-
 
 function saveProfile(next){
   profile = {
@@ -1672,41 +1675,55 @@ homeCheckInBtn?.addEventListener("click", toggleTodayAttendance);
 ---------------------------- */
 const KEY_ACTIVE_SCREEN = "gym_active_screen_v1";
 
-function showScreen(name){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+const onEnterScreen = {
+  home: () => {
+    refreshHome();
+  },
 
-  const el = document.getElementById(`screen-${name}`);
-  if(el) el.classList.add("active");
+  weight: () => {
+    renderBW();
+  },
 
-  localStorage.setItem(KEY_ACTIVE_SCREEN, name);
-  window.scrollTo(0,0);
+  attendance: () => {
+    renderCal();
+  },
 
-  if(name === "home") refreshHome();
-  if(name === "weight") renderBW();
-  if(name === "attendance") renderCal();
-
-  if(name === "protein"){
-    loadProteinDay(pDate.value || todayISO());
+  protein: () => {
+    loadProteinDay(pDate?.value || todayISO());
     const pt = document.getElementById("proteinTitle");
-    if(pt) pt.textContent = `Protein Intake (Goal ${getProteinGoal()}g)`;
-  }
+    if (pt) pt.textContent = `Protein Intake (Goal ${getProteinGoal()}g)`;
+  },
 
-  if(name === "routine"){
+  routine: () => {
     renderRoutineDropdown();
     renderPPL();
-  }
+    buildRoutineExerciseSuggestions(); // ✅ optional but recommended
+  },
 
-  if(name === "lifts"){
+  lifts: () => {
     renderLiftSearchDropdown();
     renderLiftRoutineDropdown();
     renderLifts();
-  }
+  },
 
-  if(name === "settings"){
+  settings: () => {
     hydrateSettingsUI();
     renderStorageInfo();
     renderLastBackup();
   }
+};
+
+function showScreen(name){
+  document.querySelectorAll(".screen")
+    .forEach(s => s.classList.remove("active"));
+
+  const el = document.getElementById(`screen-${name}`);
+  if (el) el.classList.add("active");
+
+  localStorage.setItem(KEY_ACTIVE_SCREEN, name);
+  window.scrollTo(0, 0);
+
+  onEnterScreen[name]?.();
 }
 
 let navBound = false;
@@ -1769,41 +1786,14 @@ function dateForWeekdayIndex(dayIndex, baseDate=new Date()){
 /* ---------------------------
    Normalization
 ---------------------------- */
-
-  function cleanExerciseName(s){
-  const raw = String(s || "").trim().replace(/\s+/g, " ");
-  if(!raw) return "";
-  return canonicalExerciseName(raw);
-}
-
-function loadCustomExercises(){
-  const arr = LS.get(KEY_CUSTOM_EX, []);
-  return Array.isArray(arr) ? arr : [];
-}
-function saveCustomExercises(arr){
-  LS.set(KEY_CUSTOM_EX, arr);
-}
-function addCustomExercise(name){
-  const cleaned = cleanExerciseName(name);
-  if(!cleaned) return "";
-
-  const cur = loadCustomExercises();
-  const exists = cur.some(x => normExName(x) === normExName(cleaned));
-  if(!exists){
-    cur.push(cleaned);
-    cur.sort((a,b)=>a.localeCompare(b));
-    saveCustomExercises(cur);
-  }
-  return cleaned;
-}
-  
-  function normExName(s){
+function normExName(s){
   return String(s||"")
     .toLowerCase()
     .replace(/\s+/g," ")
     .trim();
 }
-  function cleanExerciseName(s){
+
+function cleanExerciseName(s){
   const raw = String(s || "").trim().replace(/\s+/g, " ");
   if(!raw) return "";
   return canonicalExerciseName(raw);
@@ -1829,6 +1819,7 @@ function addCustomExercise(name){
   }
   return cleaned;
 }
+
   /* ---------------------------
    Canonical Exercise Naming
    - variants map to ONE canonical label
@@ -2232,7 +2223,7 @@ function loadRoutines(){
   }
   return {routines, activeId};
 }
-let {routines, activeId: activeRoutineId} = loadRoutines();
+({ routines, activeId: activeRoutineId } = loadRoutines());
 
 function saveRoutines(){ LS.set(KEY_ROUTINES, routines); }
 function setActiveRoutine(id){
@@ -2244,23 +2235,23 @@ function getActiveRoutine(){
 }
 
 /* ---------------------------
-   Weight Tracker
+   Weight Tracker  ✅ (COPY/PASTE THIS WHOLE BLOCK)
 ---------------------------- */
-let bwLogs = LS.get(KEY_BW, []);
+bwLogs = LS.get(KEY_BW, []);
 function sortBW(){ bwLogs.sort((a,b)=>a.date.localeCompare(b.date)); }
 
-const bwDate = document.getElementById("bwDate");
-const bwVal  = document.getElementById("bwVal");
-const bwAddBtn= document.getElementById("bwAddBtn");
-const bwTable= document.getElementById("bwTable");
-const bwLatest= document.getElementById("bwLatest");
-const bwDelta= document.getElementById("bwDelta");
-const bwAvg= document.getElementById("bwAvg");
+const bwDate   = document.getElementById("bwDate");
+const bwVal    = document.getElementById("bwVal");
+const bwAddBtn = document.getElementById("bwAddBtn");
+const bwTable  = document.getElementById("bwTable");
+const bwLatest = document.getElementById("bwLatest");
+const bwDelta  = document.getElementById("bwDelta");
+const bwAvg    = document.getElementById("bwAvg");
 
-  const bwViewTableBtn = document.getElementById("bwViewTableBtn");
+const bwViewTableBtn = document.getElementById("bwViewTableBtn");
 const bwViewGraphBtn = document.getElementById("bwViewGraphBtn");
-const bwChartWrap = document.getElementById("bwChartWrap");
-const bwTableWrap = document.getElementById("bwTableWrap");
+const bwChartWrap    = document.getElementById("bwChartWrap");
+const bwTableWrap    = document.getElementById("bwTableWrap");
 
 let bwView = "table"; // "table" | "graph"
 
@@ -2268,15 +2259,15 @@ function setBWView(next){
   bwView = next;
 
   if(bwView === "table"){
-    bwTableWrap.style.display = "";
-    bwChartWrap.style.display = "none";
-    bwViewTableBtn.classList.remove("ghost");
-    bwViewGraphBtn.classList.add("ghost");
+    if(bwTableWrap) bwTableWrap.style.display = "";
+    if(bwChartWrap) bwChartWrap.style.display = "none";
+    bwViewTableBtn?.classList.remove("ghost");
+    bwViewGraphBtn?.classList.add("ghost");
   } else {
-    bwTableWrap.style.display = "none";
-    bwChartWrap.style.display = "";
-    bwViewTableBtn.classList.add("ghost");
-    bwViewGraphBtn.classList.remove("ghost");
+    if(bwTableWrap) bwTableWrap.style.display = "none";
+    if(bwChartWrap) bwChartWrap.style.display = "";
+    bwViewTableBtn?.classList.add("ghost");
+    bwViewGraphBtn?.classList.remove("ghost");
     renderBW(); // ensures chart draws correctly when shown
   }
 }
@@ -2284,18 +2275,33 @@ function setBWView(next){
 bwViewTableBtn?.addEventListener("click", ()=> setBWView("table"));
 bwViewGraphBtn?.addEventListener("click", ()=> setBWView("graph"));
 
+if(bwDate) bwDate.value = todayISO();
 
-bwDate.value = todayISO();
+/* ✅ ADD weight */
+bwAddBtn?.addEventListener("click", ()=>{
+  const d = bwDate?.value || todayISO();
+  const v = Number(bwVal?.value);
 
-bwAddBtn.addEventListener("click", ()=>{
-  const d = bwDate.value || todayISO();
-  const v = Number(bwVal.value);
   if(!d || !isFinite(v)) return alert("Please enter date + bodyweight.");
+
   bwLogs = bwLogs.filter(x=>x.date !== d);
   bwLogs.push({date:d, bw:v});
+
   sortBW();
   LS.set(KEY_BW, bwLogs);
-  bwVal.value = "";
+
+  if(bwVal) bwVal.value = "";
+  renderBW();
+});
+
+/* ✅ DELETE weight (ONE-TIME listener — OUTSIDE renderBW) */
+bwTable?.addEventListener("click", (e)=>{
+  const btn = e.target.closest("button[data-delbw]");
+  if(!btn) return;
+
+  const d = btn.getAttribute("data-delbw");
+  bwLogs = bwLogs.filter(x=>x.date !== d);
+  LS.set(KEY_BW, bwLogs);
   renderBW();
 });
 
@@ -2313,52 +2319,60 @@ function bwStats(){
 }
 
 let bwChart;
+
 function renderBW(){
   sortBW();
-  const {latest, prev, delta, avg} = bwStats();
+  const {latest, delta, avg} = bwStats();
 
-  bwLatest.textContent = latest ? `${latest.bw.toFixed(1)} lbs (${latest.date})` : "—";
-  if(delta === null) bwDelta.textContent = "—";
-  else {
-    const sign = delta>0 ? "+" : "";
-    bwDelta.textContent = `${sign}${delta.toFixed(1)} lbs`;
-    bwDelta.className = "mono " + (delta>0 ? "bad" : (delta<0 ? "good" : ""));
-  }
-  bwAvg.textContent = avg ? `${avg.toFixed(1)} lbs` : "—";
+  if(bwLatest) bwLatest.textContent = latest ? `${latest.bw.toFixed(1)} lbs (${latest.date})` : "—";
 
-  bwTable.innerHTML = "";
-  for(let i=0;i<bwLogs.length;i++){
-    const cur = bwLogs[i];
-    const prevBW = bwLogs[i-1]?.bw ?? null;
-    const dlt = (prevBW===null) ? null : (cur.bw - prevBW);
-    const trend = dlt===null ? "—" : (dlt>0 ? "↑" : (dlt<0 ? "↓" : "—"));
-    const dltTxt = dlt===null ? "—" : `${dlt>0?"+":""}${dlt.toFixed(1)}`;
-    const cls = dlt===null ? "" : (dlt>0 ? "bad" : (dlt<0 ? "good" : ""));
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="mono">${cur.date}</td>
-      <td class="mono">${cur.bw.toFixed(1)}</td>
-      <td class="mono">${prevBW===null?"—":prevBW.toFixed(1)}</td>
-      <td class="mono ${cls}">${dltTxt} ${trend}</td>
-      <td><button data-delbw="${cur.date}">Delete</button></td>
-    `;
-    bwTable.appendChild(tr);
+  if(bwDelta){
+    if(delta === null) bwDelta.textContent = "—";
+    else {
+      const sign = delta > 0 ? "+" : "";
+      bwDelta.textContent = `${sign}${delta.toFixed(1)} lbs`;
+      bwDelta.className = "mono " + (delta>0 ? "bad" : (delta<0 ? "good" : ""));
+    }
   }
-  bwTable.querySelectorAll("button[data-delbw]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const d = btn.getAttribute("data-delbw");
-      bwLogs = bwLogs.filter(x=>x.date!==d);
-      LS.set(KEY_BW, bwLogs);
-      renderBW();
-    });
-  });
+
+  if(bwAvg) bwAvg.textContent = avg ? `${avg.toFixed(1)} lbs` : "—";
+
+  /* ---- TABLE ---- */
+  if(bwTable){
+    bwTable.innerHTML = "";
+
+    for(let i=0; i<bwLogs.length; i++){
+      const cur = bwLogs[i];
+      const prevBW = bwLogs[i-1]?.bw ?? null;
+
+      const dlt = (prevBW===null) ? null : (cur.bw - prevBW);
+      const trend = dlt===null ? "—" : (dlt>0 ? "↑" : (dlt<0 ? "↓" : "—"));
+      const dltTxt = dlt===null ? "—" : `${dlt>0?"+":""}${dlt.toFixed(1)}`;
+      const cls = dlt===null ? "" : (dlt>0 ? "bad" : (dlt<0 ? "good" : ""));
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="mono">${cur.date}</td>
+        <td class="mono">${cur.bw.toFixed(1)}</td>
+        <td class="mono">${prevBW===null ? "—" : prevBW.toFixed(1)}</td>
+        <td class="mono ${cls}">${dltTxt} ${trend}</td>
+        <td><button data-delbw="${cur.date}">Delete</button></td>
+      `;
+      bwTable.appendChild(tr);
+    }
+  }
+
+  /* ---- CHART ---- */
+  if(bwView !== "graph") return;            // only draw chart when visible
+  const canvas = document.getElementById("bwChart");
+  if(!canvas) return;
 
   const labels = bwLogs.map(x=>x.date);
   const data = bwLogs.map(x=>x.bw);
 
-  const ctx = document.getElementById("bwChart");
   if(bwChart) bwChart.destroy();
-  bwChart = new Chart(ctx, {
+
+  bwChart = new Chart(canvas, {
     type:"line",
     data:{ labels, datasets:[{ label:"Bodyweight (lbs)", data, tension:.25, pointRadius:3 }] },
     options:{
@@ -2371,11 +2385,10 @@ function renderBW(){
     }
   });
 }
-
 /* ---------------------------
    Attendance Calendar
 ---------------------------- */
-let attendance = new Set(LS.get(KEY_ATT, []));
+attendance = new Set(LS.get(KEY_ATT, []));
 
 let calY = new Date().getFullYear();
 let calM = new Date().getMonth();
@@ -2438,11 +2451,12 @@ function renderCal(){
       count++;
     }
     cell.addEventListener("click", ()=>{
-      if(attendance.has(s)) attendance.delete(s);
-      else attendance.add(s);
-      LS.set(KEY_ATT, [...attendance]);
-      renderCal();
-    });
+  if(attendance.has(s)) attendance.delete(s);
+  else attendance.add(s);
+  LS.set(KEY_ATT, [...attendance]);
+  renderCal();
+  refreshHome(); // ✅ add this
+});
     calGrid.appendChild(cell);
   }
   calCount.textContent = String(count);
@@ -2461,7 +2475,7 @@ const pBed = document.getElementById("pBed");
 const pTotal = document.getElementById("pTotal");
 const pRemain= document.getElementById("pRemain");
 const pStatus= document.getElementById("pStatus");
-let proteinMap = LS.get(KEY_PRO, {});
+proteinMap = LS.get(KEY_PRO, {});
 
 pDate.value = todayISO();
 
@@ -2480,8 +2494,8 @@ function loadProteinDay(d){
 function renderProteinTotals(){
   const total = (Number(pMorning.value)||0)+(Number(pLunch.value)||0)+(Number(pPre.value)||0)+(Number(pDinner.value)||0)+(Number(pBed.value)||0);
   pTotal.textContent = String(total);
-  const rem = getProteinGoal() - total;
-  pRemain.textContent = String(rem);
+  const rem = Math.max(getProteinGoal() - total, 0);
+pRemain.textContent = String(rem);
   if(total >= getProteinGoal()){
     pStatus.textContent = "Hit goal ✅";
     pStatus.className = "good";
@@ -2506,13 +2520,14 @@ document.getElementById("pSaveBtn").addEventListener("click", ()=>{
     bed:Number(pBed.value)||0,
   };
   LS.set(KEY_PRO, proteinMap);
-  alert("Saved ✅");
+refreshHome();
+alert("Saved ✅");
 });
 
 /* ---------------------------
    Lifts + PR helpers
 ---------------------------- */
-let lifts = LS.get(KEY_LIFTS, []);
+lifts = LS.get(KEY_LIFTS, []);
 
 function ensureLiftCompatibility(){
   lifts = lifts.map(x=>{
@@ -4194,35 +4209,42 @@ function routeInitialScreen(){
 
   
 /* ---------------------------
-   Init
+   Init (single pass)
 ---------------------------- */
-renderCal();
-loadProteinDay(todayISO());
-hydrateSettingsUI();
-renderStorageInfo();
-renderHeaderSub();
-refreshHome();
-renderLastBackup();
+function init(){
+  // Load core state
+  profile = loadProfile();
 
-renderRoutineDropdown();
-activeDayIndex = getTodaySplitIndex();
-renderPPL();
+  ({routines, activeId: activeRoutineId} = loadRoutines());
 
-renderLiftSearchDropdown();
-renderLiftRoutineDropdown();
-applyLiftFiltersFromUI();
-setLiftView("table");
+  bwLogs = LS.get(KEY_BW, []);
+  attendance = new Set(LS.get(KEY_ATT, []));
+  proteinMap = LS.get(KEY_PRO, {});
+  lifts = LS.get(KEY_LIFTS, []);
+  ensureLiftCompatibility();
+  migrateCanonicalNames();
 
-buildRoutineExerciseSuggestions();
+  // Bind once
+  bindNavigation();
 
-// 🔹 NAVIGATION WIRES HERE (only once)
-bindNavigation();
+  // Static UI (not screen-specific)
+  hydrateSettingsUI();
+  hydrateOnboardingInputs();
+  renderHeaderSub();
+  renderStorageInfo();
+  renderLastBackup();
 
-// ✅ new onboarding routing
-hydrateOnboardingInputs();
-routeInitialScreen();
+  // Default view settings
+  setBWView("table");
+  setLiftView("table");
+  applyLiftFiltersFromUI();
 
-setBWView("table");
+  // Route LAST (this calls showScreen which renders what’s needed)
+  routeInitialScreen();
+}
+
+init();
+
 
 </script>
 </body>
