@@ -2957,17 +2957,24 @@ function renderExercisePickerList(){
         </div>
       `;
       create.addEventListener("click", ()=>{
-        const created = cleanExerciseName(rawQ);
+  const created = cleanExerciseName(rawQ);
+  if(!created) return;
 
-        if(exPickMulti){
-          exPickSelectedSet.add(created);
-          renderExercisePickerList();
-        } else {
-          exPickSelected = created;
-          [...exPickList.querySelectorAll(".exPickItem")].forEach(x=>x.classList.remove("active"));
-          create.classList.add("active");
-        }
-      });
+  if(exPickMulti){
+    // multi mode: toggle selection
+    if(exPickSelectedSet.has(created)) exPickSelectedSet.delete(created);
+    else exPickSelectedSet.add(created);
+    renderExercisePickerList();
+  } else {
+    // ✅ single mode: instantly confirm + close
+    exPickSelected = created;
+
+    if(typeof exPickOnConfirm === "function"){
+      exPickOnConfirm(created);
+    }
+    closeExercisePicker();
+  }
+});
       exPickList.appendChild(create);
     }
   }
