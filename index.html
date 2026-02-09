@@ -1705,18 +1705,18 @@ function saveProfile(next){
 
 function renderHeaderSub(){
   const sub = document.getElementById("headerSub");
-  if(!sub || !window.profile) return;
+  if(!sub) return;
 
-  const restTxt = profile.hideRestDays
-    ? "Rest days hidden"
-    : "Rest days shown";
+  const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
+  const goal = Number(profile?.proteinGoal || 240) || 240;
 
   const v = localStorage.getItem(KEY_APP_VERSION) || "";
 
   sub.textContent =
-    `Minimal tracker • Protein goal ${profile.proteinGoal}g • ${restTxt}` +
+    `Minimal tracker • Protein goal ${goal}g • ${restTxt}` +
     (v ? ` • v${v}` : "");
 }
+
 
 
 
@@ -4481,24 +4481,31 @@ function hideUpdateBanner(){
 
 async function checkForUpdate(){
   try{
-    const res = await fetch("./version.json?ts=" + Date.now(), {
-      cache: "no-store"
-    });
-    const data = await res.json();
+    const url = "./version.json?ts=" + Date.now();
+    const res = await fetch(url, { cache: "no-store" });
 
+    if(!res.ok){
+      console.log("version.json fetch failed:", res.status, url);
+      return;
+    }
+
+    const data = await res.json();
     const latest = String(data.version || "").trim();
-    if(!latest) return;
+    if(!latest){
+      console.log("version.json missing 'version' field:", data);
+      return;
+    }
 
     const last = localStorage.getItem(KEY_APP_VERSION);
 
-    // CASE 1: first visit → store version silently
+    console.log("Version check:", { last, latest });
+
     if(!last){
       localStorage.setItem(KEY_APP_VERSION, latest);
       renderHeaderSub();
       return;
     }
 
-    // CASE 2: returning user + new version
     if(last !== latest){
       showUpdateBanner();
       localStorage.setItem(KEY_APP_VERSION, latest);
@@ -4506,13 +4513,12 @@ async function checkForUpdate(){
       return;
     }
 
-    // CASE 3: same version → just ensure header is correct
     renderHeaderSub();
-
   }catch(e){
-    // silent fail (offline / cached / blocked)
+    console.log("checkForUpdate error:", e);
   }
 }
+
 
 document.addEventListener("click", (e)=>{
   const btn = e.target.closest("#updateRefreshBtn");
