@@ -1676,6 +1676,10 @@ obRoutineCreateBtn?.addEventListener("click", ()=>{
 
   base.name = name;
   base.source = "onboarding";
+  base.id = uid(); // ✅ add this
+
+  routines.push(base);
+  saveRoutines();
   
   routines.push(base);
   saveRoutines();
