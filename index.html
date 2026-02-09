@@ -1779,21 +1779,6 @@ function fmtDateNow(){
   return d.toLocaleDateString([], { weekday:"long", month:"short", day:"numeric" });
 }
 
-function getWeekStartDate(){
-  // respects profile.weekStart
-  const base = new Date();
-  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
-  const dow = d.getDay(); // 0 Sun..6 Sat
-
-  if(profile.weekStart === "sun"){
-    d.setDate(d.getDate() - dow);
-  } else {
-    const delta = (dow === 0) ? 6 : (dow - 1);
-    d.setDate(d.getDate() - delta);
-  }
-  return d; // Date object
-}
-
 function dateISOFrom(baseDate, offsetDays){
   const d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
   d.setDate(d.getDate() + offsetDays);
@@ -1858,7 +1843,7 @@ function refreshHome(){
   }
 
   // week dots + count
-  const weekStart = getWeekStartDate();
+  const weekStart = weekStartDate(new Date());
   const dots = [];
   for(let i=0;i<7;i++){
     dots.push(dateISOFrom(weekStart, i));
