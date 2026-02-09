@@ -24,9 +24,6 @@
 
   --radius:16px;
   --shadow: 0 14px 40px rgba(0,0,0,.45);
-
-  --navH: 76px; /* bottom nav reserved height */
-   
 }
 
 /* ---------------------------
@@ -157,18 +154,14 @@ header .sub{
   font-size:13px;
   color: var(--muted);
 }
-  main{
-  padding: 14px 12px calc(var(--navH) + env(safe-area-inset-bottom));
-  display:grid;
-  gap:12px;
-  max-width:1100px;
-  margin:0 auto;
-  position: relative;
-
-  /* ✅ Stops scrolling into empty space */
-  height: calc(100svh - env(safe-area-inset-top));
-}
-
+    main{
+      padding:14px 12px 80px;
+      display:grid;
+      gap:12px;
+      max-width:1100px;
+      margin:0 auto;
+      position: relative; /* ✅ ADD */
+    }
     /* Match Home-style vertical rhythm on Settings */
 #screen-settings{
   display: grid;
@@ -720,7 +713,7 @@ header{
 .updateBanner{
   position: fixed;
   left: 0; right: 0;
-  bbottom: calc(var(--navH) + 10px + env(safe-area-inset-bottom)); /* sits above bottom nav */
+  bottom: calc(86px + env(safe-area-inset-bottom)); /* sits above bottom nav */
   padding: 0 12px;
   z-index: 80;
 }
