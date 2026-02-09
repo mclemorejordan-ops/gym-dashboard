@@ -4075,7 +4075,7 @@ function openRoutineEditor(routineId){
   const r = routines.find(x=>x.id===routineId);
   if(!r) return;
 
-  activeRoutineId = routineId;
+  setActiveRoutine(routineId);
 
   editRoutineId = routineId;
   editDayIndex = activeDayIndex;
