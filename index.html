@@ -4373,6 +4373,42 @@ function routeInitialScreen(){
   showScreen(localStorage.getItem(KEY_ACTIVE_SCREEN) || "home");
 }
 
+  /* ---------------------------
+   App Version + Update Banner
+   - bump APP_VERSION on each deploy
+---------------------------- */
+const APP_VERSION = "2026.02.09.1";   // ✅ change this every GitHub update
+const KEY_APP_VERSION = "gym_app_version_v1";
+
+function showUpdateBanner(){
+  const b = document.getElementById("updateBanner");
+  if(b) b.style.display = "block";
+}
+
+function hideUpdateBanner(){
+  const b = document.getElementById("updateBanner");
+  if(b) b.style.display = "none";
+}
+
+function checkForUpdate(){
+  const last = localStorage.getItem(KEY_APP_VERSION);
+
+  // if they've visited before and version changed -> show banner
+  if(last && last !== APP_VERSION){
+    showUpdateBanner();
+  }
+
+  // store current version as last-seen
+  localStorage.setItem(KEY_APP_VERSION, APP_VERSION);
+}
+
+document.addEventListener("click", (e)=>{
+  const btn = e.target.closest("#updateRefreshBtn");
+  if(!btn) return;
+
+  // force a reload (browser will fetch latest files)
+  location.reload();
+});
   
 /* ---------------------------
    Init (single pass)
@@ -4405,14 +4441,57 @@ function init(){
   setLiftView("table");
   applyLiftFiltersFromUI();
 
+  checkForUpdate();        // ✅ ADD THIS LINE
+
+
   // Route LAST (this calls showScreen which renders what’s needed)
   routeInitialScreen();
 }
 
 init();
 
+  /* ---------------------------
+   Update Banner (Option 1)
+---------------------------- */
+.updateBanner{
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(86px + env(safe-area-inset-bottom)); /* sits above bottom nav */
+  padding: 0 12px;
+  z-index: 80;
+}
+
+.updateBannerInner{
+  max-width: 1100px;
+  margin: 0 auto;
+  background: rgba(18,18,20,.96);
+  border: 1px solid rgba(124,252,0,.22);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  backdrop-filter: blur(12px);
+}
+
+.updateText{display:flex; flex-direction:column; gap:2px;}
+.updateTitle{font-weight:800; font-size:13px;}
+.updateSub{font-size:11px; color:var(--muted);}
+
 
 </script>
+
+  <!-- ✅ Update Banner (shows when a new deploy is detected) -->
+<div id="updateBanner" class="updateBanner" style="display:none;">
+  <div class="updateBannerInner">
+    <div class="updateText">
+      <div class="updateTitle">✨ Update available</div>
+      <div class="updateSub">Refresh to load the latest version.</div>
+    </div>
+    <button id="updateRefreshBtn" class="miniBtn tap">Refresh</button>
+  </div>
+</div>
   <!-- Bottom Navigation -->
 <nav class="bottomNav">
   <div class="bottomNavInner">
