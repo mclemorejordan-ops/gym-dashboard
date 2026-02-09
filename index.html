@@ -162,11 +162,6 @@ header .sub{
       margin:0 auto;
       position: relative; /* ✅ ADD */
     }
-    /* Match Home-style vertical rhythm on Settings */
-#screen-settings{
-  display: grid;
-  gap: 12px;
-}
 
 main > *{
   position: relative;
@@ -618,6 +613,11 @@ body.modalOpen{
 /* ---------------------------
    APP-LIKE UPGRADE (Bottom Nav + Transitions)
 ---------------------------- */
+
+/* safe area + extra space for bottom nav */
+main{
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
 
 /* screen transitions */
 .screen{
