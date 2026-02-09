@@ -1701,19 +1701,18 @@ function saveProfile(next){
 }
 
 
-ffunction renderHeaderSub(){
+function renderHeaderSub(){
   const sub = document.getElementById("headerSub");
   if(!sub) return;
 
   const restTxt = profile.hideRestDays ? "Rest days hidden" : "Rest days shown";
-
-  // ✅ version comes from localStorage (works even if fetch is async)
   const v = localStorage.getItem(KEY_APP_VERSION) || "";
 
   sub.textContent =
     `Minimal tracker • Protein goal ${profile.proteinGoal}g • ${restTxt}` +
     (v ? ` • v${v}` : "");
 }
+
 
 
 // Replace PRO_GOAL usage with this
@@ -4465,9 +4464,6 @@ function routeInitialScreen(){
    App Version + Update Banner
    - bump APP_VERSION on each deploy
 ---------------------------- */
-let CURRENT_APP_VERSION = "";
-  const KEY_APP_VERSION = "gym_app_version_v1";
-
 function showUpdateBanner(){
   const b = document.getElementById("updateBanner");
   if(b) b.style.display = "block";
