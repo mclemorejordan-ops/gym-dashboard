@@ -1271,6 +1271,8 @@ const KEY_ACTIVE_ROUTINE = "gym_active_routine_id_v1";
 const KEY_PROFILE = "gym_profile_v1";
 const KEY_LAST_BACKUP = "gym_last_backup_v1";
 const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
+const KEY_CUSTOM_EX = "gym_custom_ex_v1";
+
 
 
   /* ---------------------------
@@ -1678,35 +1680,31 @@ function showScreen(name){
   localStorage.setItem(KEY_ACTIVE_SCREEN, name);
   window.scrollTo(0,0);
 
-  // refresh only what’s needed when a screen becomes visible
-  if(name === "home"){
-    refreshHome();
-  }
-  if(name === "weight"){
-    renderBW();
-  }
-  if(name === "attendance"){
-    renderCal();
-  }
+  if(name === "home") refreshHome();
+  if(name === "weight") renderBW();
+  if(name === "attendance") renderCal();
+
   if(name === "protein"){
     loadProteinDay(pDate.value || todayISO());
     const pt = document.getElementById("proteinTitle");
     if(pt) pt.textContent = `Protein Intake (Goal ${getProteinGoal()}g)`;
   }
+
   if(name === "routine"){
     renderRoutineDropdown();
     renderPPL();
   }
+
   if(name === "lifts"){
     renderLiftSearchDropdown();
     renderLiftRoutineDropdown();
     renderLifts();
+  }
 
-    if(name === "settings"){
+  if(name === "settings"){
     hydrateSettingsUI();
     renderStorageInfo();
     renderLastBackup();
-  }
   }
 }
 
@@ -1770,11 +1768,65 @@ function dateForWeekdayIndex(dayIndex, baseDate=new Date()){
 /* ---------------------------
    Normalization
 ---------------------------- */
-function normExName(s){
+
+  function cleanExerciseName(s){
+  const raw = String(s || "").trim().replace(/\s+/g, " ");
+  if(!raw) return "";
+  return canonicalExerciseName(raw);
+}
+
+function loadCustomExercises(){
+  const arr = LS.get(KEY_CUSTOM_EX, []);
+  return Array.isArray(arr) ? arr : [];
+}
+function saveCustomExercises(arr){
+  LS.set(KEY_CUSTOM_EX, arr);
+}
+function addCustomExercise(name){
+  const cleaned = cleanExerciseName(name);
+  if(!cleaned) return "";
+
+  const cur = loadCustomExercises();
+  const exists = cur.some(x => normExName(x) === normExName(cleaned));
+  if(!exists){
+    cur.push(cleaned);
+    cur.sort((a,b)=>a.localeCompare(b));
+    saveCustomExercises(cur);
+  }
+  return cleaned;
+}
+  
+  function normExName(s){
   return String(s||"")
     .toLowerCase()
     .replace(/\s+/g," ")
     .trim();
+}
+  function cleanExerciseName(s){
+  const raw = String(s || "").trim().replace(/\s+/g, " ");
+  if(!raw) return "";
+  return canonicalExerciseName(raw);
+}
+
+function loadCustomExercises(){
+  const arr = LS.get(KEY_CUSTOM_EX, []);
+  return Array.isArray(arr) ? arr : [];
+}
+function saveCustomExercises(arr){
+  LS.set(KEY_CUSTOM_EX, arr);
+}
+function addCustomExercise(name){
+  const cleaned = cleanExerciseName(name);
+  if(!cleaned) return "";
+
+  const cur = loadCustomExercises();
+  const exists = cur.some(x => normExName(x) === normExName(cleaned));
+  if(!exists){
+    cur.push(cleaned);
+    cur.sort((a,b)=>a.localeCompare(b));
+    saveCustomExercises(cur);
+  }
+  return cleaned;
 }
   /* ---------------------------
    Canonical Exercise Naming
@@ -2866,6 +2918,9 @@ function collectAllExerciseNames(){
   // 1️⃣ Canonical library first
   EXERCISE_LIBRARY.forEach(n => set.add(canonicalExerciseName(n)));
 
+  // 1.5️⃣ Custom exercises created by you
+loadCustomExercises().forEach(n => set.add(canonicalExerciseName(n)));
+
   // 2️⃣ Routine exercises
   routines.forEach(r=>{
     DAY_KEYS.forEach(k=>{
@@ -2957,7 +3012,8 @@ function renderExercisePickerList(){
         </div>
       `;
       create.addEventListener("click", ()=>{
-        const created = cleanExerciseName(rawQ);
+  const created = addCustomExercise(rawQ);
+  if(!created) return;
 
         if(exPickMulti){
           exPickSelectedSet.add(created);
