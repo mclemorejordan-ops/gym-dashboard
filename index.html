@@ -1274,6 +1274,7 @@ const KEY_ACTIVE_ROUTINE = "gym_active_routine_id_v1";
 const KEY_PROFILE = "gym_profile_v1";
 const KEY_LAST_BACKUP = "gym_last_backup_v1";
 const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
+const KEY_CUSTOM_EX = "gym_custom_ex_v1";
 
 
   /* ---------------------------
@@ -1773,7 +1774,34 @@ function dateForWeekdayIndex(dayIndex, baseDate=new Date()){
 /* ---------------------------
    Normalization
 ---------------------------- */
-function normExName(s){
+function cleanExerciseName(s){
+  const raw = String(s || "").trim().replace(/\s+/g, " ");
+  if(!raw) return "";
+  return canonicalExerciseName(raw);
+}
+
+function loadCustomExercises(){
+  const arr = LS.get(KEY_CUSTOM_EX, []);
+  return Array.isArray(arr) ? arr : [];
+}
+function saveCustomExercises(arr){
+  LS.set(KEY_CUSTOM_EX, arr);
+}
+function addCustomExercise(name){
+  const cleaned = cleanExerciseName(name);
+  if(!cleaned) return "";
+
+  const cur = loadCustomExercises();
+  const exists = cur.some(x => normExName(x) === normExName(cleaned));
+  if(!exists){
+    cur.push(cleaned);
+    cur.sort((a,b)=>a.localeCompare(b));
+    saveCustomExercises(cur);
+  }
+  return cleaned;
+}
+  
+  function normExName(s){
   return String(s||"")
     .toLowerCase()
     .replace(/\s+/g," ")
@@ -2882,6 +2910,9 @@ function collectAllExerciseNames(){
   // 1️⃣ Canonical library first
   EXERCISE_LIBRARY.forEach(n => set.add(canonicalExerciseName(n)));
 
+  // 1.5️⃣ Custom exercises created by you
+loadCustomExercises().forEach(n => set.add(canonicalExerciseName(n)));
+
   // 2️⃣ Routine exercises
   routines.forEach(r=>{
     DAY_KEYS.forEach(k=>{
@@ -2972,8 +3003,8 @@ function renderExercisePickerList(){
           <span>➕ Create "<strong>${rawQ}</strong>"</span>
         </div>
       `;
-      create.addEventListener("click", ()=>{
-  const created = cleanExerciseName(rawQ);
+     create.addEventListener("click", ()=>{
+  const created = addCustomExercise(rawQ);
   if(!created) return;
 
   if(exPickMulti){
@@ -3970,8 +4001,10 @@ rtSaveBtn.addEventListener("click", ()=>{
   renderLiftRoutineDropdown();
   buildRoutineExerciseSuggestions();
 
-  // If onboarding is not done yet, finish it and send to Home
-if(!isOnboardingDone()){
+  // ✅ If we are in onboarding flow, always finish + go Home
+const currentScreen = localStorage.getItem(KEY_ACTIVE_SCREEN) || "";
+
+if(currentScreen === "profile" || currentScreen === "onboard-routine" || !isOnboardingDone()){
   setOnboardingDone();
   refreshHome();
   showScreen("home");
