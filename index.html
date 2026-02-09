@@ -1461,6 +1461,8 @@ const KEY_PROFILE = "gym_profile_v1";
 const KEY_LAST_BACKUP = "gym_last_backup_v1";
 const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 const KEY_CUSTOM_EX = "gym_custom_ex_v1";
+const KEY_APP_VERSION = "gym_app_version_v1"; // ✅ ADD THIS
+
 
 let modalDepth = 0;
 
@@ -4479,7 +4481,9 @@ function hideUpdateBanner(){
 
 async function checkForUpdate(){
   try{
-    const res = await fetch("./version.json?ts=" + Date.now(), { cache: "no-store" });
+    const res = await fetch("./version.json?ts=" + Date.now(), {
+      cache: "no-store"
+    });
     const data = await res.json();
 
     const latest = String(data.version || "").trim();
@@ -4487,17 +4491,26 @@ async function checkForUpdate(){
 
     const last = localStorage.getItem(KEY_APP_VERSION);
 
-    if(last && last !== latest){
-      showUpdateBanner();
+    // CASE 1: first visit → store version silently
+    if(!last){
+      localStorage.setItem(KEY_APP_VERSION, latest);
+      renderHeaderSub();
+      return;
     }
 
-    localStorage.setItem(KEY_APP_VERSION, latest);
+    // CASE 2: returning user + new version
+    if(last !== latest){
+      showUpdateBanner();
+      localStorage.setItem(KEY_APP_VERSION, latest);
+      renderHeaderSub();
+      return;
+    }
 
-    // ✅ force header to update once we know the version
+    // CASE 3: same version → just ensure header is correct
     renderHeaderSub();
 
   }catch(e){
-    // silent
+    // silent fail (offline / cached / blocked)
   }
 }
 
