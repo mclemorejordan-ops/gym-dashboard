@@ -1276,9 +1276,17 @@ const KEY_LAST_BACKUP = "gym_last_backup_v1";
 const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 const KEY_CUSTOM_EX = "gym_custom_ex_v1";
 
-function lockBodyScroll(){ document.body.classList.add("modalOpen"); }
-function unlockBodyScroll(){ document.body.classList.remove("modalOpen"); }
+let modalDepth = 0;
 
+function lockBodyScroll(){
+  if(modalDepth === 0) document.body.classList.add("modalOpen");
+  modalDepth++;
+}
+
+function unlockBodyScroll(){
+  modalDepth = Math.max(0, modalDepth - 1);
+  if(modalDepth === 0) document.body.classList.remove("modalOpen");
+}
 
   /* ---------------------------
    Global State (safe defaults)
@@ -3010,11 +3018,13 @@ function openExercisePicker({ title="Pick Exercise", initial="", onConfirm, mult
 
 function closeExercisePicker(){
   exPickModal.style.display = "none";
+  unlockBodyScroll(); // ✅ ADD THIS
   exPickSelected = "";
   exPickSelectedSet = new Set();
   exPickMulti = false;
   exPickOnConfirm = null;
 }
+
 
 function renderExercisePickerList(){
   const rawQ = String(exPickSearch.value || "").trim();
@@ -3602,7 +3612,6 @@ function openLogModal(exName, defaultSets=3, routineObj=null, dayKey="", dayInde
   function closeLogModal(){
   logModal.style.display = "none";
   unlockBodyScroll();               // ✅ ADD
-  activeLogExercise = null;
   modalExerciseName = null;
   modalLastLift = null;
   modalRoutine = null;
