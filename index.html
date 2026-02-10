@@ -1065,6 +1065,59 @@ header{
   border-color: rgba(124,252,0,.45);
 }
 
+/* ===========================
+   ROUTINE DAY STRIP (2-row table + horizontal scroll)
+=========================== */
+.dayStripWrap{
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.dayStrip{
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: auto auto;
+  grid-auto-columns: minmax(86px, 1fr);
+  gap: 6px;
+  width: max-content;
+}
+
+.dayCell{
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0f0f10;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.labelCell{
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(15,15,16,.9);
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dayCell.active,
+.labelCell.active{
+  border-color: rgba(124,252,0,.30);
+  outline: 2px solid rgba(124,252,0,.18);
+}
 
     
   </style>
@@ -1397,7 +1450,9 @@ header{
         </div>
       </div>
 
-      <div class="splitTabs" id="pplTabs"></div>
+<div class="dayStripWrap">
+  <div class="dayStrip" id="pplTabs"></div>
+</div>
       <div class="exerciseList" id="pplList"></div>
 
       <div class="notice" style="margin-top:10px;">
@@ -3431,22 +3486,36 @@ function renderDayTabs(){
   const ar = getActiveRoutine();
 
   DAY_KEYS.forEach((k, idx)=>{
-    const day = ar.days[k];
-    const label = (day.label || "").trim();
+    const day = ar.days[k] || { label:"", rest:false };
+    const label = String(day.label || "").trim();
     const rest = !!day.rest;
 
-    const b = document.createElement("div");
-    b.className = "tab" + (idx===activeDayIndex ? " active" : "");
-    b.innerHTML = `
-      <span>${k}</span>
-      ${label ? `<span class="badge">${label}</span>` : ""}
-      ${rest ? `<span class="badge">Rest</span>` : ""}
-    `;
-    b.addEventListener("click", ()=>{
+    // top row cell (day of week)
+    const dayCell = document.createElement("div");
+    dayCell.className = "dayCell" + (idx===activeDayIndex ? " active" : "");
+    dayCell.textContent = k;
+
+    // bottom row cell (day label)
+    const labelCell = document.createElement("div");
+    labelCell.className = "labelCell" + (idx===activeDayIndex ? " active" : "");
+
+    // What to show in the label row
+    // - if rest, show "Rest" (even if label is blank)
+    // - else show label, or "—" if empty
+    const labelText = rest ? (label || "Rest") : (label || "—");
+    labelCell.textContent = labelText;
+
+    // clicking either cell selects the day
+    const onPick = ()=>{
       activeDayIndex = idx;
       renderPPL();
-    });
-    pplTabs.appendChild(b);
+    };
+    dayCell.addEventListener("click", onPick);
+    labelCell.addEventListener("click", onPick);
+
+    // append in pairs so grid makes 2 rows per day column
+    pplTabs.appendChild(dayCell);
+    pplTabs.appendChild(labelCell);
   });
 }
 
