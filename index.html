@@ -1674,9 +1674,8 @@ obRoutineCreateBtn?.addEventListener("click", ()=>{
   } else if(tpl === "bodypart"){
     base = makeBodyPartTemplate();
   } else if(tpl === "ppl"){
-    base = defaultRoutine(); // your existing PPL seed
+    base = defaultRoutine();
   } else {
-    // blank routine
     base = defaultRoutine();
     base.name = "Routine";
     DAY_KEYS.forEach(k=>{
@@ -1688,19 +1687,27 @@ obRoutineCreateBtn?.addEventListener("click", ()=>{
 
   base.name = name;
   base.source = "onboarding";
-  base.id = uid(); // ✅ add this
+  base.id = uid();
 
   routines.push(base);
   saveRoutines();
 
-  // ✅ mark onboarding complete as soon as a routine exists
+  // mark onboarding complete
   if(!isOnboardingDone()) setOnboardingDone();
-  
-  // ✅ make onboarding routine the default immediately
-  setActiveRoutine(base.id);
-  renderRoutineDropdown(base.id);
 
-  // open editor (still customizable)
+  // set as active routine
+  setActiveRoutine(base.id);
+
+  // ✅ go to routine screen FIRST (ensures routine screen state is initialized)
+  showScreen("routine");
+
+  // ensure dropdown + list are correct right away
+  renderRoutineDropdown(base.id);
+  activeDayIndex = getTodaySplitIndex();
+  renderPPL();
+  buildRoutineExerciseSuggestions();
+
+  // ✅ THEN open editor
   openRoutineEditor(base.id);
 });
 
