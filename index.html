@@ -1066,28 +1066,33 @@ header{
 }
 
 /* ===========================
-   ROUTINE DAY STRIP (2-row table + horizontal scroll)
+   ROUTINE DAY STRIP (2-row + scroll WITHOUT widening page)
 =========================== */
 .dayStripWrap{
   width: 100%;
-  overflow-x: auto;
+  max-width: 100%;
+  overflow-x: auto;                 /* ✅ sideways scroll */
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 6px;
   margin-bottom: 10px;
+
+  /* ✅ prevents scroll area from “pushing” the page width */
+  overscroll-behavior-x: contain;
 }
 
+/* ✅ fixed-size columns so it shows a few days at once, then scroll */
 .dayStrip{
   display: grid;
-  grid-auto-flow: column;
-  grid-template-rows: auto auto;
-  grid-auto-columns: minmax(86px, 1fr);
+  grid-auto-flow: column;           /* fill columns left->right */
+  grid-template-rows: auto auto;    /* exactly 2 rows */
+  grid-auto-columns: 84px;          /* ✅ controls how many fit on screen */
   gap: 6px;
-  width: max-content;
+  width: max-content;               /* content can be wider, wrapper scrolls */
 }
 
 .dayCell{
-  padding: 10px;
+  padding: 10px 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #0f0f10;
@@ -1095,18 +1100,20 @@ header{
   font-size: 12px;
   font-weight: 800;
   text-align: center;
+  user-select: none;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .labelCell{
-  padding: 8px;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: rgba(15,15,16,.9);
   color: var(--muted);
   font-size: 11px;
   text-align: center;
+  user-select: none;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -1117,6 +1124,40 @@ header{
 .labelCell.active{
   border-color: rgba(124,252,0,.30);
   outline: 2px solid rgba(124,252,0,.18);
+  color: var(--text);
+}
+
+/* ✅ HARD STOP: never allow horizontal page overflow */
+html, body{
+  overflow-x: hidden;
+}
+    /* ✅ ROUTINE: force the control row to wrap instead of widening the page */
+#screen-routine .topRight{
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+#screen-routine .topRight > *{
+  min-width: 0; /* ✅ allows flex items to shrink instead of overflow */
+}
+
+/* the row holding the dropdown + buttons */
+#screen-routine .topRight .row{
+  min-width: 0;
+  flex: 1 1 340px;   /* ✅ can shrink + wrap */
+  flex-wrap: wrap;
+}
+
+/* allow the select block to shrink on mobile */
+#screen-routine .topRight label{
+  min-width: 0 !important;
+  flex: 1 1 220px !important;
+}
+
+/* make sure the actual <select> doesn’t exceed screen */
+#screen-routine #routineSelect{
+  width: 100%;
+  max-width: 100%;
 }
 
     
