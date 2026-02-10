@@ -555,62 +555,13 @@ main > *{
   background: transparent;     /* IMPORTANT: remove gradient from here */
 }
 
-/* ===========================
-   ANIMATED RING SWEEP (Home protein ring)
-   - animates smoothly when --deg updates
-   - uses @property so the angle interpolates
-=========================== */
-
-/* ✅ allow CSS to animate an angle custom property */
-@property --deg{
-  syntax: "<angle>";
-  inherits: true;
-  initial-value: 0deg;
-}
-
-/* the ring */
+/* the gradient ring layer */
 .proCircle::before{
   content:"";
   position:absolute;
   inset:0;
   border-radius:inherit;
-  background: conic-gradient(var(--good) 0deg var(--deg), #202124 0deg);
-}
-
-/* default: no animation */
-#homeProteinCircle{
-  transition: none;
-  will-change: --deg;
-}
-
-/* animate ONLY when Home screen is active */
-#screen-home.active #homeProteinCircle{
-  transition: --deg 2000ms cubic-bezier(.2,.9,.2,1);
-}
-
-/* optional: subtle ring sheen (iOS-ish) */
-#homeProteinCircle::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  border-radius:inherit;
-  pointer-events:none;
-  background: radial-gradient(120px 90px at 30% 20%,
-    rgba(255,255,255,.10),
-    transparent 55%);
-  opacity:.55;
-}
-
-/* reduced motion */
-@media (prefers-reduced-motion: reduce){
-  #homeProteinCircle{ transition: none !important; }
-}
-
-/* reduced motion support */
-@media (prefers-reduced-motion: reduce){
-  #homeProteinCircle::before{
-    transition: none !important;
-  }
+  background: conic-gradient(var(--good) var(--deg, 0deg), #202124 0deg);
 }
 
 /* ensure inner content is above the gradient */
@@ -2216,8 +2167,21 @@ function refreshHome(){
       }
     }
   }
+    // ✅ Protein-left circle (today)
+  const td = todayISO();
+  const obj = proteinMap?.[td] || {morning:0,lunch:0,pre:0,dinner:0,bed:0};
+  const total = (Number(obj.morning)||0)+(Number(obj.lunch)||0)+(Number(obj.pre)||0)+(Number(obj.dinner)||0)+(Number(obj.bed)||0);
 
-  // ✅ Home "Check In" button state
+  const goal = getProteinGoal();
+  const left = Math.max(goal - total, 0);
+  const pct = Math.max(0, Math.min(1, goal ? (total/goal) : 0));
+  const deg = Math.round(pct * 360);
+
+  if(homeProteinLeft) homeProteinLeft.textContent = String(left);
+  if(homeProteinCircle){
+    homeProteinCircle.style.setProperty("--deg", `${deg}deg`);
+  }
+    // ✅ Home "Check In" button state (add this BEFORE week dots section)
   if(homeCheckInBtn){
     const today = todayISO();
     const checked = attendance.has(today);
@@ -2225,9 +2189,6 @@ function refreshHome(){
     homeCheckInBtn.textContent = checked ? "✅ Checked In" : "✅ Check In";
     homeCheckInBtn.classList.toggle("ghost", checked);
   }
-
-  // ✅ Protein ring (today)
-  animateHomeProteinRing();
 
   // week dots + count
   const weekStart = weekStartDate(new Date());
@@ -2252,7 +2213,7 @@ function refreshHome(){
     homeWeekCount.textContent = `Workouts this week: ${attendedCount} / 7`;
   }
 
-  // focus text
+  // focus text (simple logic: pick label of today, or PR suggestion)
   if(homeFocus){
     if(day.rest){
       homeFocus.textContent = "Recovery + mobility. Light walk if you feel good.";
@@ -2263,40 +2224,6 @@ function refreshHome(){
     }
   }
 }
-
-  function animateHomeProteinRing({ restart=false } = {}){
-  const td = todayISO();
-  const obj = proteinMap?.[td] || { morning:0, lunch:0, pre:0, dinner:0, bed:0 };
-
-  const total =
-    (Number(obj.morning)||0) +
-    (Number(obj.lunch)||0) +
-    (Number(obj.pre)||0) +
-    (Number(obj.dinner)||0) +
-    (Number(obj.bed)||0);
-
-  const goal = getProteinGoal();
-  const left = Math.max(goal - total, 0);
-  const pct = Math.max(0, Math.min(1, goal ? (total / goal) : 0));
-  const deg = Math.round(pct * 360);
-
-  if(homeProteinLeft) homeProteinLeft.textContent = String(left);
-  if(!homeProteinCircle) return;
-
-  // Normal behavior: smooth transition from previous deg -> new deg
-  if(!restart){
-    homeProteinCircle.style.setProperty("--deg", `${deg}deg`);
-    return;
-  }
-
-  // Optional: force a restart animation (only when you explicitly want it)
-  homeProteinCircle.style.setProperty("--deg", "0deg");
-  requestAnimationFrame(()=>{
-    homeProteinCircle.style.setProperty("--deg", `${deg}deg`);
-  });
-}
-
-  
   const homeCheckInBtn = document.getElementById("homeCheckInBtn");
 
 function toggleTodayAttendance(){
@@ -2327,7 +2254,6 @@ const KEY_ACTIVE_SCREEN = "gym_active_screen_v1";
 const onEnterScreen = {
   home: () => {
     refreshHome();
-    animateHomeProteinRing(); // 👈 ADD THIS LINE
   },
 
   weight: () => {
@@ -3204,15 +3130,19 @@ pRemain.textContent = String(rem);
 [pMorning,pLunch,pPre,pDinner,pBed].forEach(inp=>{
   inp.addEventListener("input", ()=>{
     renderProteinTotals();
-    // ✅ do NOT update home ring while on protein screen
+    // live-fill the Home ring while typing (only makes sense for today)
+    if((pDate?.value || todayISO()) === todayISO()){
+      updateHomeProteinCirclePreview();
+    }
   });
 });
-
   
 pDate?.addEventListener("change", ()=>{
   loadProteinDay(pDate.value);
+  if((pDate.value || todayISO()) === todayISO()){
+    updateHomeProteinCirclePreview();
+  }
 });
-
 
 document.getElementById("pSaveBtn").addEventListener("click", ()=>{
   const d = pDate.value || todayISO();
