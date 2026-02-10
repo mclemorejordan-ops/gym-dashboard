@@ -1,117 +1,127 @@
-# Gym Dashboard (Offline Tracker)
+Gym Dashboard (Offline Tracker)
 
-A minimalist, iOS-style gym tracking dashboard that runs entirely in the browser (no login, no backend).
+A minimalist, iOS-style gym tracking dashboard that runs entirely in the browser
+(no login, no backend).
+
 Tracks weight, protein, attendance, routines, and lift progress with PR history.
 
-## Features
 
-- **Onboarding**
-  - Create profile (name, protein goal, week starts on, hide rest days)
-  - Create routine from templates (PPL, Upper/Lower, Full Body 3-day, Body Part Split, or blank)
+FEATURES
+--------
 
-- **Home Dashboard**
-  - Today’s workout (auto based on day of week)
-  - Weekly attendance dots + quick “Check In”
-  - Protein “grams left” ring + focus text
+ONBOARDING
+- Create profile (name, protein goal, week starts on, hide rest days)
+- Create routine from templates:
+  - PPL
+  - Upper / Lower
+  - Full Body (3-day)
+  - Body Part Split
+  - Blank
 
-- **Routine**
-  - Multiple routines (create / edit / duplicate / delete)
-  - Template routines can be converted into saved routines
-  - Mark days as rest days (hidden if enabled)
+HOME DASHBOARD
+- Today’s workout (auto based on day of week)
+- Weekly attendance dots + quick “Check In”
+- Protein “grams left” ring + focus text
 
-- **Log Sets**
-  - Log sets per exercise (weight + reps)
-  - Automatically calculates **lifetime max** + **PR flags**
-  - Exercise history modal
+ROUTINE
+- Multiple routines (create / edit / duplicate / delete)
+- Template routines converted into saved routines
+- Mark days as rest days (hidden if enabled)
 
-- **Progress**
-  - Table view + graph view (Chart.js)
-  - Graph metrics:
-    - Top Weight
-    - Estimated 1RM (Epley)
-    - Volume
-  - Download current graph as PNG
+LOG SETS
+- Log sets per exercise (weight + reps)
+- Automatically calculates lifetime max and PR flags
+- Exercise history modal
 
-- **Weight**
-  - Table view + graph view (Chart.js)
-  - Latest, delta, and 7-day average
+PROGRESS
+- Table view + graph view (Chart.js)
+- Graph metrics:
+  - Top Weight
+  - Estimated 1RM (Epley)
+  - Volume
+- Download current graph as PNG
 
-- **Attendance**
-  - Tap calendar days trained
-  - Monthly count + clear month
+WEIGHT
+- Table view + graph view (Chart.js)
+- Latest entry, delta, and 7-day average
 
-- **Protein**
-  - Daily meal breakdown + remaining goal
-  - Home ring updates live while typing (today)
+ATTENDANCE
+- Tap calendar days trained
+- Monthly count + clear month
 
-- **Backup / Import**
-  - Export full app data as JSON
-  - Import export JSON (overwrites current browser data)
+PROTEIN
+- Daily meal breakdown + remaining goal
+- Home ring updates live while typing (today)
 
-## Data Storage (Important)
+BACKUP / IMPORT
+- Export full app data as JSON
+- Import backup JSON (overwrites current browser data)
 
-This app stores data using **localStorage** on the device/browser you use.
+
+DATA STORAGE (IMPORTANT)
+------------------------
+This app stores data using localStorage on the device/browser you use.
+
 That means:
-- Clearing browser data clears your gym data.
-- Using a different browser/device starts fresh unless you import a backup.
+- Clearing browser data clears your gym data
+- Using a different browser/device starts fresh unless you import a backup
 
-**Recommended:** Use “Backup Now” in Settings regularly.
+Recommended:
+Use Settings → Backup Now regularly.
 
-## Run Locally
 
-### Option 1: Open directly
-Open `index.html` in your browser.
+RUN LOCALLY
+-----------
 
-> Note: Some browsers block certain features when running from `file://`.
-> If anything behaves oddly, use a local server.
+OPTION 1: OPEN DIRECTLY
+Open index.html in your browser.
 
-### Option 2: Run a simple local server (recommended)
+Note:
+Some browsers block features when running from file://
+If anything behaves oddly, use a local server.
 
-#### macOS / Linux
-```bash
+
+OPTION 2: SIMPLE LOCAL SERVER (RECOMMENDED)
+
+macOS / Linux:
 cd <repo-folder>
 python3 -m http.server 8000
 
-### Windows (PowerShell)
+Windows (PowerShell):
 cd <repo-folder>
 python -m http.server 8000
 
 Then open:
 http://localhost:8000
 
-### Project Structure
+
+PROJECT STRUCTURE
+-----------------
 index.html
 assets/
   css/
     styles.css
   js/
-    storage.js   # localStorage helper + keys
-    dom.js       # DOM helpers / shared selectors
-    utils.js     # general helpers (dates, formatting, normalization, etc.)
-    app.js       # main app logic, router, features
+    storage.js   (localStorage helper + keys)
+    dom.js       (DOM helpers / shared selectors)
+    utils.js     (general helpers: dates, formatting, normalization)
+    app.js       (main app logic, router, features)
 
-Troubleshooting
-Blank screen
 
-Open DevTools Console and check for errors.
-Confirm script order in index.html:
-Chart.js
-storage.js
-dom.js
-utils.js
-app.js
+TROUBLESHOOTING
+---------------
 
-Data missing
+BLANK SCREEN
+- Open DevTools Console
+- Check for errors
+- Confirm script order in index.html:
+  1. Chart.js
+  2. storage.js
+  3. dom.js
+  4. utils.js
+  5. app.js
 
-You may be on a different browser/device.
-Check Settings → Storage info.
-Restore using Import if you have a backup JSON.
-
-### 📋 END COPY
----
-
-## STEP 3 — Save & commit
-Run:
-```bash
-git add README.md
-git commit -m "docs: clean up README formatting"
+DATA MISSING
+- You may be on a different browser/device
+- Check Settings → Storage info
+- Restore using Import if you have a backup JSON
