@@ -1,3 +1,6 @@
+// Holds the active Service Worker registration (if available)
+window.__SW_REG__ = null;
+
 window.addEventListener("error", (e)=>{
   const msg = e?.message || String(e);
   const file = e?.filename || "";
@@ -15,33 +18,31 @@ window.addEventListener("error", (e)=>{
 });
 
 /* ---------------------------
-   PWA: Service Worker registration
-   - Runs after initial load
-   - Safe (does not block app boot)
+   Global dependency check
+   - Delay until DOM + scripts are loaded
 ---------------------------- */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("./sw.js", { scope: "./" })
-      .catch((e) => console.warn("SW register failed:", e));
-  });
-}
-
-
-(function(){
+document.addEventListener("DOMContentLoaded", ()=>{
   const required = [
     "LS",
-    "KEY_PROFILE","KEY_ROUTINES","KEY_ACTIVE_ROUTINE","KEY_ACTIVE_SCREEN",
-    "KEY_BW","KEY_ATT","KEY_PRO","KEY_LIFTS",
-    "todayISO","parseISO","localISODate","pad2","sameMonth",
-    "uid","normExName","cleanExerciseName","canonicalExerciseName"
+    "KEY_PROFILE",
+    "KEY_ROUTINES",
+    "KEY_ACTIVE_ROUTINE",
+    "KEY_ACTIVE_SCREEN",
+    "KEY_BW",
+    "KEY_ATT",
+    "KEY_PRO",
+    "KEY_LIFTS"
   ];
 
-  const missing = required.filter(k => typeof window[k] === "undefined");
+  const missing = required.filter(k => !(k in window));
   if(missing.length){
-    throw new Error("Missing globals (check storage.js/dom.js/utils.js): " + missing.join(", "));
+    throw new Error(
+      "Missing globals (check storage.js/dom.js/utils.js): " +
+      missing.join(", ")
+    );
   }
-})();
+});
+
 
 let modalDepth = 0;
 let _scrollLockY = 0;
@@ -3182,13 +3183,36 @@ function routeInitialScreen(){
   showScreen(localStorage.getItem(KEY_ACTIVE_SCREEN) || "home");
 }
 
-  /* ---------------------------
+/* ---------------------------
    App Version + Update Banner
-   - bump APP_VERSION on each deploy
 ---------------------------- */
-function showUpdateBanner(){
-  const b = document.getElementById("updateBanner");
-  if(b) b.style.display = "block";
+function showUpdateBanner(reg = window.__SW_REG__){
+  const banner = document.getElementById("updateBanner");
+  const refreshBtn = document.getElementById("updateRefreshBtn");
+  if(!banner || !refreshBtn) return;
+
+  banner.style.display = "block";
+
+  // Always ensure Refresh button uses SW-first if available
+  refreshBtn.onclick = async () => {
+    const r = reg || window.__SW_REG__;
+
+    // If SW update is waiting, activate it first
+    if(r && r.waiting){
+      r.waiting.postMessage("SKIP_WAITING");
+
+      // Reload once the new SW takes control (run once)
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        () => window.location.reload(),
+        { once:true }
+      );
+      return;
+    }
+
+    // Fallback: normal reload
+    window.location.reload();
+  };
 }
 
 function hideUpdateBanner(){
@@ -3236,14 +3260,6 @@ async function checkForUpdate(){
   }
 }
 
-
-document.addEventListener("click", (e)=>{
-  const btn = e.target.closest("#updateRefreshBtn");
-  if(!btn) return;
-
-  // force a reload (browser will fetch latest files)
-  location.reload();
-});
   
 /* ---------------------------
    Init (single pass)
@@ -3278,6 +3294,40 @@ function init(){
 
   checkForUpdate();        // ✅ ADD THIS LINE
 
+/* ---------------------------
+   PWA: Service Worker registration + update flow
+---------------------------- */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", async ()=>{
+    try{
+      const reg = await navigator.serviceWorker.register("./sw.js", { scope:"./" });
+
+      // ✅ store globally (your file already expects this)
+      window.__SW_REG__ = reg;
+
+      // If already waiting, show banner immediately
+      if(reg.waiting){
+        showUpdateBanner(); // uses global window.__SW_REG__
+      }
+
+      // Listen for future updates
+      reg.addEventListener("updatefound", ()=>{
+        const newSW = reg.installing;
+        if(!newSW) return;
+
+        newSW.addEventListener("statechange", ()=>{
+          if(newSW.state === "installed" && navigator.serviceWorker.controller){
+            // update is ready + waiting
+            showUpdateBanner();
+          }
+        });
+      });
+
+    }catch(e){
+      console.warn("SW register failed:", e);
+    }
+  });
+}
 
   // Route LAST (this calls showScreen which renders what’s needed)
   routeInitialScreen();
