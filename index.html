@@ -31,6 +31,52 @@
   --bad:#ff6b6b;
   --warn:#ffd166;
 }
+/* ===========================
+   iOS-like THEMES (Option A)
+   - set via: document.documentElement.dataset.theme = "ios-green" etc
+=========================== */
+
+html[data-theme="ios-green"]{
+  --accent:#34C759;            --accent-rgb:52,199,89;     /* iOS Green */
+  --bg0:#0B0C0F;               --bg1:#14161C;
+  --card:#12141A;              --line:#232634;
+  --text:#F5F6F7;              --muted:#A7ACB3;
+}
+
+html[data-theme="ios-blue"]{
+  --accent:#0A84FF;            --accent-rgb:10,132,255;    /* iOS Blue */
+  --bg0:#070A12;               --bg1:#10192A;
+  --card:#0E1623;              --line:#20314A;
+  --text:#F5F7FF;              --muted:#A9B4C7;
+}
+
+html[data-theme="ios-purple"]{
+  --accent:#AF52DE;            --accent-rgb:175,82,222;    /* iOS Purple */
+  --bg0:#0B0812;               --bg1:#161027;
+  --card:#141022;              --line:#2B2140;
+  --text:#F6F3FF;              --muted:#B8AFCB;
+}
+
+html[data-theme="ios-orange"]{
+  --accent:#FF9F0A;            --accent-rgb:255,159,10;    /* iOS Orange */
+  --bg0:#120B05;               --bg1:#1F140A;
+  --card:#17110B;              --line:#3A2A16;
+  --text:#FFF7EF;              --muted:#C7B8AB;
+}
+
+html[data-theme="ios-pink"]{
+  --accent:#FF375F;            --accent-rgb:255,55,95;     /* iOS Pink */
+  --bg0:#12070B;               --bg1:#1C0F14;
+  --card:#160D12;              --line:#3A1E28;
+  --text:#FFF5F7;              --muted:#C7AEB7;
+}
+
+html[data-theme="ios-mono"]{
+  --accent:#8E8E93;            --accent-rgb:142,142,147;   /* iOS Gray */
+  --bg0:#0B0B0C;               --bg1:#141416;
+  --card:#121214;              --line:#26262A;
+  --text:#F5F6F7;              --muted:#A9A9AF;
+}
 
 /* ===========================
    GLOBAL iOS INPUT ZOOM KILL
@@ -1557,6 +1603,16 @@ header{
           <option value="0">OFF</option>
         </select>
       </label>
+<label>Theme
+  <select id="setTheme">
+    <option value="ios-green">iOS Green (Default)</option>
+    <option value="ios-blue">iOS Blue</option>
+    <option value="ios-purple">iOS Purple</option>
+    <option value="ios-orange">iOS Orange</option>
+    <option value="ios-pink">iOS Pink</option>
+    <option value="ios-mono">iOS Mono</option>
+  </select>
+</label>
 
       <button id="saveProfileBtn">Save Profile</button>
     </div>
@@ -1889,6 +1945,8 @@ const setProteinGoal = document.getElementById("setProteinGoal");
 const setWeekStart = document.getElementById("setWeekStart");
 const setHideRest = document.getElementById("setHideRest");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
+const setTheme = document.getElementById("setTheme");
+
 
 const storageInfo = document.getElementById("storageInfo");
 const storageWarn = document.getElementById("storageWarn");
@@ -1901,6 +1959,11 @@ function bytesToNice(n){
   while(v>=1024 && i<u.length-1){ v/=1024; i++; }
   return `${v.toFixed(i===0?0:1)} ${u[i]}`;
 }
+  function applyTheme(themeId){
+  const t = String(themeId || "ios-green").trim() || "ios-green";
+  document.documentElement.setAttribute("data-theme", t);
+}
+
 
 function renderStorageInfo(){
   if(!storageInfo) return;
@@ -1924,15 +1987,20 @@ function hydrateSettingsUI(){
   if(setProteinGoal) setProteinGoal.value = String(getProteinGoal());
   if(setWeekStart) setWeekStart.value = profile.weekStart || "mon";
   if(setHideRest) setHideRest.value = profile.hideRestDays ? "1" : "0";
+  if(setTheme) setTheme.value = profile.theme || "ios-green";
 }
 
-saveProfileBtn?.addEventListener("click", ()=>{
-  saveProfile({
-    name: String(setName?.value || "").trim(),
-    proteinGoal: Number(setProteinGoal?.value || 240) || 240,
-    weekStart: (setWeekStart?.value === "sun") ? "sun" : "mon",
-    hideRestDays: (setHideRest?.value === "0") ? false : true
-  });
+
+saveProfile({
+  name: String(setName?.value || "").trim(),
+  proteinGoal: Number(setProteinGoal?.value || 240) || 240,
+  weekStart: (setWeekStart?.value === "sun") ? "sun" : "mon",
+  hideRestDays: (setHideRest?.value === "0") ? false : true,
+  theme: String(setTheme?.value || "ios-green")
+});
+
+applyTheme(profile.theme);
+
 
   // update protein screen title immediately
   const pt = document.getElementById("proteinTitle");
@@ -2069,12 +2137,16 @@ obRoutineCreateBtn?.addEventListener("click", ()=>{
 function defaultProfile(){
   return {
     name: "",
-    units: "lbs",        // ✅ lbs only
+    units: "lbs",
     proteinGoal: 240,
-    weekStart: "mon",    // "mon" | "sun"
-    hideRestDays: true
+    weekStart: "mon",
+    hideRestDays: true,
+
+    // ✅ Theme (Option A)
+    theme: "ios-green"
   };
 }
+
 
 
 function loadProfile(){
@@ -2087,10 +2159,13 @@ function loadProfile(){
   // normalize
   return {
   name: String(p.name || ""),
-  units: "lbs", // ✅ force lbs only (no kg supported)
+  units: "lbs",
   proteinGoal: Number(p.proteinGoal || 240) || 240,
   weekStart: (p.weekStart === "sun") ? "sun" : "mon",
-  hideRestDays: (p.hideRestDays === false) ? false : true
+  hideRestDays: (p.hideRestDays === false) ? false : true,
+
+  // ✅ theme safety
+  theme: String(p.theme || "ios-green")
 };
 }
 
@@ -4998,6 +5073,8 @@ document.addEventListener("click", (e)=>{
 function init(){
   // Load core state
   profile = loadProfile();
+  applyTheme(profile.theme);
+
 
   ({routines, activeId: activeRoutineId} = loadRoutines());
 
