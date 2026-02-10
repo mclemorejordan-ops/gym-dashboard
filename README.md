@@ -69,3 +69,49 @@ Open `index.html` in your browser.
 
 #### macOS / Linux
 ```bash
+cd <repo-folder>
+python3 -m http.server 8000
+
+### Windows (PowerShell)
+cd <repo-folder>
+python -m http.server 8000
+
+Then open:
+http://localhost:8000
+
+### Project Structure
+index.html
+assets/
+  css/
+    styles.css
+  js/
+    storage.js   # localStorage helper + keys
+    dom.js       # DOM helpers / shared selectors
+    utils.js     # general helpers (dates, formatting, normalization, etc.)
+    app.js       # main app logic, router, features
+
+Troubleshooting
+Blank screen
+
+Open DevTools Console and check for errors.
+Confirm script order in index.html:
+Chart.js
+storage.js
+dom.js
+utils.js
+app.js
+
+Data missing
+
+You may be on a different browser/device.
+Check Settings → Storage info.
+Restore using Import if you have a backup JSON.
+
+### 📋 END COPY
+---
+
+## STEP 3 — Save & commit
+Run:
+```bash
+git add README.md
+git commit -m "docs: clean up README formatting"
