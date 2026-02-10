@@ -12,70 +12,26 @@
   <style>
     
   :root{
-  --accent:#34C759;
-  --accent-rgb:52,199,89;
+  --bg0:#070708;
+  --bg1:#0b0b0c;
 
-  --bg0:#0B0C0F;
-  --bg1:#15171C;
+  --card:#121214;
+  --card-soft: rgba(18,18,20,.88);
 
-  --card:#12141A;
-  --line:#232634;
+  --text:#f5f6f7;
+  --muted:#9aa0a6;
 
-  --text:#F5F6F7;
-  --muted:#A7ACB3;
+  --line: rgba(255,255,255,.08);
 
-  --radius: 18px;
-  --shadow: 0 10px 26px rgba(0,0,0,.35);
-
-  --good:#7CFC00;
-  --bad:#ff6b6b;
+  --accent:#7CFC00;   /* Apple Fitness–style green */
+  --danger:#ff6b6b;
   --warn:#ffd166;
-}
-/* ===========================
-   iOS-like THEMES (Option A)
-   - set via: document.documentElement.dataset.theme = "ios-green" etc
-=========================== */
 
-html[data-theme="ios-green"]{
-  --accent:#34C759;            --accent-rgb:52,199,89;     /* iOS Green */
-  --bg0:#0B0C0F;               --bg1:#14161C;
-  --card:#12141A;              --line:#232634;
-  --text:#F5F6F7;              --muted:#A7ACB3;
-}
+  --good: var(--accent);
+  --bad:  var(--danger);
 
-html[data-theme="ios-blue"]{
-  --accent:#0A84FF;            --accent-rgb:10,132,255;    /* iOS Blue */
-  --bg0:#070A12;               --bg1:#10192A;
-  --card:#0E1623;              --line:#20314A;
-  --text:#F5F7FF;              --muted:#A9B4C7;
-}
-
-html[data-theme="ios-purple"]{
-  --accent:#AF52DE;            --accent-rgb:175,82,222;    /* iOS Purple */
-  --bg0:#0B0812;               --bg1:#161027;
-  --card:#141022;              --line:#2B2140;
-  --text:#F6F3FF;              --muted:#B8AFCB;
-}
-
-html[data-theme="ios-orange"]{
-  --accent:#FF9F0A;            --accent-rgb:255,159,10;    /* iOS Orange */
-  --bg0:#120B05;               --bg1:#1F140A;
-  --card:#17110B;              --line:#3A2A16;
-  --text:#FFF7EF;              --muted:#C7B8AB;
-}
-
-html[data-theme="ios-pink"]{
-  --accent:#FF375F;            --accent-rgb:255,55,95;     /* iOS Pink */
-  --bg0:#12070B;               --bg1:#1C0F14;
-  --card:#160D12;              --line:#3A1E28;
-  --text:#FFF5F7;              --muted:#C7AEB7;
-}
-
-html[data-theme="ios-mono"]{
-  --accent:#8E8E93;            --accent-rgb:142,142,147;   /* iOS Gray */
-  --bg0:#0B0B0C;               --bg1:#141416;
-  --card:#121214;              --line:#26262A;
-  --text:#F5F6F7;              --muted:#A9A9AF;
+  --radius:16px;
+  --shadow: 0 14px 40px rgba(0,0,0,.45);
 }
 
 /* ===========================
@@ -131,17 +87,13 @@ html{
 
 #exPickList{
   margin-top: 10px;
-
-  /* ✅ Theme-based border */
-  border: 1px solid var(--line);
-
+  border: 1px solid #202124;
   border-radius: 12px;
 
   max-height: 320px;      /* adjust if needed */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-
 
     /* ===========================
    iOS PWA INPUT ZOOM FIX
@@ -208,19 +160,12 @@ html{
 /* the modal card */
 :is(#logModal,#histModal,#rtModal,#exPickModal,#batchAddModal) > div{
   animation: modalPopIn .14s ease;
-
-  /* ✅ Theme-based modal glass */
-  background: color-mix(in srgb, var(--card) 92%, rgba(var(--accent-rgb), 0.08)) !important;
-
+  background: rgba(18,18,20,.92) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-
   box-shadow: 0 16px 50px rgba(0,0,0,.55);
-
-  /* ✅ Theme-based border */
-  border: 1px solid color-mix(in srgb, var(--line) 86%, rgba(var(--accent-rgb), 0.12)) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
 }
-
 
 /* keyframes */
 @keyframes modalFadeIn{
@@ -247,88 +192,10 @@ body{
   color: var(--text);
 
   background:
-    radial-gradient(1200px 800px at 50% 140px, rgba(var(--accent-rgb), .08), transparent 72%),
-    radial-gradient(1200px 900px at 50% 65%, rgba(var(--accent-rgb), .03), transparent 70%),
+    radial-gradient(1200px 800px at 50% 140px, rgba(124,252,0,.08), transparent 72%),
+    radial-gradient(1200px 900px at 50% 65%, rgba(124,252,0,.03), transparent 70%),
     linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 55%, var(--bg0) 120%);
-  background-attachment: fixed;
-}
-
-    /* ===========================
-   OPTION A — 6 iOS-like themes
-   (driven by data-theme)
-=========================== */
-
-/* defaults (fallback) */
-:root{
-  --radius: 18px;
-  --shadow: 0 10px 26px rgba(0,0,0,.35);
-  --text: #f5f6f7;
-  --muted: #9aa0a6;
-  --line: rgba(255,255,255,.10);
-  --card: rgba(18,18,20,.86);
-  --bg0: #0b0b0c;
-  --bg1: #0a0d0b;
-
-  --good:#7CFC00;
-  --bad:#ff6b6b;
-  --warn:#ffd166;
-
-  --accent: #7CFC00;
-  --accent-rgb: 124,252,0;
-}
-
-/* GREEN */
-html[data-theme="ios-green"]{
-  --bg0:#0b0b0c; --bg1:#0a120b;
-  --card: rgba(18,18,20,.86);
-  --line: rgba(255,255,255,.10);
-  --text:#f5f6f7; --muted:#9aa0a6;
-  --accent:#7CFC00; --accent-rgb:124,252,0;
-}
-
-/* BLUE */
-html[data-theme="ios-blue"]{
-  --bg0:#0b0b0c; --bg1:#081022;
-  --card: rgba(18,18,20,.86);
-  --line: rgba(255,255,255,.10);
-  --text:#f5f6f7; --muted:#9aa0a6;
-  --accent:#0A84FF; --accent-rgb:10,132,255;
-}
-
-/* PURPLE */
-html[data-theme="ios-purple"]{
-  --bg0:#0b0b0c; --bg1:#140a22;
-  --card: rgba(18,18,20,.86);
-  --line: rgba(255,255,255,.10);
-  --text:#f5f6f7; --muted:#9aa0a6;
-  --accent:#AF52DE; --accent-rgb:175,82,222;
-}
-
-/* ORANGE */
-html[data-theme="ios-orange"]{
-  --bg0:#0b0b0c; --bg1:#201106;
-  --card: rgba(18,18,20,.86);
-  --line: rgba(255,255,255,.10);
-  --text:#f5f6f7; --muted:#9aa0a6;
-  --accent:#FF9F0A; --accent-rgb:255,159,10;
-}
-
-/* PINK */
-html[data-theme="ios-pink"]{
-  --bg0:#0b0b0c; --bg1:#220a14;
-  --card: rgba(18,18,20,.86);
-  --line: rgba(255,255,255,.10);
-  --text:#f5f6f7; --muted:#9aa0a6;
-  --accent:#FF2D55; --accent-rgb:255,45,85;
-}
-
-/* MONO */
-html[data-theme="ios-mono"]{
-  --bg0:#0b0b0c; --bg1:#0b0b0c;
-  --card: rgba(20,20,22,.86);
-  --line: rgba(255,255,255,.08);
-  --text:#f5f6f7; --muted:#a7aab0;
-  --accent:#8E8E93; --accent-rgb:142,142,147;
+  background-attachment: fixed; /* ✅ makes it feel like one continuous “canvas” */
 }
 
 
@@ -385,10 +252,10 @@ main > *{
       .grid2{grid-template-columns: 1fr 1fr;}
     }
    .card{
-  background: var(--card);
-  border: 1px solid color-mix(in srgb, var(--line) 88%, rgba(var(--accent-rgb), 0.10));
+  background: rgba(18,18,20,.72);   /* ✅ translucent so the body gradient shows through */
+  border: 1px solid rgba(255,255,255,.08);
   border-radius: var(--radius);
-  padding: 14px;
+  padding:14px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -413,28 +280,22 @@ main > *{
       min-width: 120px;
       flex:1 1 140px;
     }
-    input, select, textarea{
-  background: color-mix(in srgb, var(--card) 92%, rgba(var(--accent-rgb), 0.06));
-  color: var(--text);
-  border: 1px solid color-mix(in srgb, var(--line) 88%, rgba(var(--accent-rgb), 0.10));
-  border-radius: 10px;
-  padding: 10px 10px;
-  outline: none;
-  font-size: 14px;
-}
-
-button{
-  cursor: pointer;
-  background: color-mix(in srgb, var(--card) 90%, rgba(var(--accent-rgb), 0.10));
-  color: var(--text);
-  border: 1px solid color-mix(in srgb, var(--line) 88%, rgba(var(--accent-rgb), 0.12));
-  border-radius: 10px;
-  padding: 10px 10px;
-  font-weight: 600;
-}
-button:hover{
-  border-color: color-mix(in srgb, var(--line) 70%, rgba(var(--accent-rgb), 0.25));
-}
+    input, select, button, textarea{
+      background:#0f0f10;
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 10px;
+      outline:none;
+      font-size:14px;
+    }
+    textarea{min-height:38px; resize:vertical;}
+    input::placeholder{color:#666}
+    button{
+      cursor:pointer;
+      background:#0f0f10;
+      font-weight:600;
+    }
     button:hover{border-color:#2a2b2f}
     .btnRow{
       display:flex;
@@ -473,7 +334,7 @@ button:hover{
       font-size:11px;
       text-transform:uppercase;
       letter-spacing:.6px;
-      background: color-mix(in srgb, var(--card) 88%, rgba(var(--accent-rgb), 0.06));
+      background:#0f0f10;
     }
     tr:last-child td{border-bottom:none}
     .mono{font-variant-numeric: tabular-nums;}
@@ -495,7 +356,7 @@ button:hover{
       font-size:12px;
       cursor:pointer;
       color:var(--muted);
-      background: var(--card);
+      background:#0f0f10;
       user-select:none;
       display:inline-flex;
       gap:8px;
@@ -510,17 +371,14 @@ button:hover{
       gap:8px;
     }
     .exerciseItem{
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:10px;
-
-  /* ✅ Theme-based surface instead of hard-coded #0f0f10 */
-  background: color-mix(in srgb, var(--card) 92%, rgba(var(--accent-rgb), 0.05));
-
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  align-items:flex-start;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      background:#0f0f10;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
     }
     .exerciseItem .left{
       display:flex;
@@ -551,15 +409,13 @@ button:hover{
       color:var(--muted);
     }
     .badge{
-  display:inline-block;
-  padding:4px 8px;
-  border:1px solid var(--line);
-  border-radius:999px;
-  font-size:11px;
-  color:var(--text);
-
-  /* ✅ Theme-based surface */
-  background: color-mix(in srgb, var(--card) 88%, rgba(var(--accent-rgb), 0.06));
+      display:inline-block;
+      padding:4px 8px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      font-size:11px;
+      color:var(--text);
+      background:#121214;
     }
     .calendar{
       display:grid;
@@ -574,23 +430,20 @@ button:hover{
       text-align:center;
       padding:4px 0;
     }
-   .day{
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:10px 0;
-  text-align:center;
-  font-size:12px;
-
-  /* ✅ Theme-based surface */
-  background: color-mix(in srgb, var(--card) 92%, rgba(var(--accent-rgb), 0.05));
-
-  cursor:pointer;
-}
+    .day{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 0;
+      text-align:center;
+      font-size:12px;
+      background:#0f0f10;
+      cursor:pointer;
+    }
     .day.off{opacity:.35; cursor:default;}
-   .day.attended{
-  border-color:#2a2b2f;
-  outline:2px solid rgba(var(--accent-rgb), .25);
-}
+    .day.attended{
+      border-color:#2a2b2f;
+      outline:2px solid rgba(124,252,0,.25);
+    }
     .day.attended .dot{
       display:block;
       margin:6px auto 0;
@@ -611,15 +464,13 @@ button:hover{
     }
     .ghost:hover{border-color:var(--line)}
     .notice{
-  border:1px dashed color-mix(in srgb, var(--line) 75%, rgba(var(--accent-rgb), 0.10));
-  border-radius:12px;
-  padding:10px;
-  color:var(--muted);
-  font-size:12px;
-
-  /* ✅ Theme-based surface */
-  background: color-mix(in srgb, var(--card) 92%, rgba(var(--accent-rgb), 0.05));
-}
+      border:1px dashed #2a2b2f;
+      border-radius:12px;
+      padding:10px;
+      color:var(--muted);
+      font-size:12px;
+      background:#0f0f10;
+    }
     .clickEx{cursor:pointer; text-decoration:underline; text-decoration-color:#2a2b2f;}
     .clickEx:hover{opacity:.85;}
     .divider{
@@ -644,8 +495,8 @@ button:hover{
 .exPickItem:last-child{border-bottom:none;}
 .exPickItem:hover{opacity:.85;}
 .exPickItem.active{
-  outline:2px solid rgba(var(--accent-rgb), .25);
-  background: color-mix(in srgb, var(--card) 92%, rgba(var(--accent-rgb), 0.05));
+  outline:2px solid rgba(124,252,0,.25);
+  background:#0f0f10;
 }
     .exPickRow{
   display:flex;
@@ -663,7 +514,7 @@ button:hover{
   font-size:12px;
 }
 .exPickItem.active .exPickCheck{
-  border-color: rgba(var(--accent-rgb), .35);
+  border-color: rgba(124,252,0,.35);
 }
     /* ---------------------------
    APP SCREENS (Option A)
@@ -762,12 +613,12 @@ button:hover{
   text-align:left;
 }
 .primary{
-  background: rgba(var(--accent-rgb), .10);
-  border-color: rgba(var(--accent-rgb), .28);
+  background: rgba(124,252,0,.10);
+  border-color: rgba(124,252,0,.28);
   color: var(--text);
 }
 .primary:hover{
-  border-color: rgba(var(--accent-rgb), .45);
+  border-color: rgba(124,252,0,.45);
 }
 /* ===========================
    HOME APP TILES (visual only)
@@ -779,8 +630,8 @@ button:hover{
 
 /* make each Home button feel like a real app tile */
 .homeGrid button{
-  background: var(--card) !important;
-  border: 1px solid var(--line) !important;
+  background: rgba(18,18,20,.86) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
   box-shadow: 0 10px 26px rgba(0,0,0,.35) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -804,13 +655,12 @@ button:hover{
   inset:-2px;
   background: radial-gradient(
     420px 220px at 18% 0%,
-    rgba(var(--accent-rgb), .12),
+    rgba(124,252,0,.12),
     transparent 55%
   );
   opacity: .7;
   pointer-events:none;
 }
-
 
 /* tap / hover feedback */
 .homeGrid button:hover{
@@ -976,8 +826,8 @@ main{
 
 .navBtn.active{
   color: var(--text);
-  background: rgba(var(--accent-rgb), .06);
-  border-color: rgba(var(--accent-rgb), .22);
+  background: rgba(124,252,0,.06);
+  border-color: rgba(124,252,0,.22);
 }
 
 /* optional: reduce header prominence when bottom nav exists */
@@ -1115,15 +965,16 @@ header{
   background: rgba(15,15,16,.9);
 }
 #rtModal #rtDayTabs .tab.active{
-  background: rgba(var(--accent-rgb), .08);
-  border-color: rgba(var(--accent-rgb), .25);
+  background: rgba(124,252,0,.08);
+  border-color: rgba(124,252,0,.25);
 }
+
 /* Add Exercise CTA – looks like a button tile */
 #rtModal .rtAddWrap{
-  border: 1px dashed rgba(var(--accent-rgb), .25);
+  border: 1px dashed rgba(124,252,0,.25);
   border-radius: 14px;
   padding: 12px;
-  background: rgba(var(--accent-rgb), .04);
+  background: rgba(124,252,0,.04);
   display:flex;
   gap:10px;
   align-items:flex-end;
@@ -1207,11 +1058,11 @@ header{
 }
 
 #rtModal #rtSaveBtn{
-  background: rgba(var(--accent-rgb), .12);
-  border-color: rgba(var(--accent-rgb), .30);
+  background: rgba(124,252,0,.12);
+  border-color: rgba(124,252,0,.30);
 }
 #rtModal #rtSaveBtn:hover{
-  border-color: rgba(var(--accent-rgb), .45);
+  border-color: rgba(124,252,0,.45);
 }
 
 
@@ -1679,16 +1530,6 @@ header{
           <option value="0">OFF</option>
         </select>
       </label>
-<label>Theme
-  <select id="setTheme">
-    <option value="ios-green">iOS Green (Default)</option>
-    <option value="ios-blue">iOS Blue</option>
-    <option value="ios-purple">iOS Purple</option>
-    <option value="ios-orange">iOS Orange</option>
-    <option value="ios-pink">iOS Pink</option>
-    <option value="ios-mono">iOS Mono</option>
-  </select>
-</label>
 
       <button id="saveProfileBtn">Save Profile</button>
     </div>
@@ -2021,8 +1862,6 @@ const setProteinGoal = document.getElementById("setProteinGoal");
 const setWeekStart = document.getElementById("setWeekStart");
 const setHideRest = document.getElementById("setHideRest");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
-const setTheme = document.getElementById("setTheme");
-
 
 const storageInfo = document.getElementById("storageInfo");
 const storageWarn = document.getElementById("storageWarn");
@@ -2035,11 +1874,6 @@ function bytesToNice(n){
   while(v>=1024 && i<u.length-1){ v/=1024; i++; }
   return `${v.toFixed(i===0?0:1)} ${u[i]}`;
 }
-  function applyTheme(themeId){
-  const t = String(themeId || "ios-green").trim() || "ios-green";
-  document.documentElement.setAttribute("data-theme", t);
-}
-
 
 function renderStorageInfo(){
   if(!storageInfo) return;
@@ -2063,20 +1897,15 @@ function hydrateSettingsUI(){
   if(setProteinGoal) setProteinGoal.value = String(getProteinGoal());
   if(setWeekStart) setWeekStart.value = profile.weekStart || "mon";
   if(setHideRest) setHideRest.value = profile.hideRestDays ? "1" : "0";
-  if(setTheme) setTheme.value = profile.theme || "ios-green";
 }
 
-
-saveProfile({
-  name: String(setName?.value || "").trim(),
-  proteinGoal: Number(setProteinGoal?.value || 240) || 240,
-  weekStart: (setWeekStart?.value === "sun") ? "sun" : "mon",
-  hideRestDays: (setHideRest?.value === "0") ? false : true,
-  theme: String(setTheme?.value || "ios-green")
-});
-
-applyTheme(profile.theme);
-
+saveProfileBtn?.addEventListener("click", ()=>{
+  saveProfile({
+    name: String(setName?.value || "").trim(),
+    proteinGoal: Number(setProteinGoal?.value || 240) || 240,
+    weekStart: (setWeekStart?.value === "sun") ? "sun" : "mon",
+    hideRestDays: (setHideRest?.value === "0") ? false : true
+  });
 
   // update protein screen title immediately
   const pt = document.getElementById("proteinTitle");
@@ -2213,16 +2042,12 @@ obRoutineCreateBtn?.addEventListener("click", ()=>{
 function defaultProfile(){
   return {
     name: "",
-    units: "lbs",
+    units: "lbs",        // ✅ lbs only
     proteinGoal: 240,
-    weekStart: "mon",
-    hideRestDays: true,
-
-    // ✅ Theme (Option A)
-    theme: "ios-green"
+    weekStart: "mon",    // "mon" | "sun"
+    hideRestDays: true
   };
 }
-
 
 
 function loadProfile(){
@@ -2235,13 +2060,10 @@ function loadProfile(){
   // normalize
   return {
   name: String(p.name || ""),
-  units: "lbs",
+  units: "lbs", // ✅ force lbs only (no kg supported)
   proteinGoal: Number(p.proteinGoal || 240) || 240,
   weekStart: (p.weekStart === "sun") ? "sun" : "mon",
-  hideRestDays: (p.hideRestDays === false) ? false : true,
-
-  // ✅ theme safety
-  theme: String(p.theme || "ios-green")
+  hideRestDays: (p.hideRestDays === false) ? false : true
 };
 }
 
@@ -5149,8 +4971,6 @@ document.addEventListener("click", (e)=>{
 function init(){
   // Load core state
   profile = loadProfile();
-  applyTheme(profile.theme);
-
 
   ({routines, activeId: activeRoutineId} = loadRoutines());
 
