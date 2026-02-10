@@ -63,6 +63,24 @@
   -webkit-overflow-scrolling: touch;
 }
 
+    /* ===========================
+   iOS PWA INPUT ZOOM FIX
+   Prevents auto-zoom on focus
+=========================== */
+
+/* Exercise picker inputs */
+#exPickModal input,
+#exPickModal select,
+#exPickModal textarea{
+  font-size: 16px !important;
+}
+
+/* Batch add modal inputs (just in case) */
+#batchAddModal input,
+#batchAddModal select{
+  font-size: 16px !important;
+}
+    
 
 :is(#logModal,#histModal,#rtModal,#exPickModal,#batchAddModal) > div{
   max-height: calc(100dvh - 32px); /* true mobile viewport height */
