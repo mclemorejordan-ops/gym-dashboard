@@ -563,6 +563,45 @@ main > *{
   border-radius:inherit;
   background: conic-gradient(var(--good) var(--deg, 0deg), #202124 0deg);
 }
+    /* ===========================
+   ANIMATED RING SWEEP (Home protein ring)
+   - animates smoothly when --deg updates
+   - adds subtle “shine” + anti-jitter
+=========================== */
+
+/* smooth rotation of the conic-gradient layer */
+#homeProteinCircle::before{
+  /* important: animate the LAYER, not the custom property */
+  transition: transform 520ms cubic-bezier(.2,.9,.2,1);
+  will-change: transform;
+  #homeProteinCircle::before{ transform: rotate(calc(var(--deg, 0deg) - 90deg)); }
+}
+
+/* optional: subtle ring sheen (iOS-ish) */
+#homeProteinCircle::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background: radial-gradient(120px 90px at 30% 20%,
+    rgba(255,255,255,.10),
+    transparent 55%);
+  opacity:.55;
+}
+
+/* if you want the gray portion to be “fixed” and only sweep the green:
+   keep the gradient static and rotate the whole ring layer (above) */
+.proCircle::before{
+  background: conic-gradient(var(--good) 0deg var(--deg, 0deg), #202124 0deg);
+}
+
+/* reduced motion support */
+@media (prefers-reduced-motion: reduce){
+  #homeProteinCircle::before{
+    transition: none !important;
+  }
+}
 
 /* ensure inner content is above the gradient */
 .proCircleInner{
