@@ -849,6 +849,27 @@ header{
   overflow: hidden;                    /* lets sticky footer look clean */
 }
 
+ /* ===========================
+   ROUTINE EDITOR – RESTORE SCROLL
+   (visual-only, keeps JS intact)
+=========================== */
+
+#rtModal > div{
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  overflow: hidden !important; /* header + footer stay fixed */
+}
+
+/* 👇 THIS is the scrollable area */
+#rtModal .rtBody{
+  flex: 1 1 auto;
+  min-height: 0;               /* REQUIRED for flex scroll */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+
 /* Header row inside Routine Editor */
 #rtModal .rtHead{
   position: sticky;
