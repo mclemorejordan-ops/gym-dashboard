@@ -1465,7 +1465,7 @@ header{
 
       <div class="row">
   <label style="min-width:280px; flex:1 1 280px;">Add Exercise (suggestions)
-    <input id="rtAddExName" list="rtExSuggestions" placeholder="Start typing a known exercise name..." />
+    <input id="rtAddExName" list="rtExSuggestions" placeholder="Tap to pick an exercise..." readonly />
     <datalist id="rtExSuggestions"></datalist>
   </label>
   <label>Sets
@@ -4169,15 +4169,46 @@ const rtExList = document.getElementById("rtExList");
 const rtAddMultiBtn = document.getElementById("rtAddMultiBtn");
 const rtExSuggestions = document.getElementById("rtExSuggestions");
 
-  rtAddExName.addEventListener("focus", ()=>{
+  function openAddExercisePicker(){
+  // ✅ remember where the Routine Editor modal is scrolled
+  const modalCard = document.querySelector("#rtModal > div");
+  const prevScroll = modalCard ? modalCard.scrollTop : 0;
+
+  // ✅ kill focus so iOS doesn’t scroll the page
+  rtAddExName.blur();
+
+  // ✅ open picker
   openExercisePicker({
     title: "Pick exercise to add",
     initial: rtAddExName.value,
     onConfirm: (picked)=>{
       rtAddExName.value = picked;
+
+      // ✅ restore modal scroll after pick
+      setTimeout(()=>{
+        if(modalCard) modalCard.scrollTop = prevScroll;
+      }, 0);
     }
   });
+
+  // ✅ restore immediately too (covers iOS “jump” before picker paints)
+  setTimeout(()=>{
+    if(modalCard) modalCard.scrollTop = prevScroll;
+  }, 0);
+}
+
+// open picker on tap/click
+rtAddExName.addEventListener("click", (e)=>{
+  e.preventDefault();
+  openAddExercisePicker();
 });
+
+// safety: if iOS still triggers focus somehow
+rtAddExName.addEventListener("focus", (e)=>{
+  e.preventDefault();
+  openAddExercisePicker();
+});
+
   
 let editRoutineId = null;
 let editDayIndex = 0;
