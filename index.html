@@ -579,6 +579,7 @@ main > *{
 
 /* default: no animation */
 #homeProteinCircle{
+  transition: none;
   will-change: --deg;
 }
 
@@ -2282,18 +2283,14 @@ function refreshHome(){
   if(homeProteinLeft) homeProteinLeft.textContent = String(left);
   if(!homeProteinCircle) return;
 
-  // ✅ hard reset
+  // reset then animate
   homeProteinCircle.style.setProperty("--deg", "0deg");
-
-  // ✅ force layout flush so the browser "commits" 0deg first
-  homeProteinCircle.getBoundingClientRect();
-
-  // ✅ set target on next frame (transition now applies)
-  requestAnimationFrame(() => {
-    homeProteinCircle.style.setProperty("--deg", `${deg}deg`);
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      homeProteinCircle.style.setProperty("--deg", `${deg}deg`);
+    });
   });
 }
-
 
   
   const homeCheckInBtn = document.getElementById("homeCheckInBtn");
@@ -2323,15 +2320,11 @@ homeCheckInBtn?.addEventListener("click", toggleTodayAttendance);
 ---------------------------- */
 const KEY_ACTIVE_SCREEN = "gym_active_screen_v1";
 
-home: () => {
-  refreshHome();
-
-  // ✅ wait 1 frame so #screen-home.active styles apply first
-  requestAnimationFrame(() => {
-    animateHomeProteinRing();
-  });
-},
-
+const onEnterScreen = {
+  home: () => {
+    refreshHome();
+    animateHomeProteinRing(); // 👈 ADD THIS LINE
+  },
 
   weight: () => {
     renderBW();
