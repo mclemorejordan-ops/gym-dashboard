@@ -10,6 +10,11 @@
 ">
   <title>Gym Dashboard</title>
   <style>
+
+  html, body{
+  overflow-x: hidden;
+}
+
     
   :root{
   --bg0:#070708;
@@ -42,30 +47,58 @@
 .weekStripWrap{
   margin-bottom: 10px;
   overflow-x: auto;
-  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-
-  /* nice iOS swipe */
-  scroll-snap-type: x mandatory;
-
-  /* hides scrollbar (iOS + some browsers) */
-  scrollbar-width: none;
 }
-.weekStripWrap::-webkit-scrollbar{ display:none; }
 
 .weekStrip{
   display: grid;
-  grid-auto-flow: column;           /* makes it a horizontal strip */
-  grid-auto-columns: minmax(72px, 1fr); /* each day card width */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
-  padding-bottom: 2px;
+  min-width: 560px; /* forces nice spacing on tiny screens */
   user-select: none;
 }
-/* ✅ #2 ADD: snap alignment for each column item */
-.weekStrip .wkHead,
-.weekStrip .wkBtn{
-  scroll-snap-align: start;
+
+.weekStrip .wkHead{
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .4px;
+  padding: 6px 0;
 }
+
+.weekStrip .wkBtn{
+  border: 1px solid var(--line);
+  background: #0f0f10;
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  line-height: 1.1;
+}
+
+.weekStrip .wkBtn .wkLabel{
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.weekStrip .wkBtn .wkSub{
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* Active day */
+.weekStrip .wkBtn.active{
+  border-color: rgba(124,252,0,.45);
+  box-shadow: 0 0 0 2px rgba(124,252,0,.18);
+}
+
+/* Rest day look */
+.weekStrip .wkBtn.rest{
+  opacity: .55;
+}
+
 
 /* ===========================
    GLOBAL iOS INPUT ZOOM KILL
@@ -161,6 +194,36 @@ html{
   max-height: none;
 }
 
+    /* ✅ Routine Editor: day tabs row is a horizontal scroller */
+#rtModal #rtDayTabs{
+  display: flex;                /* make sure it's flex */
+  flex-wrap: nowrap;            /* stay in 1 row */
+  overflow-x: auto;             /* horizontal scroll only here */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+
+/* ✅ each tab is compact and never forces page width */
+#rtModal #rtDayTabs .tab{
+  flex: 0 0 auto;               /* tab keeps its width */
+  white-space: nowrap;          /* no wrapping inside tab */
+  padding: 8px 10px;
+  font-size: 12px;
+  max-width: 140px;             /* prevents giant tabs */
+  overflow: hidden;
+  text-overflow: ellipsis;      /* "Full Body Day..." */
+}
+
+/* ✅ badges inside tabs also truncate instead of expanding */
+#rtModal #rtDayTabs .tab .badge{
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+    
 /* ✅ Routine Editor list should NOT be its own scrollbar */
 #rtExList{
   overflow: visible !important;
@@ -1851,20 +1914,6 @@ const LS = {
 const $  = (id)=>document.getElementById(id);
 const $$ = (sel, root=document)=>[...root.querySelectorAll(sel)];
 
-/* ✅ #3 ADD: auto-scroll week strip so active day is visible/centered on iPhone */
-function scrollActiveDayIntoView(){
-  const wrap = document.querySelector(".weekStripWrap");
-  const active = document.querySelector(".weekStrip .wkBtn.active");
-  if(!wrap || !active) return;
-
-  active.scrollIntoView({
-    behavior: "smooth",
-    inline: "center",
-    block: "nearest"
-  });
-}
-
-
 const KEY_BW = "gym_bw_logs_v1";
 const KEY_ATT = "gym_attendance_v1";
 const KEY_PRO = "gym_protein_v1";
@@ -3513,7 +3562,6 @@ function renderDayTabs(){
 
     pplTabs.appendChild(btn);
   });
-scrollActiveDayIntoView(); // ✅ #3 call
 }
   
 function renderPPL(){
