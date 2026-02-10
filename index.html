@@ -636,14 +636,17 @@ main > *{
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 
-  padding: 16px 14px !important;
-  border-radius: 18px !important;
+  /* ⬇️ SLIMMER TILE SETTINGS */
+  padding: 10px 12px !important;   /* was 16px 14px */
+  gap:6px;                         /* was 10px */
+  min-height: 64px;                /* was 92px */
 
+  border-radius: 16px !important;  /* slightly tighter */
   display:flex;
   flex-direction:column;
-  gap:10px;
+  justify-content:center;          /* centers icon/text vertically */
+  text-align:left;
 
-  min-height: 92px; /* makes them feel like tiles */
   position: relative;
   overflow: hidden;
 }
