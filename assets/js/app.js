@@ -14,6 +14,21 @@ window.addEventListener("error", (e)=>{
   `;
 });
 
+(function(){
+  const required = [
+    "LS",
+    "KEY_PROFILE","KEY_ROUTINES","KEY_ACTIVE_ROUTINE","KEY_ACTIVE_SCREEN",
+    "KEY_BW","KEY_ATT","KEY_PRO","KEY_LIFTS",
+    "todayISO","parseISO","localISODate","pad2","sameMonth",
+    "uid","normExName","cleanExerciseName","canonicalExerciseName"
+  ];
+
+  const missing = required.filter(k => typeof window[k] === "undefined");
+  if(missing.length){
+    throw new Error("Missing globals (check storage.js/dom.js/utils.js): " + missing.join(", "));
+  }
+})();
+
 let modalDepth = 0;
 
 function lockBodyScroll(){
