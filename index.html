@@ -48,6 +48,18 @@ html{
   -webkit-text-size-adjust: 100%;
 }
 
+/* Visual-only: prevent nested scrolling in Exercise Picker */
+#exPickModal > div{
+  overflow: hidden !important;   /* card does not scroll */
+  display:flex;
+  flex-direction:column;
+}
+
+#exPickList{
+  flex:1;                        /* list fills remaining space */
+  overflow-y:auto;               /* list scrolls */
+  -webkit-overflow-scrolling: touch;
+}
 
 
 /* ---------------------------
@@ -826,6 +838,164 @@ header{
 .updateText{display:flex; flex-direction:column; gap:2px;}
 .updateTitle{font-weight:800; font-size:13px;}
 .updateSub{font-size:11px; color:var(--muted);}
+
+    /* ===========================
+   ROUTINE EDITOR (BIGGEST VISUAL WIN)
+   - header + day tabs + add CTA + exercise cards + sticky footer
+=========================== */
+
+#rtModal > div{
+  padding: 0 !important;              /* remove inline padding look */
+  overflow: hidden;                    /* lets sticky footer look clean */
+}
+
+/* Header row inside Routine Editor */
+#rtModal .rtHead{
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 14px 14px 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background: linear-gradient(to bottom,
+    rgba(18,18,20,.98),
+    rgba(18,18,20,.80),
+    rgba(18,18,20,0)
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+#rtModal .rtHead h2{
+  margin:0;
+  font-size:15px;
+  letter-spacing:.2px;
+}
+
+#rtModal .rtHead .rtClose{
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+/* Body padding */
+#rtModal .rtBody{
+  padding: 0 14px 14px;
+}
+
+/* Day tabs – more “iOS segmented” feel */
+#rtModal #rtDayTabs{
+  gap:6px;
+}
+#rtModal #rtDayTabs .tab{
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(15,15,16,.9);
+}
+#rtModal #rtDayTabs .tab.active{
+  background: rgba(124,252,0,.08);
+  border-color: rgba(124,252,0,.25);
+}
+
+/* Add Exercise CTA – looks like a button tile */
+#rtModal .rtAddWrap{
+  border: 1px dashed rgba(124,252,0,.25);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(124,252,0,.04);
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+}
+
+#rtModal .rtAddWrap .rtPick{
+  flex: 1 1 260px;
+  min-width: 240px;
+}
+
+#rtModal .rtAddWrap input[readonly]{
+  cursor: pointer;
+  background: rgba(15,15,16,.9);
+  border-color: rgba(255,255,255,.10);
+}
+
+#rtModal .rtAddWrap .hint{
+  margin-top:6px;
+  font-size:11px;
+  color: var(--muted);
+}
+
+/* Exercise list cards – stop using generic .card look */
+#rtModal .rtExCard{
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: rgba(15,15,16,.92);
+  padding: 12px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+}
+
+#rtModal .rtExTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+#rtModal .rtExName{
+  font-weight: 800;
+  font-size: 13px;
+}
+
+#rtModal .rtMetaRow{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+#rtModal .rtActions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+#rtModal .rtActions .miniBtn{
+  border-radius: 12px;
+}
+
+/* Sticky footer actions */
+#rtModal .rtFooter{
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(
+    to bottom,
+    rgba(18,18,20,0),
+    rgba(18,18,20,.85) 35%,
+    rgba(18,18,20,.98)
+  );
+  border-top: 1px solid rgba(255,255,255,.06);
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+}
+
+#rtModal #rtSaveBtn{
+  background: rgba(124,252,0,.12);
+  border-color: rgba(124,252,0,.30);
+}
+#rtModal #rtSaveBtn:hover{
+  border-color: rgba(124,252,0,.45);
+}
+
+
+    
   </style>
 </head>
 
@@ -1428,13 +1598,16 @@ header{
   </div>
 
   <!-- ROUTINE EDITOR MODAL -->
-  <div id="rtModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
-    <div style="max-width:760px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
-      <div class="topRight">
-        <h2 style="margin:0;">Routine Editor</h2>
-        <button id="rtCloseBtn">Close</button>
-      </div>
+<div id="rtModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+  <div style="max-width:760px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px;">
+    
+    <!-- Sticky Header -->
+    <div class="rtHead">
+      <h2>Routine Editor</h2>
+      <button id="rtCloseBtn" class="rtClose ghost" type="button">Close</button>
+    </div>
 
+    <div class="rtBody">
       <div class="row" style="margin-top:10px;">
         <label>Routine Name
           <input id="rtName" placeholder="e.g., PPL (6 days)" />
@@ -1464,37 +1637,43 @@ header{
 
       <div class="divider"></div>
 
-      <div class="row">
-  <label style="min-width:280px; flex:1 1 280px;">Add Exercise (suggestions)
-    <input id="rtAddExName" list="rtExSuggestions" placeholder="Tap to pick an exercise..." readonly />
-    <datalist id="rtExSuggestions"></datalist>
-  </label>
-  <label>Sets
-    <input id="rtAddExSets" type="number" min="1" placeholder="3" />
-  </label>
-  <label>Reps
-    <input id="rtAddExReps" placeholder="8–10" />
-  </label>
+      <!-- Add Exercise CTA tile -->
+      <div class="rtAddWrap" style="margin-top:10px;">
+        <div class="rtPick">
+          <label style="min-width:260px; width:100%;">Add Exercise
+            <input id="rtAddExName" list="rtExSuggestions" placeholder="Tap to pick an exercise..." readonly />
+            <datalist id="rtExSuggestions"></datalist>
+          </label>
+          <div class="hint">Tap to choose from your library</div>
+        </div>
 
-  <button id="rtAddExBtn">Add</button>
-  <button id="rtAddMultiBtn" class="ghost" type="button">Add Multiple</button>
-</div>
+        <label style="width:110px;">Sets
+          <input id="rtAddExSets" type="number" min="1" placeholder="3" />
+        </label>
 
+        <label style="width:140px;">Reps
+          <input id="rtAddExReps" placeholder="8–10" />
+        </label>
 
-      <div id="rtExList" style="margin-top:10px; display:grid; gap:8px;"></div>
-
-      <div class="divider"></div>
-
-      <div class="btnRow">
-        <button id="rtSaveBtn">Save Routine</button>
-        <button id="rtCancelBtn" class="ghost">Cancel</button>
+        <button id="rtAddExBtn" class="tap">Add</button>
+        <button id="rtAddMultiBtn" class="ghost tap" type="button">Add Multiple</button>
       </div>
+
+      <div id="rtExList" style="margin-top:12px; display:grid; gap:10px;"></div>
 
       <div class="notice" style="margin-top:10px;">
         Swap replaces an exercise only for this day. Reorder uses Up/Down.
       </div>
     </div>
+
+    <!-- Sticky Footer -->
+    <div class="rtFooter">
+      <button id="rtCancelBtn" class="ghost tap" type="button">Cancel</button>
+      <button id="rtSaveBtn" class="tap" type="button">Save Routine</button>
+    </div>
+
   </div>
+</div>
 
   <!-- EXERCISE PICKER MODAL -->
 <div id="exPickModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
@@ -4301,12 +4480,15 @@ function renderRtDayPanel(){
 
   list.forEach((ex, idx)=>{
     const wrap = document.createElement("div");
-    wrap.className = "card";
-    wrap.style.padding = "10px";
-    wrap.style.background = "#0f0f10";
+    wrap.className = "rtExCard";
 
     wrap.innerHTML = `
-      <div class="row" style="align-items:center;">
+      <div class="rtExTop">
+        <div class="rtExName">${ex.name || "Exercise"}</div>
+        <span class="badge">${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
+      </div>
+
+      <div class="row" style="margin-top:10px; align-items:end;">
         <label style="flex:2 1 240px;">Name
           <input data-field="name" value="${ex.name || ""}" />
         </label>
@@ -4326,13 +4508,15 @@ function renderRtDayPanel(){
         </label>
       </div>
 
-      <div class="btnRow">
-        <button type="button" class="miniBtn" data-up="${idx}">Up</button>
-        <button type="button" class="miniBtn" data-down="${idx}">Down</button>
+      <div class="rtActions">
+        <button type="button" class="miniBtn" data-up="${idx}">↑ Up</button>
+        <button type="button" class="miniBtn" data-down="${idx}">↓ Down</button>
         <button type="button" class="miniBtn" data-swap="${idx}">Swap</button>
         <button type="button" class="miniBtn danger" data-remove="${idx}">Remove</button>
       </div>
     `;
+
+    // keep the rest of your event listeners EXACTLY as-is below
 
     wrap.querySelectorAll("[data-field]").forEach(inp=>{
       inp.addEventListener("input", ()=>{
