@@ -10,11 +10,6 @@
 ">
   <title>Gym Dashboard</title>
   <style>
-
-  html, body{
-  overflow-x: hidden;
-}
-
     
   :root{
   --bg0:#070708;
@@ -38,67 +33,6 @@
   --radius:16px;
   --shadow: 0 14px 40px rgba(0,0,0,.45);
 }
-
-    /* ===========================
-   ROUTINE WEEK STRIP (2-row grid)
-   Mon..Sun on top, labels below
-=========================== */
-
-.weekStripWrap{
-  margin-bottom: 10px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.weekStrip{
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
-  width: max-content; /* forces nice spacing on tiny screens */
-  user-select: none;
-}
-
-.weekStrip .wkHead{
-  text-align: center;
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: .4px;
-  padding: 6px 0;
-}
-
-.weekStrip .wkBtn{
-  border: 1px solid var(--line);
-  background: #0f0f10;
-  border-radius: 12px;
-  padding: 10px 8px;
-  text-align: center;
-  cursor: pointer;
-  line-height: 1.1;
-}
-
-.weekStrip .wkBtn .wkLabel{
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--text);
-}
-
-.weekStrip .wkBtn .wkSub{
-  margin-top: 6px;
-  font-size: 10px;
-  color: var(--muted);
-}
-
-/* Active day */
-.weekStrip .wkBtn.active{
-  border-color: rgba(124,252,0,.45);
-  box-shadow: 0 0 0 2px rgba(124,252,0,.18);
-}
-
-/* Rest day look */
-.weekStrip .wkBtn.rest{
-  opacity: .55;
-}
-
 
 /* ===========================
    GLOBAL iOS INPUT ZOOM KILL
@@ -194,36 +128,6 @@ html{
   max-height: none;
 }
 
-    /* ✅ Routine Editor: day tabs row is a horizontal scroller */
-#rtModal #rtDayTabs{
-  display: flex;                /* make sure it's flex */
-  flex-wrap: nowrap;            /* stay in 1 row */
-  overflow-x: auto;             /* horizontal scroll only here */
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  gap: 6px;
-  padding-bottom: 8px;
-}
-
-/* ✅ each tab is compact and never forces page width */
-#rtModal #rtDayTabs .tab{
-  flex: 0 0 auto;               /* tab keeps its width */
-  white-space: nowrap;          /* no wrapping inside tab */
-  padding: 8px 10px;
-  font-size: 12px;
-  max-width: 140px;             /* prevents giant tabs */
-  overflow: hidden;
-  text-overflow: ellipsis;      /* "Full Body Day..." */
-}
-
-/* ✅ badges inside tabs also truncate instead of expanding */
-#rtModal #rtDayTabs .tab .badge{
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-    
 /* ✅ Routine Editor list should NOT be its own scrollbar */
 #rtExList{
   overflow: visible !important;
@@ -856,8 +760,8 @@ main > *{
 body.modalOpen{
   overflow: hidden;
   height: 100%;
+  touch-action: none;
 }
-
 
 /* ---------------------------
    APP-LIKE UPGRADE (Bottom Nav + Transitions)
@@ -1493,10 +1397,7 @@ header{
         </div>
       </div>
 
-<div class="weekStripWrap">
-  <div class="weekStrip" id="pplTabs"></div>
-</div>
-
+      <div class="splitTabs" id="pplTabs"></div>
       <div class="exerciseList" id="pplList"></div>
 
       <div class="notice" style="margin-top:10px;">
@@ -3529,41 +3430,26 @@ function renderDayTabs(){
   pplTabs.innerHTML = "";
   const ar = getActiveRoutine();
 
-  // Row 1: Mon Tue Wed...
-  DAY_KEYS.forEach((k)=>{
-    const h = document.createElement("div");
-    h.className = "wkHead";
-    h.textContent = k;
-    pplTabs.appendChild(h);
-  });
-
-  // Row 2: Push Pull Legs...
   DAY_KEYS.forEach((k, idx)=>{
-    const day = ar.days[k] || { label:"", rest:false };
-    const label = (day.label || "").trim() || "—";
+    const day = ar.days[k];
+    const label = (day.label || "").trim();
     const rest = !!day.rest;
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className =
-      "wkBtn" +
-      (idx === activeDayIndex ? " active" : "") +
-      (rest ? " rest" : "");
-
-    btn.innerHTML = `
-      <div class="wkLabel">${label}</div>
-      <div class="wkSub">${rest ? "Rest day" : "Workout day"}</div>
+    const b = document.createElement("div");
+    b.className = "tab" + (idx===activeDayIndex ? " active" : "");
+    b.innerHTML = `
+      <span>${k}</span>
+      ${label ? `<span class="badge">${label}</span>` : ""}
+      ${rest ? `<span class="badge">Rest</span>` : ""}
     `;
-
-    btn.addEventListener("click", ()=>{
+    b.addEventListener("click", ()=>{
       activeDayIndex = idx;
       renderPPL();
     });
-
-    pplTabs.appendChild(btn);
+    pplTabs.appendChild(b);
   });
 }
-  
+
 function renderPPL(){
   renderDayTabs();
 
