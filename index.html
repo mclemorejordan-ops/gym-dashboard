@@ -6788,24 +6788,21 @@ fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
   if(!down) return;
   down = false;
 
-  const TAP_THRESHOLD = 10; // px
-
-  // Swipe
+  // Swipe only (do NOT toggle anything on tap here)
   if(dx <= -THRESH){
     selectedIndex = (selectedIndex + 1) % 7;
-    UIState.routine.showSnapshot = false;
+    UIState.routine.flipOpen = false; // close flip when changing days
+    repaint();
   }
   else if(dx >= THRESH){
     selectedIndex = (selectedIndex + 6) % 7;
-    UIState.routine.showSnapshot = false;
-  }
-  else if(Math.abs(dx) < TAP_THRESHOLD){
-    // TAP detected
-    UIState.routine.showSnapshot = !UIState.routine.showSnapshot;
+    UIState.routine.flipOpen = false; // close flip when changing days
+    repaint();
   }
 
-  repaint();
+  // If it was a tap, let the card's click handler handle flipping.
 }
+
 
 
     const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -6924,21 +6921,18 @@ const card = el("div", {
 // - If you tap a DIFFERENT day → switch day + close snapshot
 // - If you tap the SAME selected day again → toggle snapshot
 card.addEventListener("click", () => {
+  // Tap cards:
+  // - Tap DIFFERENT day → switch day + close flip
+  // - Tap SAME selected day again → toggle flip
   if(idx === selectedIndex){
-const next = !UIState.routine.showSnapshot;
-UIState.routine.showSnapshot = next;
-
-// When opening: scroll the snapshot into view + pop the active card
-if(next){
-  UIState.routine.scrollToSnapshot = true;
-  UIState.routine.snapPop = true;
-}
+    UIState.routine.flipOpen = !UIState.routine.flipOpen;
   }else{
     selectedIndex = idx;
-    UIState.routine.showSnapshot = false;
+    UIState.routine.flipOpen = false;
   }
   repaint();
 });
+
 
 
 
@@ -6997,140 +6991,6 @@ scrollHost.appendChild(el("div", { class:"card" }, [
         ])
       ]));
     }
-
-// ────────────────────────────
-// Performance Snapshot (tap-to-expand)
-// Rule: must have at least 2 completed sessions (attendance+logs) for this routine day template
-// Also: animate mount + auto-scroll into view when opened
-// ────────────────────────────
-if(UIState.routine.showSnapshot){
-
-  const sessionDates = __sessionDatesForRoutineDayTemplate(routine.id, day.id);
-
-  // Mount wrapper (for animation)
-  const mount = el("div", { class:"snapMount", id:"snapMount" });
-
-  // Helper: mount + animate + (optional) scroll to it
-  function mountSnapshotCard(cardNode){
-    mount.appendChild(cardNode);
-    scrollHost.appendChild(mount);
-
-    // Animate in next frame
-    requestAnimationFrame(() => {
-      mount.classList.add("in");
-    });
-
-    // Auto-scroll into view ONLY when opening (not every repaint)
-    if(UIState.routine.scrollToSnapshot){
-      UIState.routine.scrollToSnapshot = false;
-      // Scroll after the element exists + has begun animating
-      setTimeout(() => {
-        try{
-          mount.scrollIntoView({ behavior:"smooth", block:"start" });
-        }catch(_){}
-      }, 30);
-    }
-  }
-
-  // Optional: pop the active carousel card once on open
-  if(UIState.routine.snapPop){
-    UIState.routine.snapPop = false;
-    try{
-      const activeCard = root.querySelector(".c3dCard.sel");
-      if(activeCard){
-        activeCard.classList.remove("snapPop");
-        // force reflow to restart animation reliably
-        void activeCard.offsetWidth;
-        activeCard.classList.add("snapPop");
-      }
-    }catch(_){}
-  }
-
-  // Always render the card when toggled, but lock if <2 sessions
-  if(sessionDates.length < 2){
-
-    const lockedCard = el("div", { class:"card snapCard" }, [
-      el("div", { class:"snapHeader" }, [
-        el("div", {}, [
-          el("div", { class:"snapTitle", text:"PERFORMANCE SNAPSHOT" }),
-          el("div", { class:"snapSub", text:"Unlocks after 2 completed sessions on this day." })
-        ]),
-        el("div", { class:"snapHint", text:"Tap again to close" })
-      ]),
-      el("div", { class:"snapLock", text:"Not enough history yet. Complete this exact day (with logged sets + attendance) at least two times to see Strength Gains + Consistency trends." })
-    ]);
-
-    mountSnapshotCard(lockedCard);
-
-  }else{
-
-    const latestDate = sessionDates[0];
-    const prevDate   = sessionDates[1];
-
-    const gains = __strengthGains(routine.id, day.id, latestDate, prevDate);
-    const { last4, vols } = __lastVolumes(routine.id, day.id, sessionDates);
-
-    // Trend text (simple compare oldest vs newest)
-    let trend = "—";
-    if(vols.length >= 2){
-      const oldest = vols[vols.length - 1];
-      const newest = vols[0];
-      if(newest > oldest) trend = "↑ Improving";
-      else if(newest < oldest) trend = "↓ Declining";
-      else trend = "→ Flat";
-    }
-
-    const fullCard = el("div", { class:"card snapCard" }, [
-      el("div", { class:"snapHeader" }, [
-        el("div", {}, [
-          el("div", { class:"snapTitle", text:"PERFORMANCE SNAPSHOT" }),
-          el("div", { class:"snapSub", text:`Last ${day?.label || "session"}: ${Dates.formatShort(prevDate)}` })
-        ]),
-        el("div", { class:"snapHint", text:"Tap again to close" })
-      ]),
-
-      el("div", { class:"snapSectionTitle", text:"Strength Gains" }),
-
-      (gains.length
-        ? el("div", { class:"snapList" }, gains.slice(0,3).map(g => {   // ✅ top 3 (your preference)
-            const deltaTxt =
-              (g.deltaW !== 0)
-                ? `${g.deltaW > 0 ? "+" : ""}${Math.round(g.deltaW)} lb`
-                : `${g.deltaR > 0 ? "+" : ""}${g.deltaR} reps`;
-
-            const cls = (g.deltaW > 0 || g.deltaR > 0) ? "snapRow positive" : "snapRow negative";
-
-            return el("div", { class: cls }, [
-              el("div", { class:"l" }, [
-                el("div", { class:"a", text: g.name }),
-                el("div", { class:"b", text: `${g.fromText} → ${g.toText}` })
-              ]),
-              el("div", { class:"r", text: `(${deltaTxt})` })
-            ]);
-          }))
-        : el("div", { class:"snapLock", text:"No measurable changes between the last two sessions yet (or sets/reps were the same)." })
-      ),
-
-      el("div", { class:"snapSectionTitle", text:"Consistency" }),
-
-      el("div", { class:"snapMiniTrend" }, [
-        el("div", { text:`Last ${Math.min(4, last4.length)} ${day?.label || ""} sessions (volume):` }),
-        el("div", {
-          style:"margin-top:6px; font-weight:950; color: rgba(255,255,255,.90);",
-          text: vols.map(v => {
-            // 12.8k format
-            if(!Number.isFinite(v)) return "0";
-            if(v >= 1000) return (Math.round(v/100)/10).toFixed(1) + "k";
-            return String(v);
-          }).join(" → ")
-        }),
-        el("div", { style:"margin-top:6px;", text:`Trend: ${trend}` })
-      ])
-    ]);
-
-    mountSnapshotCard(fullCard);
-  }
-}
 
 
 // ────────────────────────────
