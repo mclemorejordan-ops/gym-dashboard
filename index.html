@@ -1566,7 +1566,123 @@ body.modalOpen{
   box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
   color: rgba(255,255,255,.92);
 }
+/* ─────────────────────────────
+   Routine — Performance Snapshot (tap-to-expand)
+   ───────────────────────────── */
 
+.snapCard{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.04);
+}
+
+.snapHeader{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.snapTitle{
+  font-weight: 950;
+  letter-spacing: .6px;
+}
+
+.snapSub{
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+  font-weight: 700;
+}
+
+.snapHint{
+  font-size: 12px;
+  color: rgba(255,255,255,.55);
+  font-weight: 800;
+  white-space: nowrap;
+  opacity: .9;
+}
+
+.snapSectionTitle{
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .6px;
+  color: rgba(255,255,255,.78);
+  text-transform: uppercase;
+}
+
+.snapList{
+  margin-top: 8px;
+  display:grid;
+  gap: 8px;
+}
+
+.snapRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.18);
+}
+
+.snapRow .l{
+  min-width: 0;
+}
+
+.snapRow .a{
+  font-weight: 900;
+  color: rgba(255,255,255,.90);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.snapRow .b{
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,.62);
+}
+
+.snapRow .r{
+  font-weight: 950;
+  color: rgba(255,255,255,.92);
+  white-space: nowrap;
+}
+
+.snapRow.positive .r{
+  color: rgba(55,214,122,.95);
+}
+
+.snapRow.negative .r{
+  color: rgba(255,92,122,.95);
+}
+
+.snapMiniTrend{
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.18);
+  font-size: 12px;
+  font-weight: 850;
+  color: rgba(255,255,255,.72);
+  line-height: 1.35;
+}
+
+.snapLock{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(255,255,255,.22);
+  background: rgba(255,255,255,.03);
+  color: rgba(255,255,255,.70);
+  font-size: 12px;
+  font-weight: 800;
+}
 .routineDayBtn.sel .dot{
   background: rgba(55,214,122,1);
   box-shadow: 0 0 0 3px rgba(55,214,122,.12);
@@ -5633,11 +5749,127 @@ const root = el("div", { class:"routinePage" });
     return root;
   }
 
-  const today = new Date();
+    const today = new Date();
   const todayIndex = today.getDay();               // 0=Sun..6=Sat
   const todayISO = Dates.todayISO(); // local date (fixes Feb 14 UTC bug)
 
   let selectedIndex = todayIndex;
+
+  // ✅ NEW: tap-to-expand Performance Snapshot
+  // - Only toggles when you tap the currently-selected day again
+  // - Resets (closes) when switching to a different day
+  let showSnapshot = false;
+
+  // Helpers for snapshot
+  function __entriesForRoutineDayTemplate(routineId, dayId){
+    LogEngine.ensure();
+    const arr = (state.logs?.workouts || []);
+    return arr.filter(e => e && e.routineId === routineId && e.dayId === dayId);
+  }
+
+  // A "session" is a dateISO where:
+  // - at least one log exists for this routine+day template
+  // - AND attendance has that date (trained day)
+  function __sessionDatesForRoutineDayTemplate(routineId, dayId){
+    const entries = __entriesForRoutineDayTemplate(routineId, dayId);
+    const set = new Set();
+    for(const e of entries){
+      if(e?.dateISO && attendanceHas(e.dateISO)) set.add(e.dateISO);
+    }
+    // newest → oldest
+    return Array.from(set).sort((a,b) => String(b).localeCompare(String(a)));
+  }
+
+  // Best set text from entry.sets (prefers higher weight, then reps)
+  function __bestSetFromSets(sets){
+    const s = (sets || []).map(x => ({
+      weight: Number(x.weight) || 0,
+      reps: Math.max(0, Math.floor(Number(x.reps) || 0))
+    })).filter(x => x.weight > 0 && x.reps > 0);
+
+    if(!s.length) return null;
+
+    s.sort((a,b) => (b.weight - a.weight) || (b.reps - a.reps));
+    return s[0]; // {weight,reps}
+  }
+
+  // For Strength Gains, we compare "best set" per exercise between latest vs previous session
+  function __strengthGains(routineId, dayId, latestDateISO, prevDateISO){
+    const entries = __entriesForRoutineDayTemplate(routineId, dayId);
+
+    function byDate(d){
+      return entries.filter(e => e?.dateISO === d);
+    }
+
+    const latest = byDate(latestDateISO);
+    const prev   = byDate(prevDateISO);
+
+    // Map exerciseKey -> bestSet
+    function mapBest(list){
+      const m = new Map();
+      for(const e of list){
+        const key = `${e.type || ""}:${e.exerciseId || e.routineExerciseId || ""}:${e.nameSnap || ""}`;
+        const best = __bestSetFromSets(e.sets || []);
+        if(!best) continue;
+        const cur = m.get(key);
+        if(!cur) m.set(key, { name: e.nameSnap || "Exercise", best });
+        else{
+          // keep the best among entries on the same date
+          const a = cur.best;
+          const b = best;
+          if((b.weight > a.weight) || (b.weight === a.weight && b.reps > a.reps)){
+            m.set(key, { name: e.nameSnap || cur.name, best: b });
+          }
+        }
+      }
+      return m;
+    }
+
+    const mLatest = mapBest(latest);
+    const mPrev   = mapBest(prev);
+
+    const rows = [];
+    for(const [k, v] of mLatest.entries()){
+      const p = mPrev.get(k);
+      if(!p) continue;
+
+      // Only show if it actually changed
+      const wA = v.best.weight, rA = v.best.reps;
+      const wB = p.best.weight, rB = p.best.reps;
+
+      // "gain" rules: higher weight with same reps, or higher reps with same weight, or both higher
+      const deltaW = wA - wB;
+      const deltaR = rA - rB;
+
+      if(deltaW === 0 && deltaR === 0) continue;
+
+      rows.push({
+        name: v.name,
+        fromText: `${Math.round(wB)}×${rB}`,
+        toText: `${Math.round(wA)}×${rA}`,
+        deltaW,
+        deltaR
+      });
+    }
+
+    // Most meaningful first: bigger weight gain, then reps gain
+    rows.sort((a,b) => (b.deltaW - a.deltaW) || (b.deltaR - a.deltaR));
+    return rows.slice(0, 6); // keep it compact
+  }
+
+  // Consistency = last 4 session volumes (sum of summary.totalVolume)
+  function __lastVolumes(routineId, dayId, sessionDatesDesc){
+    const entries = __entriesForRoutineDayTemplate(routineId, dayId);
+
+    function volForDate(d){
+      const items = entries.filter(e => e?.dateISO === d);
+      return Math.round(items.reduce((sum,e) => sum + (Number(e.summary?.totalVolume) || 0), 0));
+    }
+
+    const last4 = sessionDatesDesc.slice(0, 4);
+    const vols = last4.map(d => volForDate(d));
+    return { last4, vols };
+  }
 
     const weekStartsOn = state.profile?.weekStartsOn || "mon";
   const weekStartISO = Dates.startOfWeekISO(todayISO, weekStartsOn);
@@ -6460,11 +6692,19 @@ fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
         el("div", { class:"c3dChips" }, chips)
       ]);
 
-      // Tap any card to jump (visual-only)
-      card.addEventListener("click", () => {
-        selectedIndex = idx;
-        repaint();
-      });
+      // Tap cards:
+// - If you tap a DIFFERENT day → switch day + close snapshot
+// - If you tap the SAME selected day again → toggle snapshot
+card.addEventListener("click", () => {
+  if(idx === selectedIndex){
+    showSnapshot = !showSnapshot;
+  }else{
+    selectedIndex = idx;
+    showSnapshot = false;
+  }
+  repaint();
+});
+
 
       c3d.appendChild(card);
     });
@@ -6478,7 +6718,11 @@ fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
       const label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
       return el("button", {
         class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
-        onClick: () => { selectedIndex = i; repaint(); }
+onClick: () => {
+  selectedIndex = i;
+  showSnapshot = false;
+  repaint();
+}
       }, [
         el("div", { text: label }),
         el("div", { class:"dot" })
@@ -6517,6 +6761,80 @@ scrollHost.appendChild(el("div", { class:"card" }, [
       ]));
     }
 
+// ────────────────────────────
+// Performance Snapshot (tap-to-expand)
+// Rule: must have at least 2 completed sessions (attendance+logs) for this routine day template
+// ────────────────────────────
+if(showSnapshot){
+  const sessionDates = __sessionDatesForRoutineDayTemplate(routine.id, day.id);
+
+  // Always render the card when toggled, but lock if <2 sessions
+  if(sessionDates.length < 2){
+    scrollHost.appendChild(el("div", { class:"card snapCard" }, [
+      el("div", { class:"snapHeader" }, [
+        el("div", {}, [
+          el("div", { class:"snapTitle", text:"PERFORMANCE SNAPSHOT" }),
+          el("div", { class:"snapSub", text:"Unlocks after 2 completed sessions on this day." })
+        ]),
+        el("div", { class:"snapHint", text:"Tap again to close" })
+      ]),
+      el("div", { class:"snapLock", text:"Not enough history yet. Complete this exact day (with logged sets + attendance) at least two times to see Strength Gains + Consistency trends." })
+    ]));
+  }else{
+    const latestDate = sessionDates[0];
+    const prevDate   = sessionDates[1];
+
+    const gains = __strengthGains(routine.id, day.id, latestDate, prevDate);
+    const { last4, vols } = __lastVolumes(routine.id, day.id, sessionDates);
+
+    // Trend text (very simple: compare first vs last in last4)
+    let trend = "—";
+    if(vols.length >= 2){
+      const a = vols[vols.length - 1];
+      const b = vols[0];
+      if(b > a) trend = "↑ Improving";
+      else if(b < a) trend = "↓ Declining";
+      else trend = "→ Flat";
+    }
+
+    scrollHost.appendChild(el("div", { class:"card snapCard" }, [
+      el("div", { class:"snapHeader" }, [
+        el("div", {}, [
+          el("div", { class:"snapTitle", text:"PERFORMANCE SNAPSHOT" }),
+          el("div", { class:"snapSub", text:`Last session: ${Dates.formatShort(latestDate)} (prev: ${Dates.formatShort(prevDate)})` })
+        ]),
+        el("div", { class:"snapHint", text:"Tap again to close" })
+      ]),
+
+      el("div", { class:"snapSectionTitle", text:"Strength Gains" }),
+
+      (gains.length ? el("div", { class:"snapList" }, gains.map(g => {
+        const deltaTxt =
+          (g.deltaW !== 0)
+            ? `${g.deltaW > 0 ? "+" : ""}${Math.round(g.deltaW)} lb`
+            : `${g.deltaR > 0 ? "+" : ""}${g.deltaR} reps`;
+
+        const cls = (g.deltaW > 0 || g.deltaR > 0) ? "snapRow positive" : "snapRow negative";
+
+        return el("div", { class: cls }, [
+          el("div", { class:"l" }, [
+            el("div", { class:"a", text: g.name }),
+            el("div", { class:"b", text: `${g.fromText} → ${g.toText}` })
+          ]),
+          el("div", { class:"r", text: `(${deltaTxt})` })
+        ]);
+      })) : el("div", { class:"snapLock", text:"No measurable changes between the last two sessions yet (or sets/reps were the same)." })),
+
+      el("div", { class:"snapSectionTitle", text:"Consistency" }),
+
+      el("div", { class:"snapMiniTrend" }, [
+        el("div", { text:`Last ${Math.min(4, last4.length)} sessions volume:` }),
+        el("div", { style:"margin-top:6px; font-weight:950; color: rgba(255,255,255,.90);" , text: vols.join(" → ") }),
+        el("div", { style:"margin-top:6px;" , text:`Trend: ${trend}` })
+      ])
+    ]));
+  }
+}
 
 // ────────────────────────────
 // Exercise Cards (compact)
