@@ -6871,7 +6871,7 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
   }
 }
 
-       // ────────────────────────────
+    // ────────────────────────────
     // Routine header visual: 3D carousel OR compact header (based on Settings)
     // ────────────────────────────
     const wants3D = (state.profile?.show3DCards === undefined) ? true : !!state.profile.show3DCards;
@@ -6920,11 +6920,6 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
       scrollHost.appendChild(el("div", { class:"card note" }, ["No day found."]));
       return;
     }
-
-// ────────────────────────────
-// Routine header visual: 3D carousel OR simple day strip (based on Settings)
-// ────────────────────────────
-const wants3D = (state.profile?.show3DCards === undefined) ? true : !!state.profile.show3DCards;
 
 if(wants3D){
   // ✅ 3D Card Carousel
