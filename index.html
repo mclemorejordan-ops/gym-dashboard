@@ -2008,25 +2008,6 @@ button.mini.added{
   label{ gap: 6px; font-size: 11.5px; }                              /*  */
   input, select, textarea{ padding: 10px 10px; font-size: 16px; border-radius: 12px; }
 
-/* ───────────────────────────────
-   GLOBAL UI SCALE (Safari “A” Equivalent)
-   ─────────────────────────────── */
-
-:root{
-  --ui-font-size: 16px; /* default */
-}
-
-html{
-  font-size: var(--ui-font-size);
-}
-
-/* Size presets */
-html[data-ui="sm"]{ --ui-font-size: 15px; }
-html[data-ui="md"]{ --ui-font-size: 16px; }
-html[data-ui="lg"]{ --ui-font-size: 17px; }
-html[data-ui="xl"]{ --ui-font-size: 18px; }
-
-  
   /* Prevent iOS input zoom (GLOBAL — not just modals) */
 @media (hover: none) and (pointer: coarse){
   input,
@@ -2248,70 +2229,49 @@ html[data-ui="xl"]{ --ui-font-size: 18px; }
     font-size: 16px !important;
   }
 }
-    /* ─────────────────────────────
-   ✅ UI Scale (Safari A button equivalent)
-   applyUIScale() sets: <html data-ui="sm|md|lg|xl">
-   We scale #uiRoot and compensate width so layout still fits.
-───────────────────────────── */
-:root{ --uiScale: 1; }
-
-html[data-ui="sm"]{ --uiScale: .92; }
-html[data-ui="md"]{ --uiScale: 1; }
-html[data-ui="lg"]{ --uiScale: 1.08; }
-html[data-ui="xl"]{ --uiScale: 1.16; }
-
-#uiRoot{
-  transform: scale(var(--uiScale));
-  transform-origin: top center;
-  width: calc(100% / var(--uiScale));
-  margin: 0 auto;
-}
   </style>
 </head>
 
 <body>
-  <!-- ✅ UI Scale root (Safari A button equivalent) -->
-  <div id="uiRoot">
-    <div class="app">
-      <header>
-        <div class="topbar">
-          <div class="brand">
-            <div class="title" id="appTitle">Gym Dashboard</div>
+  <div class="app">
+<header>
+  <div class="topbar">
+    <div class="brand">
+      <div class="title" id="appTitle">Gym Dashboard</div>
 
-            <div class="subtitle" id="appSubtitle">
-              <div class="subPills">
-                <button class="subPill" id="syncPill" type="button">Offline</button>
-                <button class="subPill" id="verPill" type="button">v0.0.0</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="chip" id="chipStatus">Not set up</div>
+      <div class="subtitle" id="appSubtitle">
+        <div class="subPills">
+          <button class="subPill" id="syncPill" type="button">Offline</button>
+          <button class="subPill" id="verPill" type="button">v0.0.0</button>
         </div>
-      </header>
-
-      <main id="viewRoot"></main>
-    </div>
-
-    <div class="nav">
-      <div class="navbar" id="navbar"></div>
-    </div>
-
-    <!-- Modal Host -->
-    <div class="modalHost" id="modalHost" aria-hidden="true">
-      <div class="backdrop" id="modalBackdrop"></div>
-      <div class="sheet" role="dialog" aria-modal="true">
-        <div class="sheetHeader">
-          <div class="h" id="modalTitle">Modal</div>
-          <button class="xbtn" id="modalClose">Close</button>
-        </div>
-        <div id="modalBody"></div>
       </div>
+    </div>
+
+    <div class="chip" id="chipStatus">Not set up</div>
+  </div>
+</header>
+
+
+    <main id="viewRoot"></main>
+  </div>
+
+  <div class="nav">
+    <div class="navbar" id="navbar"></div>
+  </div>
+
+  <!-- Modal Host -->
+  <div class="modalHost" id="modalHost" aria-hidden="true">
+    <div class="backdrop" id="modalBackdrop"></div>
+    <div class="sheet" role="dialog" aria-modal="true">
+      <div class="sheetHeader">
+        <div class="h" id="modalTitle">Modal</div>
+        <button class="xbtn" id="modalClose">Close</button>
+      </div>
+      <div id="modalBody"></div>
     </div>
   </div>
 
   <script>
-
     /********************
      * 1) State + Storage
      ********************/
@@ -2914,42 +2874,6 @@ const Dates = {
       else state.attendance.push(dateISO);
       Storage.save(state);
     }
-
-    /********************
- * UI Scale (Safari A button equivalent)
- ********************/
-const UI_SCALE_KEY = "gymdash:uiScale"; // sm | md | lg | xl
-
-function getUIScale(){
-  try{
-    const v = localStorage.getItem(UI_SCALE_KEY);
-    return (v === "sm" || v === "md" || v === "lg" || v === "xl") ? v : "md";
-  }catch(_){
-    return "md";
-  }
-}
-
-function applyUIScale(scale){
-  const s = (scale === "sm" || scale === "md" || scale === "lg" || scale === "xl") ? scale : "md";
-  document.documentElement.setAttribute("data-ui", s);
-}
-
-function setUIScale(scale){
-  const s = (scale === "sm" || scale === "md" || scale === "lg" || scale === "xl") ? scale : "md";
-  try{ localStorage.setItem(UI_SCALE_KEY, s); }catch(_){}
-  applyUIScale(s);
-
-  // Helps iOS reflow some fixed/positioned elements after scaling
-  try{ window.dispatchEvent(new Event("resize")); }catch(_){}
-
-  // Feedback so it doesn't feel like "nothing happened"
-  try{
-    const label = (s === "sm") ? "A−" : (s === "md") ? "A" : (s === "lg") ? "A+" : "A++";
-    showToast(`Text size: ${label}`);
-  }catch(_){}
-}
-
-    
     /********************
      * Attendance Helpers (Step 9)
      ********************/
@@ -5376,8 +5300,8 @@ function bindHeaderPills(){
 
     }
 
+
     function renderView(){
-applyUIScale(getUIScale());
 setChip();
 setHeaderPills();
       const root = $("#viewRoot");
@@ -8255,71 +8179,53 @@ state.profile.hideRestDays = !!hideRestDays;
 
         // --- Section bodies ---
         const profileBody = el("div", {}, [
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"Name" }),
-      el("div", { class:"meta", text:"Shown on Home" })
-    ]),
-    nameInput
-  ]),
-
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
-      el("div", { class:"meta", text:"grams/day" })
-    ]),
-    proteinInput
-  ]),
-
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"Week starts on" }),
-      el("div", { class:"meta", text:"Affects Home week view" })
-    ]),
-    weekSelect
-  ]),
-
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"Hide rest days" }),
-      el("div", { class:"meta", text:"Keep Home focused on training days" })
-    ]),
-    hideRestSwitch
-  ]),
-
-  // ─── Text Size (Safari A equivalent) ───
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"Text size" }),
-      el("div", { class:"meta", text:"Adjust app size like Safari’s A button" })
-    ]),
-    el("div", { class:"btnrow" }, [
-      el("button", { class:"btn mini", onClick: () => setUIScale("sm") }, ["A−"]),
-      el("button", { class:"btn mini", onClick: () => setUIScale("md") }, ["A"]),
-      el("button", { class:"btn mini", onClick: () => setUIScale("lg") }, ["A+"]),
-      el("button", { class:"btn mini", onClick: () => setUIScale("xl") }, ["A++"])
-    ])
-  ]),
-
-  el("div", { style:"height:12px" }),
-  el("div", { class:"btnrow" }, [
-    el("button", { class:"btn primary", onClick: () => {
-      try{ saveProfile(); }
-      catch(e){
-        Modal.open({
-          title:"Save failed",
-          bodyNode: el("div", {}, [
-            el("div", { class:"note", text: e?.message || "Could not save settings." }),
-            el("div", { style:"height:12px" }),
-            el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Name" }),
+              el("div", { class:"meta", text:"Shown on Home" })
+            ]),
+            nameInput
+          ]),
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
+              el("div", { class:"meta", text:"grams/day" })
+            ]),
+            proteinInput
+          ]),
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Week starts on" }),
+              el("div", { class:"meta", text:"Affects Home week view" })
+            ]),
+            weekSelect
+          ]),
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Hide rest days" }),
+              el("div", { class:"meta", text:"Keep Home focused on training days" })
+            ]),
+            hideRestSwitch
+          ]),
+          el("div", { style:"height:12px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", { class:"btn primary", onClick: () => {
+              try{ saveProfile(); }
+              catch(e){
+                Modal.open({
+                  title:"Save failed",
+                  bodyNode: el("div", {}, [
+                    el("div", { class:"note", text: e?.message || "Could not save settings." }),
+                    el("div", { style:"height:12px" }),
+                    el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                  ])
+                });
+              }
+            }}, ["Save changes"])
           ])
-        });
-      }
-    }}, ["Save changes"])
-  ])
-]);
+        ]);
 
-        // ────────────────────────────
+                // ────────────────────────────
         // Routines section (Recovery + Management)
         // ────────────────────────────
         function openCreateRoutineModal(afterCreateRoute=null){
