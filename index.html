@@ -1715,6 +1715,68 @@ body.modalOpen{
   color: rgba(255,255,255,.92);
 }
 /* ─────────────────────────────
+   Routine — Minimal Header (3D OFF)
+   ───────────────────────────── */
+.routineMiniCard{
+  padding: 16px 16px 14px;
+}
+.routineMiniLabel{
+  font-size: 12px;
+  letter-spacing: .9px;
+  font-weight: 950;
+  color: rgba(255,255,255,.62);
+}
+.routineMiniTitle{
+  margin-top: 6px;
+  font-size: 30px;
+  line-height: 1.05;
+  font-weight: 950;
+  letter-spacing: .2px;
+}
+.routineMiniMeta{
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(255,255,255,.70);
+  font-weight: 700;
+}
+
+.routineTabs{
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  --i: 0;
+}
+.routineTabBtn{
+  appearance:none;
+  border:0;
+  background: transparent;
+  color: rgba(255,255,255,.65);
+  font-weight: 900;
+  letter-spacing: .3px;
+  font-size: 13px;
+  padding: 8px 6px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.routineTabBtn.sel{
+  color: rgba(255,255,255,.92);
+}
+.routineTabUnderline{
+  position:absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  width: calc(100% / 7);
+  border-radius: 999px;
+  background: rgba(124,92,255,.85);
+  transform: translateX(calc(var(--i) * 100%));
+  transition: transform 180ms ease;
+}
+
+  /* ─────────────────────────────
    Routine — Performance Snapshot (tap-to-expand)
    ───────────────────────────── */
 
@@ -7049,25 +7111,72 @@ if(wants3D){
 
   ]));
 } else {
-  // ✅ Simple Day Strip fallback (still lets users switch days)
-  fixedHost.appendChild(el("div", { class:"card" }, [
-    el("div", { class:"note", text:"3D cards are off (enable in Settings → Profile)." }),
-    el("div", { style:"height:10px" }),
-    el("div", { class:"pillrow", style:"overflow:auto; -webkit-overflow-scrolling:touch; flex-wrap:nowrap;" }, [
-      ...["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((lab, idx) =>
-        el("div", {
-          class:"pill" + (idx === selectedIndex ? " active" : ""),
-          style:"flex:0 0 auto;",
+  // ✅ Minimal (3D OFF) header: Apple-style
+  const dayNamesFull = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const dayNamesShort = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  const dSel = getDay(selectedIndex) || { label:"Day", isRest:false, exercises:[] };
+
+  function muscleSummaryForDay(day){
+    try{
+      const pool = []
+        .concat(lib.weightlifting || [], lib.cardio || [], lib.core || [])
+        .concat(state.exerciseLibrary?.weightlifting || [], state.exerciseLibrary?.cardio || [], state.exerciseLibrary?.core || []);
+
+      const byName = new Map(pool.map(x => [normName(x.name), x]));
+
+      // Preferred display order (keeps the summary consistent)
+      const order = ["Chest","Back","Shoulders","Arms","Legs","Full Body","Cardio","Core"];
+      const found = new Set();
+
+      (day.exercises || []).forEach(ex => {
+        const nm = normName(ex?.name || "");
+        const hit = byName.get(nm);
+        const pm = hit?.primaryMuscle;
+        if(pm) found.add(pm);
+      });
+
+      const arr = Array.from(found);
+      arr.sort((a,b) => order.indexOf(a) - order.indexOf(b));
+      return arr.slice(0,3).join(" / "); // ✅ minimal
+    }catch(_){
+      return "";
+    }
+  }
+
+  const exCount = (dSel.exercises || []).length;
+  const muscles = muscleSummaryForDay(dSel);
+
+  const metaLine = dSel.isRest
+    ? "Rest Day • Recovery Focus"
+    : `${exCount} Exercise${exCount===1?"":"s"}${muscles ? " • " + muscles : ""}`;
+
+  fixedHost.appendChild(el("div", { class:"card routineMiniCard" }, [
+    el("div", { class:"routineMiniTop" }, [
+      el("div", { class:"routineMiniLabel", text: (routine?.name || "Routine").toUpperCase() }),
+      el("div", { class:"routineMiniTitle", text: dayNamesFull[selectedIndex] }),
+      el("div", { class:"routineMiniMeta", text: metaLine })
+    ]),
+
+    el("div", { style:"height:12px" }),
+
+    // Day tabs with underline animation
+    el("div", { class:"routineTabs", style:`--i:${selectedIndex};` }, [
+      ...dayNamesShort.map((lab, idx) =>
+        el("button", {
+          class:"routineTabBtn" + (idx === selectedIndex ? " sel" : ""),
           onClick: () => {
             selectedIndex = idx;
             UIState.routine.flipOpen = false;
             repaint();
           }
         }, [lab])
-      )
+      ),
+      el("div", { class:"routineTabUnderline", "aria-hidden":"true" })
     ])
   ]));
 }
+
     // Rest Day
     if(day.isRest){
 scrollHost.appendChild(el("div", { class:"card restCard" }, [
