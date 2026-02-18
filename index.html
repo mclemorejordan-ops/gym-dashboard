@@ -1443,6 +1443,101 @@ body.modalOpen{
   will-change: transform, opacity, filter;
   overflow: hidden; /* important for overlay */
 }
+    /* ─────────────────────────────
+   3D Card Flip (Front/Back)
+   ───────────────────────────── */
+
+.c3dCard{
+  transform-style: preserve-3d;
+}
+
+.c3dInner{
+  position:absolute;
+  inset:0;
+  border-radius: 18px;
+  transform-style: preserve-3d;
+  transition: transform 420ms cubic-bezier(.2,.9,.2,1);
+  will-change: transform;
+}
+
+.c3dCard.flipped .c3dInner{
+  transform: rotateY(180deg);
+}
+
+.c3dFace{
+  position:absolute;
+  inset:0;
+  border-radius: 18px;
+  padding: 12px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Front keeps existing look */
+.c3dFace.front{
+  transform: rotateY(0deg);
+}
+
+/* Back face */
+.c3dFace.back{
+  transform: rotateY(180deg);
+}
+
+/* Snapshot content inside the back face */
+.c3dSnapTitle{
+  font-weight: 950;
+  letter-spacing: .7px;
+  font-size: 13px;
+  color: rgba(255,255,255,.90);
+}
+
+.c3dSnapSub{
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 750;
+  color: rgba(255,255,255,.60);
+}
+
+.c3dSnapList{
+  margin-top: 10px;
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.c3dSnapRow{
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,.86);
+}
+
+.c3dSnapRow .muted{
+  color: rgba(255,255,255,.58);
+  font-weight: 750;
+}
+
+.c3dSnapLock{
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 750;
+  color: rgba(255,255,255,.70);
+  border: 1px dashed rgba(255,255,255,.18);
+  background: rgba(255,255,255,.04);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .c3dInner{ transition:none; }
+}
+
 
 /* Dim non-selected cards */
 .c3dCard:not(.sel){
@@ -5792,6 +5887,11 @@ const root = el("div", { class:"routinePage" });
 
 let selectedIndex = todayIndex;
 
+  // ✅ Flip state for the selected carousel card (persists between repaints)
+UIState.routine = UIState.routine || {};
+if(typeof UIState.routine.flipOpen !== "boolean") UIState.routine.flipOpen = false;
+
+
   // ✅ Persistent Routine UI state (survives repaint)
 UIState.routine = UIState.routine || {};
 if(typeof UIState.routine.showSnapshot !== "boolean") UIState.routine.showSnapshot = false;
@@ -6737,17 +6837,88 @@ fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
       chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
       if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
 
-      const card = el("div", {
-        class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
-        style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
-      }, [
-        el("div", {}, [
-          el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
-          el("div", { class:"c3dLabel", text: d.label || "Day" }),
-          el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+      const isSel = (idx === selectedIndex);
+const isFlipped = isSel && !!UIState.routine.flipOpen;
+
+function buildBackFace(){
+  // Must have at least 2 sessions for this routine day template to show real data
+  const sessionDates = __sessionDatesForRoutineDayTemplate(routine.id, d.id);
+
+  if(sessionDates.length < 2){
+    return el("div", { class:"c3dFace back" }, [
+      el("div", {}, [
+        el("div", { class:"c3dSnapTitle", text:"PERFORMANCE SNAPSHOT" }),
+        el("div", { class:"c3dSnapSub", text:"Unlocks after 2 completed sessions on this day." }),
+        el("div", { class:"c3dSnapLock", text:"Not enough history yet. Complete this exact day (logged sets + attendance) at least two times." })
+      ]),
+      el("div", { class:"c3dSnapSub", text:"Tap again to close" })
+    ]);
+  }
+
+  const latestDate = sessionDates[0];
+  const prevDate   = sessionDates[1];
+
+  const gains = __strengthGains(routine.id, d.id, latestDate, prevDate);
+  const { vols } = __lastVolumes(routine.id, d.id, sessionDates);
+
+  let trend = "—";
+  if(vols.length >= 2){
+    const oldest = vols[vols.length - 1];
+    const newest = vols[0];
+    trend = newest > oldest ? "↑ Improving" : (newest < oldest ? "↓ Declining" : "→ Flat");
+  }
+
+  const top = (gains || []).slice(0, 2); // keep the card back compact
+
+  return el("div", { class:"c3dFace back" }, [
+    el("div", {}, [
+      el("div", { class:"c3dSnapTitle", text:"PERFORMANCE SNAPSHOT" }),
+      el("div", { class:"c3dSnapSub", text:`Last session: ${Dates.formatShort(prevDate)}` }),
+
+      el("div", { class:"c3dSnapList" }, [
+        ...(top.length ? top.map(g => {
+          const deltaTxt =
+            (g.deltaW !== 0)
+              ? `${g.deltaW > 0 ? "+" : ""}${Math.round(g.deltaW)} lb`
+              : `${g.deltaR > 0 ? "+" : ""}${g.deltaR} reps`;
+
+          return el("div", { class:"c3dSnapRow" }, [
+            el("div", { text: g.name }),
+            el("div", { class:"muted", text: deltaTxt })
+          ]);
+        }) : [
+          el("div", { class:"c3dSnapLock", text:"No measurable changes between the last two sessions yet." })
         ]),
-        el("div", { class:"c3dChips" }, chips)
-      ]);
+
+        el("div", { style:"height:6px" }),
+        el("div", { class:"c3dSnapRow" }, [
+          el("div", { text:"Consistency" }),
+          el("div", { class:"muted", text: trend })
+        ])
+      ])
+    ]),
+    el("div", { class:"c3dSnapSub", text:"Tap again to close" })
+  ]);
+}
+
+const frontFace = el("div", { class:"c3dFace front" }, [
+  el("div", {}, [
+    el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
+    el("div", { class:"c3dLabel", text: d.label || "Day" }),
+    el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+  ]),
+  el("div", { class:"c3dChips" }, chips)
+]);
+
+const card = el("div", {
+  class: "c3dCard" + (isSel ? " sel" : "") + (isFlipped ? " flipped" : ""),
+  style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+}, [
+  el("div", { class:"c3dInner" }, [
+    frontFace,
+    buildBackFace()
+  ])
+]);
 
       // Tap cards:
 // - If you tap a DIFFERENT day → switch day + close snapshot
