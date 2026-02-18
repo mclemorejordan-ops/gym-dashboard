@@ -6646,15 +6646,29 @@ fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
       dx = e.clientX - startX;
       // (visual-only: we keep drag simple; snap happens on release)
     }
-    function onEnd(){
-      if(!down) return;
-      down = false;
+    function onEnd(e){
+  if(!down) return;
+  down = false;
 
-      if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
-      else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
+  const TAP_THRESHOLD = 10; // px
 
-      repaint();
-    }
+  // Swipe
+  if(dx <= -THRESH){
+    selectedIndex = (selectedIndex + 1) % 7;
+    UIState.routine.showSnapshot = false;
+  }
+  else if(dx >= THRESH){
+    selectedIndex = (selectedIndex + 6) % 7;
+    UIState.routine.showSnapshot = false;
+  }
+  else if(Math.abs(dx) < TAP_THRESHOLD){
+    // TAP detected
+    UIState.routine.showSnapshot = !UIState.routine.showSnapshot;
+  }
+
+  repaint();
+}
+
 
     const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
