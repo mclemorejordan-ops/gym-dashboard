@@ -1479,6 +1479,15 @@ body.modalOpen{
   justify-content:space-between;
   will-change: transform, opacity, filter;
   overflow: hidden; /* important for overlay */
+    /* ✅ Animate carousel positioning + expand smoothly */
+  transform: translateX(var(--x, 0px)) translateY(var(--y, 0px)) translateZ(var(--z, 0px))
+             rotateY(var(--rot, 0deg)) scale(var(--scale, 1));
+  opacity: var(--op, 1);
+
+  transition:
+    transform 420ms cubic-bezier(.2,.9,.2,1),
+    opacity 240ms ease,
+    filter 240ms ease;
 }
     /* ─────────────────────────────
    3D Card Flip (Front/Back)
@@ -1500,7 +1509,11 @@ body.modalOpen{
 .c3dCard.flipped .c3dInner{
   transform: rotateY(180deg);
 }
-
+/* ✅ Expand selected card (outer card) while flipped */
+.c3d.flipMode .c3dCard.sel{
+  transform: translateX(0px) translateY(-10px) translateZ(140px) rotateY(0deg) scale(1.22);
+  opacity: 1;
+}
 .c3dFace{
   position:absolute;
   inset:0;
@@ -6977,7 +6990,7 @@ const frontFace = el("div", { class:"c3dFace front" }, [
 
 const card = el("div", {
   class: "c3dCard" + (isSel ? " sel" : "") + (isFlipped ? " flipped" : ""),
-  style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+  style: `--x:${x}px; --y:${y}px; --z:${z}px; --rot:${rot}deg; --scale:${scale}; --op:${op};`
 }, [
   el("div", { class:"c3dInner" }, [
     frontFace,
@@ -6990,16 +7003,24 @@ const card = el("div", {
 // - If you tap the SAME selected day again → toggle snapshot
 card.addEventListener("click", () => {
   // Tap cards:
-  // - Tap DIFFERENT day → switch day + close flip
-  // - Tap SAME selected day again → toggle flip
+  // - Tap DIFFERENT day → switch day (repaint needed)
+  // - Tap SAME selected day → toggle flip IN-PLACE (no repaint → smooth animation)
   if(idx === selectedIndex){
     UIState.routine.flipOpen = !UIState.routine.flipOpen;
-  }else{
-    selectedIndex = idx;
-    UIState.routine.flipOpen = false;
+
+    // ✅ Toggle flip classes without rebuilding DOM (enables transitions)
+    card.classList.toggle("flipped", UIState.routine.flipOpen);
+    c3d.classList.toggle("flipMode", UIState.routine.flipOpen);
+
+    return; // IMPORTANT: no repaint
   }
+
+  // Switching days still requires repaint (different content + positions)
+  selectedIndex = idx;
+  UIState.routine.flipOpen = false;
   repaint();
 });
+
 
 
 
