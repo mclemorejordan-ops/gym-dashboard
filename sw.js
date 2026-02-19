@@ -1,3 +1,4 @@
+
 /* sw.js — Gym Dashboard (version.json + versioned cache)
    Goals:
    - Network-first for navigations so users get newest index.html immediately when online
