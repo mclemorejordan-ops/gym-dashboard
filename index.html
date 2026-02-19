@@ -1,18 +1,27 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BEG1YYMSB5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-BEG1YYMSB5');
+</script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f17" />
 
-      <!-- 🔒 Production Content Security Policy -->
+        <!-- 🔒 Production Content Security Policy -->
   <meta http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com;
         style-src 'self' 'unsafe-inline';
-        img-src 'self' data:;
-        connect-src 'self' https://cdn.jsdelivr.net https://formspree.io;
+        img-src 'self' data: https://www.google-analytics.com;
+        connect-src 'self' https://cdn.jsdelivr.net https://formspree.io https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com;
         font-src 'self';
         object-src 'none';
         base-uri 'self';
@@ -1420,49 +1429,12 @@ body.modalOpen{
   touch-action: pan-y;
   user-select:none;
 }
-/* ─────────────────────────────
-   Flip + Expand + Dim Background
-   ───────────────────────────── */
 
-/* Backdrop overlay when flipped (makes it feel “out there”) */
-.c3d.flipMode::before{
-  content:"";
-  position:absolute;
-  inset:-18px;
-  border-radius: 22px;
-  background: rgba(0,0,0,.42);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* Ensure cards sit above the overlay */
-.c3d.flipMode .c3dCard{ z-index: 1; }
-
-/* Dim/blur non-selected cards while flipped */
-.c3d.flipMode .c3dCard:not(.sel){
-  opacity: .10 !important;
-  filter: blur(1.6px) brightness(.70) saturate(.8);
-  pointer-events: none; /* prevents accidental taps behind */
-}
-
-/* Bring the selected card forward in stacking order */
-.c3d.flipMode .c3dCard.sel{
-  z-index: 10;
-}
-
-/* Optional: slightly enhance the selected card glass while in flip mode */
-.c3d.flipMode .c3dCard.sel{
-  box-shadow: 0 28px 85px rgba(0,0,0,.70);
-  border-color: rgba(55,214,122,.42);
-}
 /* Square “3D” card */
 /* Square “3D” card */
 .c3dCard{
   position:absolute;
   width: min(58vw, 190px);       /* ✅ smaller cards */
-  min-height: 180px;
   aspect-ratio: 1 / 1;
   border-radius: 18px;
 
@@ -1479,115 +1451,7 @@ body.modalOpen{
   justify-content:space-between;
   will-change: transform, opacity, filter;
   overflow: hidden; /* important for overlay */
-    /* ✅ Animate carousel positioning + expand smoothly */
-  transform: translateX(var(--x, 0px)) translateY(var(--y, 0px)) translateZ(var(--z, 0px))
-             rotateY(var(--rot, 0deg)) scale(var(--scale, 1));
-  opacity: var(--op, 1);
-
-  transition:
-    transform 420ms cubic-bezier(.2,.9,.2,1),
-    opacity 240ms ease,
-    filter 240ms ease;
 }
-    /* ─────────────────────────────
-   3D Card Flip (Front/Back)
-   ───────────────────────────── */
-
-.c3dCard{
-  transform-style: preserve-3d;
-}
-
-.c3dInner{
-  position:absolute;
-  inset:0;
-  border-radius: 18px;
-  transform-style: preserve-3d;
-  transition: transform 420ms cubic-bezier(.2,.9,.2,1);
-  will-change: transform;
-}
-
-.c3dCard.flipped .c3dInner{
-  transform: rotateY(180deg);
-}
-/* ✅ Expand selected card (outer card) while flipped */
-.c3d.flipMode .c3dCard.sel{
-  transform: translateX(0px) translateY(-10px) translateZ(140px) rotateY(0deg) scale(1.22);
-  opacity: 1;
-}
-.c3dFace{
-  position:absolute;
-  inset:0;
-  border-radius: 18px;
-  padding: 12px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-/* Front keeps existing look */
-.c3dFace.front{
-  transform: rotateY(0deg);
-}
-
-/* Back face */
-.c3dFace.back{
-  transform: rotateY(180deg);
-}
-
-/* Snapshot content inside the back face */
-.c3dSnapTitle{
-  font-weight: 950;
-  letter-spacing: .7px;
-  font-size: 13px;
-  color: rgba(255,255,255,.90);
-}
-
-.c3dSnapSub{
-  margin-top: 6px;
-  font-size: 12px;
-  font-weight: 750;
-  color: rgba(255,255,255,.60);
-}
-
-.c3dSnapList{
-  margin-top: 10px;
-  display:flex;
-  flex-direction:column;
-  gap: 8px;
-}
-
-.c3dSnapRow{
-  display:flex;
-  justify-content:space-between;
-  gap: 10px;
-  font-size: 12px;
-  font-weight: 800;
-  color: rgba(255,255,255,.86);
-}
-
-.c3dSnapRow .muted{
-  color: rgba(255,255,255,.58);
-  font-weight: 750;
-}
-
-.c3dSnapLock{
-  margin-top: 10px;
-  font-size: 12px;
-  font-weight: 750;
-  color: rgba(255,255,255,.70);
-  border: 1px dashed rgba(255,255,255,.18);
-  background: rgba(255,255,255,.04);
-  border-radius: 14px;
-  padding: 10px;
-}
-
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .c3dInner{ transition:none; }
-}
-
 
 /* Dim non-selected cards */
 .c3dCard:not(.sel){
@@ -1624,10 +1488,7 @@ body.modalOpen{
   );
   pointer-events:none;
 }
-/* Expand height when flipped */
-.c3d.flipMode .c3dCard.sel{
-  min-height: 260px;
-}
+
 .c3dCard.sel::before{
   /* Slightly stronger sheen on active card */
   background: linear-gradient(135deg,
@@ -1714,257 +1575,10 @@ body.modalOpen{
   box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
   color: rgba(255,255,255,.92);
 }
-/* ─────────────────────────────
-   Routine — Minimal Header (3D OFF)
-   ───────────────────────────── */
-.routineMiniCard{
-  padding: 16px 16px 14px;
-}
-  /* A3 — Compact combined Routine header (3D OFF) */
-.routineCompactCard{
-  padding: 14px 14px 12px;
-}
-.routineCompactTop{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap: 10px;
-}
-.routineCompactTop .note{
-  margin-top: 4px;
-}
-.routineCompactRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-.manageLink.compact{
-  margin-top: 0;
-  font-weight: 850;
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.04);
-}
-.manageLink.compact:active{ transform: translateY(1px); }
-.routineMiniTitle.compact{
-  font-size: 26px;
-  margin-top: 2px;
-}
-.routineMiniLabel{
-  font-size: 12px;
-  letter-spacing: .9px;
-  font-weight: 950;
-  color: rgba(255,255,255,.62);
-}
-.routineMiniTitle{
-  margin-top: 6px;
-  font-size: 30px;
-  line-height: 1.05;
-  font-weight: 950;
-  letter-spacing: .2px;
-}
-.routineMiniMeta{
-  margin-top: 6px;
-  font-size: 13px;
-  color: rgba(255,255,255,.70);
-  font-weight: 700;
-}
 
-.routineTabs{
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,255,255,.10);
-  --i: 0;
-}
-.routineTabBtn{
-  appearance:none;
-  border:0;
-  background: transparent;
-  color: rgba(255,255,255,.65);
-  font-weight: 900;
-  letter-spacing: .3px;
-  font-size: 13px;
-  padding: 8px 6px;
-  flex: 1 1 0;
-  min-width: 0;
-}
-.routineTabBtn.sel{
-  color: rgba(255,255,255,.92);
-}
-.routineTabUnderline{
-  position:absolute;
-  left: 0;
-  bottom: -1px;
-  height: 2px;
-  width: calc(100% / 7);
-  border-radius: 999px;
-  background: rgba(124,92,255,.85);
-  transform: translateX(calc(var(--i) * 100%));
-  transition: transform 180ms ease;
-}
-
-  /* ─────────────────────────────
-   Routine — Performance Snapshot (tap-to-expand)
-   ───────────────────────────── */
-
-.snapCard{
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.04);
-}
-
-.snapHeader{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap: 10px;
-}
-
-.snapTitle{
-  font-weight: 950;
-  letter-spacing: .6px;
-}
-
-.snapSub{
-  margin-top: 4px;
-  font-size: 12px;
-  color: rgba(255,255,255,.65);
-  font-weight: 700;
-}
-
-.snapHint{
-  font-size: 12px;
-  color: rgba(255,255,255,.55);
-  font-weight: 800;
-  white-space: nowrap;
-  opacity: .9;
-}
-
-.snapSectionTitle{
-  margin-top: 12px;
-  font-size: 12px;
-  font-weight: 950;
-  letter-spacing: .6px;
-  color: rgba(255,255,255,.78);
-  text-transform: uppercase;
-}
-
-.snapList{
-  margin-top: 8px;
-  display:grid;
-  gap: 8px;
-}
-
-.snapRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.18);
-}
-
-.snapRow .l{
-  min-width: 0;
-}
-
-.snapRow .a{
-  font-weight: 900;
-  color: rgba(255,255,255,.90);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.snapRow .b{
-  margin-top: 2px;
-  font-size: 12px;
-  font-weight: 800;
-  color: rgba(255,255,255,.62);
-}
-
-.snapRow .r{
-  font-weight: 950;
-  color: rgba(255,255,255,.92);
-  white-space: nowrap;
-}
-
-.snapRow.positive .r{
-  color: rgba(55,214,122,.95);
-}
-
-.snapRow.negative .r{
-  color: rgba(255,92,122,.95);
-}
-
-.snapMiniTrend{
-  margin-top: 8px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.18);
-  font-size: 12px;
-  font-weight: 850;
-  color: rgba(255,255,255,.72);
-  line-height: 1.35;
-}
-
-.snapLock{
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px dashed rgba(255,255,255,.22);
-  background: rgba(255,255,255,.03);
-  color: rgba(255,255,255,.70);
-  font-size: 12px;
-  font-weight: 800;
-}
 .routineDayBtn.sel .dot{
   background: rgba(55,214,122,1);
   box-shadow: 0 0 0 3px rgba(55,214,122,.12);
-}
-    /* Snapshot mount animation (slide/fade in) */
-.snapMount{
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-8px) scale(.985);
-  transition:
-    max-height 260ms cubic-bezier(.2,.9,.2,1),
-    opacity 220ms ease,
-    transform 260ms cubic-bezier(.2,.9,.2,1);
-  will-change: max-height, opacity, transform;
-}
-
-.snapMount.in{
-  max-height: 520px; /* enough for locked + typical 3–6 gains */
-  opacity: 1;
-  transform: none;
-}
-
-/* Optional: little "pop" on the active carousel card when snapshot opens */
-.c3dCard.snapPop{
-  animation: snapPop 220ms cubic-bezier(.2,.9,.2,1);
-}
-@keyframes snapPop{
-  0%{ transform: translateZ(var(--z, 0px)) scale(1); }
-  60%{ transform: translateZ(var(--z, 0px)) scale(1.03); }
-  100%{ transform: translateZ(var(--z, 0px)) scale(1); }
-}
-
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .snapMount, .snapMount.in{
-    transition:none;
-    transform:none;
-  }
-  .c3dCard.snapPop{ animation:none; }
 }
   /* Add Multiple visual feedback */
 .item.selected{
@@ -2765,7 +2379,7 @@ function exportBackupJSON(){
   // Keep export simple: full state snapshot
   const payload = {
     exportedAt: new Date().toISOString(),
-    app: "gym-dashboard",
+    app: "gym-dashboard-dev",
     data: state
   };
   return JSON.stringify(payload, null, 2);
@@ -5397,15 +5011,34 @@ function bindHeaderPills(){
 
 
     function navigate(routeKey){
-      destroyProgressChart();
-      destroyWeightChart();
-      currentRoute = routeKey;
-      renderNav();
-      renderView();
-      bindHeaderPills();
-      checkForUpdates();
+  destroyProgressChart();
+  destroyWeightChart();
 
+  currentRoute = routeKey;
+
+  renderNav();
+  renderView();
+  bindHeaderPills();
+  checkForUpdates();
+
+  // ─────────────────────────────
+  // GA4: SPA route tracking (page_view)
+  // ─────────────────────────────
+  try{
+    if(typeof gtag === "function"){
+      const label = (Routes?.[routeKey]?.label) || routeKey || "unknown";
+      const pagePath = "/" + String(routeKey || "unknown");
+
+      gtag("event", "page_view", {
+        page_title: label,
+        page_path: pagePath,
+        page_location: (location?.origin || "") + pagePath
+      });
     }
+  }catch(e){
+    // never let analytics break navigation
+  }
+}
 
 
     function renderView(){
@@ -5494,15 +5127,11 @@ else root.appendChild(el("div", { class:"card" }, [
           }
 
           const profile = {
-  name: cleanName,
-  proteinGoal: Math.round(cleanProtein),
-  weekStartsOn,
-  hideRestDays: !!hideRestDays,
-
-  // ✅ default ON for new users
-  show3DCards: true
-};
-
+            name: cleanName,
+            proteinGoal: Math.round(cleanProtein),
+            weekStartsOn,
+            hideRestDays: !!hideRestDays
+          };
 
           // Seed library FIRST so template exercises can resolve to real exerciseIds
           ExerciseLibrary.ensureSeeded();
@@ -5705,7 +5334,7 @@ el("div", { style:"height:10px" }),
 // el("div", { style:"height:10px" }),
 // el("div", { class:"btnrow" }, [
 //   el("button", { class:"btn primary", onClick: openCheckIn }, [isTrained(todayISO) ? "Undo check-in" : "Check in"]),
-//   el("button", { class:"btn", onClick: () => navigate("routine") }, ["Edit routine"])
+//   el("button", { class:"btn", onClick: () => navigate("routine") }, ["Open Routine"])
 // ])
 
 el("div", { class:"card" }, [
@@ -5776,6 +5405,7 @@ el("div", { class:"card" }, [
         ]);
       },
       ProteinHistory(){
+
         const root = el("div", { class:"grid" });
 
         // Read-only totals (do NOT call totalProtein() here because it can auto-create entries)
@@ -6032,138 +5662,11 @@ const root = el("div", { class:"routinePage" });
     return root;
   }
 
-    const today = new Date();
+  const today = new Date();
   const todayIndex = today.getDay();               // 0=Sun..6=Sat
   const todayISO = Dates.todayISO(); // local date (fixes Feb 14 UTC bug)
 
-let selectedIndex = todayIndex;
-
-  // ✅ Flip state for the selected carousel card (persists between repaints)
-UIState.routine = UIState.routine || {};
-if(typeof UIState.routine.flipOpen !== "boolean") UIState.routine.flipOpen = false;
-
-
-  // ✅ Persistent Routine UI state (survives repaint)
-UIState.routine = UIState.routine || {};
-if(typeof UIState.routine.showSnapshot !== "boolean") UIState.routine.showSnapshot = false;
-if(typeof UIState.routine.scrollToSnapshot !== "boolean") UIState.routine.scrollToSnapshot = false;
-if(typeof UIState.routine.snapPop !== "boolean") UIState.routine.snapPop = false;
-
-
-  // ✅ NEW: tap-to-expand Performance Snapshot
-  // - Only toggles when you tap the currently-selected day again
-  // - Resets (closes) when switching to a different day
-
-  // Helpers for snapshot
-  function __entriesForRoutineDayTemplate(routineId, dayId){
-    LogEngine.ensure();
-    const arr = (state.logs?.workouts || []);
-    return arr.filter(e => e && e.routineId === routineId && e.dayId === dayId);
-  }
-
-  // A "session" is a dateISO where:
-  // - at least one log exists for this routine+day template
-  // - AND attendance has that date (trained day)
-  function __sessionDatesForRoutineDayTemplate(routineId, dayId){
-    const entries = __entriesForRoutineDayTemplate(routineId, dayId);
-    const set = new Set();
-    for(const e of entries){
-      if(e?.dateISO && attendanceHas(e.dateISO)) set.add(e.dateISO);
-    }
-    // newest → oldest
-    return Array.from(set).sort((a,b) => String(b).localeCompare(String(a)));
-  }
-
-  // Best set text from entry.sets (prefers higher weight, then reps)
-  function __bestSetFromSets(sets){
-    const s = (sets || []).map(x => ({
-      weight: Number(x.weight) || 0,
-      reps: Math.max(0, Math.floor(Number(x.reps) || 0))
-    })).filter(x => x.weight > 0 && x.reps > 0);
-
-    if(!s.length) return null;
-
-    s.sort((a,b) => (b.weight - a.weight) || (b.reps - a.reps));
-    return s[0]; // {weight,reps}
-  }
-
-  // For Strength Gains, we compare "best set" per exercise between latest vs previous session
-  function __strengthGains(routineId, dayId, latestDateISO, prevDateISO){
-    const entries = __entriesForRoutineDayTemplate(routineId, dayId);
-
-    function byDate(d){
-      return entries.filter(e => e?.dateISO === d);
-    }
-
-    const latest = byDate(latestDateISO);
-    const prev   = byDate(prevDateISO);
-
-    // Map exerciseKey -> bestSet
-    function mapBest(list){
-      const m = new Map();
-      for(const e of list){
-        const key = `${e.type || ""}:${e.exerciseId || e.routineExerciseId || ""}:${e.nameSnap || ""}`;
-        const best = __bestSetFromSets(e.sets || []);
-        if(!best) continue;
-        const cur = m.get(key);
-        if(!cur) m.set(key, { name: e.nameSnap || "Exercise", best });
-        else{
-          // keep the best among entries on the same date
-          const a = cur.best;
-          const b = best;
-          if((b.weight > a.weight) || (b.weight === a.weight && b.reps > a.reps)){
-            m.set(key, { name: e.nameSnap || cur.name, best: b });
-          }
-        }
-      }
-      return m;
-    }
-
-    const mLatest = mapBest(latest);
-    const mPrev   = mapBest(prev);
-
-    const rows = [];
-    for(const [k, v] of mLatest.entries()){
-      const p = mPrev.get(k);
-      if(!p) continue;
-
-      // Only show if it actually changed
-      const wA = v.best.weight, rA = v.best.reps;
-      const wB = p.best.weight, rB = p.best.reps;
-
-      // "gain" rules: higher weight with same reps, or higher reps with same weight, or both higher
-      const deltaW = wA - wB;
-      const deltaR = rA - rB;
-
-      if(deltaW === 0 && deltaR === 0) continue;
-
-      rows.push({
-        name: v.name,
-        fromText: `${Math.round(wB)}×${rB}`,
-        toText: `${Math.round(wA)}×${rA}`,
-        deltaW,
-        deltaR
-      });
-    }
-
-    // Most meaningful first: bigger weight gain, then reps gain
-    rows.sort((a,b) => (b.deltaW - a.deltaW) || (b.deltaR - a.deltaR));
-    return rows.slice(0, 6); // keep it compact
-  }
-
-  // Consistency = last 4 session volumes (sum of summary.totalVolume)
-  function __lastVolumes(routineId, dayId, sessionDatesDesc){
-    const entries = __entriesForRoutineDayTemplate(routineId, dayId);
-
-    function volForDate(d){
-      const items = entries.filter(e => e?.dateISO === d);
-      return Math.round(items.reduce((sum,e) => sum + (Number(e.summary?.totalVolume) || 0), 0));
-    }
-
-    const last4 = sessionDatesDesc.slice(0, 4);
-    const vols = last4.map(d => volForDate(d));
-    return { last4, vols };
-  }
+  let selectedIndex = todayIndex;
 
     const weekStartsOn = state.profile?.weekStartsOn || "mon";
   const weekStartISO = Dates.startOfWeekISO(todayISO, weekStartsOn);
@@ -6872,378 +6375,147 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
 }
 
     // ────────────────────────────
-    // Routine header visual: 3D carousel OR compact header (based on Settings)
+    // Header Card (locked layout)
     // ────────────────────────────
-    const wants3D = (state.profile?.show3DCards === undefined) ? true : !!state.profile.show3DCards;
+fixedHost.appendChild(el("div", { class:"card" }, [
+      el("h2", { text:"Routine" }),
+      el("div", { class:"note", text:`${routine.name} • ${weekStartsOn === "sun" ? "Sun–Sat" : "Mon–Sun"}` }),
 
-    // ────────────────────────────
-    // Header Card (locked layout) — only when 3D is ON
-    // ────────────────────────────
-    if(wants3D){
-      fixedHost.appendChild(el("div", { class:"card" }, [
-        el("h2", { text:"Routine" }),
-        el("div", { class:"note", text:`${routine.name} • ${weekStartsOn === "sun" ? "Sun–Sat" : "Mon–Sun"}` }),
+      el("div", { style:"height:10px" }),
 
-        el("div", { style:"height:10px" }),
+      el("div", { class:"rHdrRow" }, [
+        el("button", {
+          class:"btn ghost",
+          onClick: (e) => openRoutinePicker(e.currentTarget)
+        }, [`${routine.name} ▼`]),
 
-        el("div", { class:"rHdrRow" }, [
-          el("button", {
-            class:"btn ghost",
-            onClick: (e) => openRoutinePicker(e.currentTarget)
-          }, [`${routine.name} ▼`]),
+        el("button", {
+          class:"btn primary",
+          onClick: () => {
+            selectedIndex = todayIndex;
+            repaint();
+            setTimeout(()=>{
+              const first = scrollHost.querySelector("[data-unlogged='true']");
+              if(first){
+                first.scrollIntoView({ behavior:"smooth", block:"center" });
+                first.classList.add("pulse");
+                setTimeout(()=>first.classList.remove("pulse"),1200);
+              }
+            },0);
+          }
+        }, ["▶ Start Today"])
+      ]),
 
-          el("button", {
-            class:"btn primary",
-            onClick: () => {
-              selectedIndex = todayIndex;
-              repaint();
-              setTimeout(()=>{
-                const first = scrollHost.querySelector("[data-unlogged='true']");
-                if(first){
-                  first.scrollIntoView({ behavior:"smooth", block:"center" });
-                  first.classList.add("pulse");
-                  setTimeout(()=>first.classList.remove("pulse"),1200);
-                }
-              },0);
-            }
-          }, ["▶ Start Today"])
-        ]),
-
-        el("div", {
-          class:"manageLink",
-          onClick: () => navigate("routine_editor")
-        }, ["Manage Routine ▾"])
-      ]));
-    }
+      el("div", {
+        class:"manageLink",
+        onClick: () => navigate("routine_editor")
+      }, ["Manage Routine ▾"])
+    ]));
 
     if(!day){
       scrollHost.appendChild(el("div", { class:"card note" }, ["No day found."]));
       return;
     }
 
-if(wants3D){
-  // ✅ 3D Card Carousel
-  fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+    // ────────────────────────────
+    // 3D Card Carousel (visual container)
+    // ────────────────────────────
+fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+  (() => {
+    let down = false;
+    let startX = 0;
+    let dx = 0;
+    const THRESH = 55;
 
-    // 3D stage
-    (() => {
-      let down = false;
-      let startX = 0;
-      let dx = 0;
-      const THRESH = 55;
-
-      function onDown(e){
-        down = true;
-        startX = e.clientX;
-        dx = 0;
-        try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-      }
-      function onMove(e){
-        if(!down) return;
-        dx = e.clientX - startX;
-      }
-      function onEnd(){
-        if(!down) return;
-        down = false;
-
-        // ✅ If flipped open, do NOT swipe days.
-        // Any swipe gesture just closes the flip.
-        if(UIState.routine?.flipOpen){
-          if(Math.abs(dx) > 18){
-            UIState.routine.flipOpen = false;
-            repaint();
-            return;
-          }
-          return;
-        }
-
-        // Normal swipe behavior
-        if(dx <= -THRESH){
-          selectedIndex = (selectedIndex + 1) % 7;
-          UIState.routine.flipOpen = false;
-          repaint();
-        }
-        else if(dx >= THRESH){
-          selectedIndex = (selectedIndex + 6) % 7;
-          UIState.routine.flipOpen = false;
-          repaint();
-        }
-      }
-
-      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-      const c3d = el("div", {
-        class: "c3d" + (UIState.routine?.flipOpen ? " flipMode" : ""),
-        onPointerDown: onDown,
-        onPointerMove: onMove,
-        onPointerUp: onEnd,
-        onPointerCancel: onEnd,
-        onLostPointerCapture: onEnd,
-
-        // Tap outside the selected card (the stage) closes the flip
-        onClick: (e) => {
-          if(UIState.routine?.flipOpen && e.target === c3d){
-            UIState.routine.flipOpen = false;
-            repaint();
-          }
-        }
-      }, []);
-
-      // Show selected ±2
-      const offsets = [-2,-1,0,1,2];
-      offsets.forEach(off => {
-        const idx = (selectedIndex + off + 7) % 7;
-        const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
-
-        const abs = Math.abs(off);
-
-        let scale = (off === 0) ? 1 : (1 - abs * 0.10);
-        let x = off * 92;              // tighter spacing
-        let z = -(abs * 95);           // depth
-        let y = abs * 6;
-        let rot = off * -22;
-        let op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
-
-        const isSel = (idx === selectedIndex);
-        const isFlipped = isSel && !!UIState.routine.flipOpen;
-
-        /* ✅ Flip+Expand: make the selected flipped card feel “out there” */
-        if(isFlipped){
-          scale = 1.22;     // bigger, readable
-          z = 140;          // push forward
-          y = -10;          // lift up slightly
-          rot = 0;          // keep facing forward while in detail mode
-          op = 1;
-        }
-
-        const chips = [];
-        chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
-        if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
-
-        function buildBackFace(){
-          // Must have at least 2 sessions for this routine day template to show real data
-          const sessionDates = __sessionDatesForRoutineDayTemplate(routine.id, d.id);
-
-          if(sessionDates.length < 2){
-            return el("div", { class:"c3dFace back" }, [
-              el("div", {}, [
-                el("div", { class:"c3dSnapTitle", text:"PERFORMANCE SNAPSHOT" }),
-                el("div", { class:"c3dSnapSub", text:"Unlocks after 2 completed sessions on this day." }),
-                el("div", { class:"c3dSnapLock", text:"Not enough history yet. Complete this exact day (logged sets + attendance) at least two times." })
-              ]),
-              el("div", { class:"c3dSnapSub", text:"Tap again to close" })
-            ]);
-          }
-
-          const latestDate = sessionDates[0];
-          const prevDate   = sessionDates[1];
-
-          const gains = __strengthGains(routine.id, d.id, latestDate, prevDate);
-          const { vols } = __lastVolumes(routine.id, d.id, sessionDates);
-
-          let trend = "—";
-          if(vols.length >= 2){
-            const oldest = vols[vols.length - 1];
-            const newest = vols[0];
-            trend = newest > oldest ? "↑ Improving" : (newest < oldest ? "↓ Declining" : "→ Flat");
-          }
-
-          const top = (gains || []).slice(0, 2); // keep the card back compact
-
-          return el("div", { class:"c3dFace back" }, [
-            el("div", {}, [
-              el("div", { class:"c3dSnapTitle", text:"PERFORMANCE SNAPSHOT" }),
-              el("div", { class:"c3dSnapSub", text:`Last session: ${Dates.formatShort(prevDate)}` }),
-
-              el("div", { class:"c3dSnapList" }, [
-                ...(top.length ? top.map(g => {
-                  const deltaTxt =
-                    (g.deltaW !== 0)
-                      ? `${g.deltaW > 0 ? "+" : ""}${Math.round(g.deltaW)} lb`
-                      : `${g.deltaR > 0 ? "+" : ""}${g.deltaR} reps`;
-
-                  return el("div", { class:"c3dSnapRow" }, [
-                    el("div", { text: g.name }),
-                    el("div", { class:"muted", text: deltaTxt })
-                  ]);
-                }) : [
-                  el("div", { class:"c3dSnapLock", text:"No measurable changes between the last two sessions yet." })
-                ]),
-
-                el("div", { style:"height:6px" }),
-                el("div", { class:"c3dSnapRow" }, [
-                  el("div", { text:"Consistency" }),
-                  el("div", { class:"muted", text: trend })
-                ])
-              ])
-            ]),
-            el("div", { class:"c3dSnapSub", text:"Tap again to close" })
-          ]);
-        }
-
-        const frontFace = el("div", { class:"c3dFace front" }, [
-          el("div", {}, [
-            el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
-            el("div", { class:"c3dLabel", text: d.label || "Day" }),
-            el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
-          ]),
-          el("div", { class:"c3dChips" }, chips)
-        ]);
-
-        const card = el("div", {
-          class: "c3dCard" + (isSel ? " sel" : "") + (isFlipped ? " flipped" : ""),
-          style: `--x:${x}px; --y:${y}px; --z:${z}px; --rot:${rot}deg; --scale:${scale}; --op:${op};`
-        }, [
-          el("div", { class:"c3dInner" }, [
-            frontFace,
-            buildBackFace()
-          ])
-        ]);
-
-        // Tap cards:
-        // - Tap DIFFERENT day → switch day (repaint needed)
-        // - Tap SAME selected day → toggle flip IN-PLACE (no repaint → smooth animation)
-        card.addEventListener("click", () => {
-          if(idx === selectedIndex){
-            UIState.routine.flipOpen = !UIState.routine.flipOpen;
-
-            // ✅ Toggle flip classes without rebuilding DOM (enables transitions)
-            card.classList.toggle("flipped", UIState.routine.flipOpen);
-            c3d.classList.toggle("flipMode", UIState.routine.flipOpen);
-
-            return; // IMPORTANT: no repaint
-          }
-
-          selectedIndex = idx;
-          UIState.routine.flipOpen = false;
-          repaint();
-        });
-
-        c3d.appendChild(card);
-      });
-
-      return c3d;
-    })(),
-
-    // Fixed day strip under carousel (tap to jump)
-    el("div", { class:"routineDayStrip" }, [
-      ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
-        const label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
-        return el("button", {
-          class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
-          onClick: () => {
-            selectedIndex = i;
-            UIState.routine.flipOpen = false;
-            repaint();
-          }
-        }, [
-          el("div", { text: label }),
-          el("div", { class:"dot" })
-        ]);
-      })
-    ])
-
-  ]));
-} else {
-    // ✅ Compact combined header (3D OFF): merges Routine controls + Day tabs
-  const dayNamesFull = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const dayNamesShort = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-  const dSel = getDay(selectedIndex) || { label:"Day", isRest:false, exercises:[] };
-
-  function muscleSummaryForDay(day){
-    try{
-      // Preferred display order (consistent + minimal)
-      const order = ["Chest","Back","Shoulders","Arms","Legs","Full Body","Cardio","Core"];
-      const found = new Set();
-
-      (day.exercises || []).forEach(ex => {
-        const type = ex?.type || "weightlifting";
-        const nm = ex?.nameSnap || ex?.name || "";
-        const hit = findLibItem(type, nm);
-        const pm = hit?.primaryMuscle;
-        if(pm) found.add(pm);
-      });
-
-      const arr = Array.from(found);
-      arr.sort((a,b) => order.indexOf(a) - order.indexOf(b));
-      return arr.slice(0,3).join(" / "); // ✅ minimal
-    }catch(_){
-      return "";
+    function onDown(e){
+      down = true;
+      startX = e.clientX;
+      dx = 0;
+      try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
     }
-  }
+    function onMove(e){
+      if(!down) return;
+      dx = e.clientX - startX;
+      // (visual-only: we keep drag simple; snap happens on release)
+    }
+    function onEnd(){
+      if(!down) return;
+      down = false;
 
-  const exCount = (dSel.exercises || []).length;
-  const muscles = muscleSummaryForDay(dSel);
+      if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
+      else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
 
-  const metaLine = dSel.isRest
-    ? "Rest Day • Recovery Focus"
-    : `${exCount} Exercise${exCount===1?"":"s"}${muscles ? " • " + muscles : ""}`;
+      repaint();
+    }
 
-  fixedHost.appendChild(el("div", { class:"card routineCompactCard" }, [
-    // Top: routine picker + start today
-    el("div", { class:"routineCompactTop" }, [
-      el("div", {}, [
-        el("div", { class:"routineMiniLabel", text:"ROUTINE" }),
-        el("div", { class:"note", text:`${routine.name} • ${weekStartsOn === "sun" ? "Sun–Sat" : "Mon–Sun"}` })
-      ]),
+    const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-      el("button", {
-        class:"btn primary",
-        onClick: () => {
-          selectedIndex = todayIndex;
-          repaint();
-          setTimeout(()=>{
-            const first = scrollHost.querySelector("[data-unlogged='true']");
-            if(first){
-              first.scrollIntoView({ behavior:"smooth", block:"center" });
-              first.classList.add("pulse");
-              setTimeout(()=>first.classList.remove("pulse"),1200);
-            }
-          },0);
-        }
-      }, ["▶ Today"])
-    ]),
+    const c3d = el("div", {
+      class:"c3d",
+      onPointerDown: onDown,
+      onPointerMove: onMove,
+      onPointerUp: onEnd,
+      onPointerCancel: onEnd,
+      onLostPointerCapture: onEnd
+    }, []);
 
-    el("div", { style:"height:10px" }),
+    // Show selected ±2
+    const offsets = [-2,-1,0,1,2];
+    offsets.forEach(off => {
+      const idx = (selectedIndex + off + 7) % 7;
+      const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
 
-    // Routine selector + manage
-    el("div", { class:"routineCompactRow" }, [
-      el("button", {
-        class:"btn ghost",
-        onClick: (e) => openRoutinePicker(e.currentTarget)
-      }, [`${routine.name} ▼`]),
+      const abs = Math.abs(off);
+      const scale = (off === 0) ? 1 : (1 - abs * 0.10);
+      const x = off * 92;              // ✅ tighter spacing (more compact)
+      const z = -(abs * 95);           // ✅ less depth than before
+      const y = abs * 6;
+      const rot = off * -22;           // ✅ slightly tighter rotation
+      const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
 
-      el("div", {
-        class:"manageLink compact",
-        onClick: () => navigate("routine_editor")
-      }, ["Manage ▾"])
-    ]),
+      const chips = [];
+      chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
+      if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
 
-    el("div", { style:"height:10px" }),
+      const card = el("div", {
+        class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
+        style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+      }, [
+        el("div", {}, [
+          el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
+          el("div", { class:"c3dLabel", text: d.label || "Day" }),
+          el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+        ]),
+        el("div", { class:"c3dChips" }, chips)
+      ]);
 
-    // Day title + meta
-    el("div", { class:"routineMiniTitle compact", text: dayNamesFull[selectedIndex] }),
-    el("div", { class:"routineMiniMeta", text: metaLine }),
+      // Tap any card to jump (visual-only)
+      card.addEventListener("click", () => {
+        selectedIndex = idx;
+        repaint();
+      });
 
-    el("div", { style:"height:10px" }),
+      c3d.appendChild(card);
+    });
 
-    // Day tabs with underline animation
-    el("div", { class:"routineTabs", style:`--i:${selectedIndex};` }, [
-      ...dayNamesShort.map((lab, idx) =>
-        el("button", {
-          class:"routineTabBtn" + (idx === selectedIndex ? " sel" : ""),
-          onClick: () => {
-            selectedIndex = idx;
-            UIState.routine.flipOpen = false;
-            repaint();
-          }
-        }, [lab])
-      ),
-      el("div", { class:"routineTabUnderline", "aria-hidden":"true" })
-    ])
-  ]));
-  }
+    return c3d;
+  })(),
+
+  // Fixed day strip under carousel (tap to jump)
+  el("div", { class:"routineDayStrip" }, [
+    ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
+      const label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
+      return el("button", {
+        class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
+        onClick: () => { selectedIndex = i; repaint(); }
+      }, [
+        el("div", { text: label }),
+        el("div", { class:"dot" })
+      ]);
+    })
+  ])
+]));
+
 
     // Rest Day
     if(day.isRest){
@@ -8297,9 +7569,6 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
 
         let hideRestDays = !!state.profile?.hideRestDays;
 
-// ✅ New: show/hide the 3D routine cards (default ON)
-let show3DCards = (state.profile?.show3DCards === undefined) ? true : !!state.profile.show3DCards;
-
 const hideRestSwitch = el("div", {
   class: "switch" + (hideRestDays ? " on" : ""),
   onClick: () => {
@@ -8308,30 +7577,17 @@ const hideRestSwitch = el("div", {
   }
 });
 
-// ✅ New switch
-const show3DSwitch = el("div", {
-  class: "switch" + (show3DCards ? " on" : ""),
-  onClick: () => {
-    show3DCards = !show3DCards;
-    show3DSwitch.classList.toggle("on", show3DCards);
-  }
-});
 
-function saveProfile(){
-  state.profile = state.profile || {};
-  state.profile.name = (nameInput.value || "").trim();
-  state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
-  state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
-  state.profile.hideRestDays = !!hideRestDays;
-
-  // ✅ Persist the preference
-  state.profile.show3DCards = !!show3DCards;
-
-  Storage.save(state);
-  showToast("Saved");
-  renderView();
-}
-
+        function saveProfile(){
+          state.profile = state.profile || {};
+          state.profile.name = (nameInput.value || "").trim();
+          state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
+          state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
+state.profile.hideRestDays = !!hideRestDays;
+          Storage.save(state);
+          showToast("Saved");
+          renderView();
+        }
 
         // --- Existing import/export helpers (reuse your current functions) ---
         function openImportPasteModal(){
@@ -8409,61 +7665,51 @@ function saveProfile(){
 
         // --- Section bodies ---
         const profileBody = el("div", {}, [
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"Name" }),
-      el("div", { class:"meta", text:"Shown on Home" })
-    ]),
-    nameInput
-  ]),
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
-      el("div", { class:"meta", text:"grams/day" })
-    ]),
-    proteinInput
-  ]),
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"Week starts on" }),
-      el("div", { class:"meta", text:"Affects Home week view" })
-    ]),
-    weekSelect
-  ]),
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"Hide rest days" }),
-      el("div", { class:"meta", text:"Keep Home focused on training days" })
-    ]),
-    hideRestSwitch
-  ]),
-
-  // ✅ NEW: 3D card toggle
-  el("div", { class:"setRow" }, [
-    el("div", {}, [
-      el("div", { style:"font-weight:820;", text:"3D routine cards" }),
-      el("div", { class:"meta", text:"Show the 3D day carousel on Routine" })
-    ]),
-    show3DSwitch
-  ]),
-
-  el("div", { style:"height:12px" }),
-  el("div", { class:"btnrow" }, [
-    el("button", { class:"btn primary", onClick: () => {
-      try{ saveProfile(); }
-      catch(e){
-        Modal.open({
-          title:"Save failed",
-          bodyNode: el("div", {}, [
-            el("div", { class:"note", text: e?.message || "Could not save settings." }),
-            el("div", { style:"height:12px" }),
-            el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Name" }),
+              el("div", { class:"meta", text:"Shown on Home" })
+            ]),
+            nameInput
+          ]),
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
+              el("div", { class:"meta", text:"grams/day" })
+            ]),
+            proteinInput
+          ]),
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Week starts on" }),
+              el("div", { class:"meta", text:"Affects Home week view" })
+            ]),
+            weekSelect
+          ]),
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Hide rest days" }),
+              el("div", { class:"meta", text:"Keep Home focused on training days" })
+            ]),
+            hideRestSwitch
+          ]),
+          el("div", { style:"height:12px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", { class:"btn primary", onClick: () => {
+              try{ saveProfile(); }
+              catch(e){
+                Modal.open({
+                  title:"Save failed",
+                  bodyNode: el("div", {}, [
+                    el("div", { class:"note", text: e?.message || "Could not save settings." }),
+                    el("div", { style:"height:12px" }),
+                    el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                  ])
+                });
+              }
+            }}, ["Save changes"])
           ])
-        });
-      }
-    }}, ["Save changes"])
-  ])
-]);
+        ]);
 
                 // ────────────────────────────
         // Routines section (Recovery + Management)
