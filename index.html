@@ -6580,153 +6580,183 @@ if(show3DPreview){
       const THRESH = 55;
 
       function onDown(e){
-        down = true;
-        startX = e.clientX;
-        dx = 0;
-        try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-      }
-      function onMove(e){
-        if(!down) return;
-        dx = e.clientX - startX;
-      }
-      function onEnd(){
-        if(!down) return;
-        down = false;
+  down = true;
+  startX = e.clientX;
+  dx = 0;
 
-        if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
-        else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
+  // ✅ If the user touched a card, remember which card it was
+  tapCardEl = (e.target && e.target.closest) ? e.target.closest(".c3dCard") : null;
 
+  // ✅ Only capture pointer when swiping on the background (not on a card)
+  if(!tapCardEl){
+    try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+  }
+}
+
+function onMove(e){
+  if(!down) return;
+  dx = e.clientX - startX;
+}
+
+function onEnd(){
+  if(!down) return;
+  down = false;
+
+  const TAP_SLOP = 10; // px (tap tolerance)
+
+  // ✅ TAP on a card (not a swipe)
+  if(tapCardEl && Math.abs(dx) < TAP_SLOP){
+    const idxStr = tapCardEl.getAttribute("data-idx");
+    const idx = Number(idxStr);
+
+    if(Number.isFinite(idx)){
+      // If you tap a non-active card -> select it (no flip)
+      if(idx !== selectedIndex){
+        UIState.routine.flipIdx = null;
+        selectedIndex = idx;
+        repaint();
+      } else {
+        // If you tap the active card -> flip toggle
+        UIState.routine.flipIdx = (UIState.routine.flipIdx === idx) ? null : idx;
         repaint();
       }
+    }else{
+      repaint();
+    }
 
-      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    tapCardEl = null;
+    return;
+  }
 
-      const c3d = el("div", {
-        class:"c3d",
-        onPointerDown: onDown,
-        onPointerMove: onMove,
-        onPointerUp: onEnd,
-        onPointerCancel: onEnd,
-        onLostPointerCapture: onEnd
-      }, []);
+  // ✅ SWIPE (same behavior as before)
+  if(dx <= -THRESH){
+    UIState.routine.flipIdx = null; // optional safety: stop showing back when swiping days
+    selectedIndex = (selectedIndex + 1) % 7;
+  }
+  else if(dx >= THRESH){
+    UIState.routine.flipIdx = null; // optional safety
+    selectedIndex = (selectedIndex + 6) % 7;
+  }
 
-      const offsets = [-2,-1,0,1,2];
-      offsets.forEach(off => {
-        const idx = (selectedIndex + off + 7) % 7;
-        const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
+  tapCardEl = null;
+  repaint();
+}
 
-        const abs = Math.abs(off);
-        const scale = (off === 0) ? 1 : (1 - abs * 0.10);
-        const x = off * 92;
-        const z = -(abs * 95);
-        const y = abs * 6;
-        const rot = off * -22;
-        const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
+const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-        const chips = [];
-        chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
-        if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
+let tapCardEl = null;
 
-        // Persist flip state across repaints (in-memory UIState only)
-        UIState.routine = UIState.routine || {};
-        const isFlipped = (UIState.routine.flipIdx === idx);
+const c3d = el("div", {
+  class:"c3d",
+  onPointerDown: onDown,
+  onPointerMove: onMove,
+  onPointerUp: onEnd,
+  onPointerCancel: onEnd,
+  onLostPointerCapture: onEnd
+}, []);
 
-        // Back-of-card scorecard is a UI shell for now.
-        // (We can wire in true 14-day comparison once your log schema includes a stable workout label/type key.)
-        const selectedDateISO_forCard = getSelectedDateISO(idx);
-        const focusQuote = "Strength is trending upward. Stay progressive.";
+const offsets = [-2,-1,0,1,2];
+offsets.forEach(off => {
+  const idx = (selectedIndex + off + 7) % 7;
+  const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
 
-        const top3 = (d.exercises || []).slice(0, 3).map((ex, i) => {
-          const name = (ex?.name || ex?.nameSnap || `Exercise ${i+1}`);
-          // Placeholder improvements (wire to real deltas later)
-          const r = (i === 0) ? "+10 lb" : (i === 1) ? "+2 reps @ 70 lb" : "+5 lb";
-          const base = (i === 0) ? "(225 vs 215 avg)" : (i === 1) ? "(8 vs 6 avg)" : "(185 vs 180 avg)";
-          return { name, r, base };
-        });
+  const abs = Math.abs(off);
+  const scale = (off === 0) ? 1 : (1 - abs * 0.10);
+  const x = off * 92;
+  const z = -(abs * 95);
+  const y = abs * 6;
+  const rot = off * -22;
+  const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
 
-        while(top3.length < 3){
-          const k = top3.length + 1;
-          top3.push({ name:`Exercise ${k}`, r:"—", base:"(no baseline yet)" });
-        }
+  const chips = [];
+  chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
+  if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
 
-        const frontFace = el("div", { class:"c3dFace c3dFront" }, [
-          el("div", {}, [
-            el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
-            el("div", { class:"c3dLabel", text: d.label || "Day" }),
-            el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
-          ]),
-          el("div", { class:"c3dChips" }, chips)
-        ]);
+  // Persist flip state across repaints (in-memory UIState only)
+  UIState.routine = UIState.routine || {};
+  const isFlipped = (UIState.routine.flipIdx === idx);
 
-        const backFace = el("div", { class:"c3dFace c3dBack" }, [
-          el("div", { class:"c3dScore" }, [
-            el("div", { class:"c3dScoreHead" }, [
-              el("div", {}, [
-                el("div", { class:"c3dScoreTitle", text:"TODAY'S PERFORMANCE" }),
-                el("div", { class:"c3dScoreSub", text:`${d.label || "Workout"} • Compared to last 2 weeks` })
-              ]),
-              el("button", {
-                class:"c3dScoreClose",
-                onClick: (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  UIState.routine.flipIdx = null;
-                  repaint();
-                }
-              }, ["Close"])
-            ]),
+  // Back-of-card scorecard UI
+  const selectedDateISO_forCard = getSelectedDateISO(idx);
+  const focusQuote = "Strength is trending upward. Stay progressive.";
 
-            el("div", { class:"c3dScoreCard" }, [
-              el("div", { class:"c3dScoreCardTop" }, [
-                el("div", {}, [
-                  el("div", { class:"t", text:"Top Improvements" }),
-                  el("div", { class:"m", text:`Compared to your last 14 days of ${d.label || "sessions"}` })
-                ]),
-                el("div", { class:"note", text:selectedDateISO_forCard })
-              ]),
-              el("div", { class:"c3dScoreList" }, top3.map(row => {
-                return el("div", { class:"c3dScoreRow" }, [
-                  el("div", { class:"l" }, [
-                    el("div", { class:"name", text: row.name }),
-                    el("div", { class:"base", text: row.base })
-                  ]),
-                  el("div", { class:"r", text: row.r })
-                ]);
-              })),
-              el("div", { class:"c3dScoreFocus" }, [
-                el("div", { class:"note", text:"FOCUS" }),
-                el("div", { text: focusQuote })
-              ])
-            ])
-          ])
-        ]);
+  const top3 = (d.exercises || []).slice(0, 3).map((ex, i) => {
+    const name = (ex?.name || ex?.nameSnap || `Exercise ${i+1}`);
+    const r = (i === 0) ? "+10 lb" : (i === 1) ? "+2 reps @ 70 lb" : "+5 lb";
+    const base = (i === 0) ? "(225 vs 215 avg)" : (i === 1) ? "(8 vs 6 avg)" : "(185 vs 180 avg)";
+    return { name, r, base };
+  });
 
-        const inner = el("div", { class:"c3dInner" }, [frontFace, backFace]);
+  while(top3.length < 3){
+    const k = top3.length + 1;
+    top3.push({ name:`Exercise ${k}`, r:"—", base:"(no baseline yet)" });
+  }
 
-        const card = el("div", {
-          class: "c3dCard" + (idx === selectedIndex ? " sel" : "") + (isFlipped ? " flipped" : ""),
-          style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
-        }, [ inner ]);
+  const frontFace = el("div", { class:"c3dFace c3dFront" }, [
+    el("div", {}, [
+      el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
+      el("div", { class:"c3dLabel", text: d.label || "Day" }),
+      el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+    ]),
+    el("div", { class:"c3dChips" }, chips)
+  ]);
 
-        // Tap-to-flip behavior:
-        // - Clicking a non-active card selects it (no flip)
-        // - Clicking the active card toggles flip
-        card.addEventListener("click", () => {
-          if(idx !== selectedIndex){
+  const backFace = el("div", { class:"c3dFace c3dBack" }, [
+    el("div", { class:"c3dScore" }, [
+      el("div", { class:"c3dScoreHead" }, [
+        el("div", {}, [
+          el("div", { class:"c3dScoreTitle", text:"TODAY'S PERFORMANCE" }),
+          el("div", { class:"c3dScoreSub", text:`${d.label || "Workout"} • Compared to last 2 weeks` })
+        ]),
+        el("button", {
+          class:"c3dScoreClose",
+          onClick: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             UIState.routine.flipIdx = null;
-            selectedIndex = idx;
             repaint();
-            return;
           }
-          // Active card: toggle flip
-          UIState.routine.flipIdx = (UIState.routine.flipIdx === idx) ? null : idx;
-          repaint();
-        });
+        }, ["Close"])
+      ]),
 
-        c3d.appendChild(card);
-      });
+      el("div", { class:"c3dScoreCard" }, [
+        el("div", { class:"c3dScoreCardTop" }, [
+          el("div", {}, [
+            el("div", { class:"t", text:"Top Improvements" }),
+            el("div", { class:"m", text:`Compared to your last 14 days of ${d.label || "sessions"}` })
+          ]),
+          el("div", { class:"note", text:selectedDateISO_forCard })
+        ]),
+        el("div", { class:"c3dScoreList" }, top3.map(row => {
+          return el("div", { class:"c3dScoreRow" }, [
+            el("div", { class:"l" }, [
+              el("div", { class:"name", text: row.name }),
+              el("div", { class:"base", text: row.base })
+            ]),
+            el("div", { class:"r", text: row.r })
+          ]);
+        })),
+        el("div", { class:"c3dScoreFocus" }, [
+          el("div", { class:"note", text:"FOCUS" }),
+          el("div", { text: focusQuote })
+        ])
+      ])
+    ])
+  ]);
 
-      return c3d;
+  const inner = el("div", { class:"c3dInner" }, [frontFace, backFace]);
+
+  const card = el("div", {
+    class: "c3dCard" + (idx === selectedIndex ? " sel" : "") + (isFlipped ? " flipped" : ""),
+    "data-idx": String(idx),
+    style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+  }, [ inner ]);
+
+  // ✅ IMPORTANT: no click handler here anymore (tap is handled in pointerup logic)
+  c3d.appendChild(card);
+});
+
+return c3d;
     })()
   ]));
 }
