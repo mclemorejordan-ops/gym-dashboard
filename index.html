@@ -1548,14 +1548,11 @@ body.modalOpen{
   justify-content:space-between;
   margin-top: 20px; 
 }
-/* Routine carousel: when 3D preview is OFF, tighten day strip spacing */
-.carouselCard.no3d .routineDayStrip{
-  margin-top: 0 !important;
-}
+
 .routineDayBtn{
   flex: 1 1 0;
   min-width: 0;
-  height: 70px;                  /* room for date + label */
+  height: 58px;                  /* ✅ more compact */
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.03);
@@ -1563,44 +1560,26 @@ body.modalOpen{
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap: 4px;
+  gap: 8px;
   color: rgba(255,255,255,.60);
   font-weight: 950;
   letter-spacing: .6px;
 }
 
-/* Day pill: top line (MON 18) */
-.routineDayBtn .dTop{
-  display:flex;
-  align-items:baseline;
-  justify-content:center;
-  gap: 6px;
-  line-height: 1;
-}
-.routineDayBtn .dTop .dow{
-  font-size: 12px;
-}
-.routineDayBtn .dTop .num{
-  font-size: 12px;
-  opacity: .85;
-}
-
-/* Day pill: routine label (Push/Pull/Rest) */
-.routineDayBtn .dLbl{
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .2px;
-  opacity: .85;
-  max-width: 100%;
-  padding: 0 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .routineDayBtn .dot{
   width: 8px; height: 8px; border-radius: 999px;
-  background: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.22);
+}
+
+.routineDayBtn.sel{
+  border-color: rgba(55,214,122,.45);
+  box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
+  color: rgba(255,255,255,.92);
+}
+
+.routineDayBtn.sel .dot{
+  background: rgba(55,214,122,1);
+  box-shadow: 0 0 0 3px rgba(55,214,122,.12);
 }
   /* Add Multiple visual feedback */
 .item.selected{
@@ -5149,13 +5128,11 @@ else root.appendChild(el("div", { class:"card" }, [
           }
 
           const profile = {
-          name: cleanName,
-          proteinGoal: Math.round(cleanProtein),
-          weekStartsOn,
-          hideRestDays: !!hideRestDays,
-          show3DPreview: true
-        };
-
+            name: cleanName,
+            proteinGoal: Math.round(cleanProtein),
+            weekStartsOn,
+            hideRestDays: !!hideRestDays
+          };
 
           // Seed library FIRST so template exercises can resolve to real exerciseIds
           ExerciseLibrary.ensureSeeded();
@@ -6318,8 +6295,6 @@ function isDayComplete(dateISO, day){
 
   const day = getDay(selectedIndex);
   const selectedDateISO = getSelectedDateISO(selectedIndex);
-  const show3DPreview = (state.profile?.show3DPreview !== false); // default ON
-
 
 function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
   LogEngine.ensure();
@@ -6432,24 +6407,10 @@ fixedHost.appendChild(el("div", { class:"card" }, [
         }, ["▶ Start Today"])
       ]),
 
- el("div", { class:"rHdrRow", style:"margin-top:10px; align-items:center;" }, [
-
-  el("div", {
-    class:"manageLink",
-    onClick: () => navigate("routine_editor")
-  }, ["Manage Routine ▾"]),
-
-  el("button", {
-    class:"btn ghost",
-    onClick: () => {
-      state.profile = state.profile || {};
-      state.profile.show3DPreview = !show3DPreview;
-      Storage.save(state);
-      repaint(); // instant swap
-    }
-  }, [`3D Preview: ${show3DPreview ? "ON" : "OFF"} 👁`])
-
-])
+      el("div", {
+        class:"manageLink",
+        onClick: () => navigate("routine_editor")
+      }, ["Manage Routine ▾"])
     ]));
 
     if(!day){
@@ -6457,8 +6418,7 @@ fixedHost.appendChild(el("div", { class:"card" }, [
       return;
     }
 
-
-     // ────────────────────────────
+    // ────────────────────────────
     // 3D Card Carousel (visual container)
     // ────────────────────────────
 fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
@@ -6545,30 +6505,15 @@ fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
   // Fixed day strip under carousel (tap to jump)
   el("div", { class:"routineDayStrip" }, [
     ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
-  const dow = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
-
-  // Date number for that day
-  const iso = getSelectedDateISO(i);
-  const dayNum = (() => {
-    try{ return new Date(String(iso) + "T00:00:00").getDate(); }catch(_){ return ""; }
-  })();
-
-  // Routine label (Push/Pull/Legs/etc) + Rest label
-  const d = getDay(i) || {};
-  const dayLabel = (d.isRest ? "Rest" : (d.label || d.title || ""));
-
-  return el("button", {
-    class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
-    onClick: () => { selectedIndex = i; repaint(); }
-  }, [
-    el("div", { class:"dTop" }, [
-      el("span", { class:"dow", text: dow }),
-      el("span", { class:"num", text: String(dayNum || "") })
-    ]),
-    el("div", { class:"dLbl", text: dayLabel || "" }),
-    el("div", { class:"dot" })
-  ]);
-})
+      const label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
+      return el("button", {
+        class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
+        onClick: () => { selectedIndex = i; repaint(); }
+      }, [
+        el("div", { text: label }),
+        el("div", { class:"dot" })
+      ]);
+    })
   ])
 ]));
 
@@ -7624,37 +7569,26 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
 
 
         let hideRestDays = !!state.profile?.hideRestDays;
-        let show3DPreview = (state.profile?.show3DPreview !== false); // default ON
-        
-        const hideRestSwitch = el("div", {
-          class: "switch" + (hideRestDays ? " on" : ""),
-          onClick: () => {
-            hideRestDays = !hideRestDays;
-            hideRestSwitch.classList.toggle("on", hideRestDays);
-          }
-        });
-        
-        const show3DSwitch = el("div", {
-          class: "switch" + (show3DPreview ? " on" : ""),
-          onClick: () => {
-            show3DPreview = !show3DPreview;
-            show3DSwitch.classList.toggle("on", show3DPreview);
-          }
-        });
-        
+
+const hideRestSwitch = el("div", {
+  class: "switch" + (hideRestDays ? " on" : ""),
+  onClick: () => {
+    hideRestDays = !hideRestDays;
+    hideRestSwitch.classList.toggle("on", hideRestDays);
+  }
+});
+
+
         function saveProfile(){
           state.profile = state.profile || {};
           state.profile.name = (nameInput.value || "").trim();
           state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
           state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
-          state.profile.hideRestDays = !!hideRestDays;
-          state.profile.show3DPreview = !!show3DPreview;
-        
+state.profile.hideRestDays = !!hideRestDays;
           Storage.save(state);
           showToast("Saved");
           renderView();
         }
-
 
         // --- Existing import/export helpers (reuse your current functions) ---
         function openImportPasteModal(){
@@ -7759,13 +7693,6 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
               el("div", { class:"meta", text:"Keep Home focused on training days" })
             ]),
             hideRestSwitch
-          ]),
-          el("div", { class:"setRow" }, [
-            el("div", {}, [
-              el("div", { style:"font-weight:820;", text:"3D Preview" }),
-              el("div", { class:"meta", text:"Show or hide the 3D cards on Routine" })
-            ]),
-            show3DSwitch
           ]),
           el("div", { style:"height:12px" }),
           el("div", { class:"btnrow" }, [
