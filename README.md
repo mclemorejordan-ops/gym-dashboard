@@ -1,3 +1,4 @@
+
 # Gym Dashboard (PWA)
 
 A production-hardened, fully client-side Progressive Web App for
