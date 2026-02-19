@@ -1840,7 +1840,159 @@ body.modalOpen{
 body.perfLock{
   overflow: hidden;
 }
-  
+  /* ===== Expanded Performance Modal (flip like sandbox) ===== */
+.perfWrap{
+  width: min(520px, 100%);
+  margin: 0 auto;
+}
+
+.perfStage{
+  perspective:1100px;
+  position:relative;
+}
+
+.perfCard{
+  position:relative;
+  width:100%;
+  aspect-ratio: 1.45 / 1;
+  transform-style:preserve-3d;
+  transition:transform 280ms ease;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow: 0 18px 60px rgba(0,0,0,.55);
+  background: linear-gradient(180deg, rgba(17,26,43,.95), rgba(15,22,38,.92));
+}
+
+.perfSide{
+  position:absolute;
+  inset:0;
+  padding:18px;
+  backface-visibility:hidden;
+}
+
+.perfFront{
+  /* not really used since we auto-flip, but kept for completeness */
+}
+
+.perfBack{
+  transform: rotateY(180deg);
+}
+
+.perfStage.flipped .perfCard{
+  transform: rotateY(180deg);
+}
+
+/* Panel is INSIDE the card (no scrollbars) */
+.perfPanel{
+  position:absolute;
+  left:14px;
+  right:14px;
+  top:70px;
+  bottom:14px;
+
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:16px;
+  padding:10px;
+
+  opacity:0;
+  transform:translateY(10px) scale(.96);
+  transition:all 200ms ease;
+  overflow:hidden;           /* ✅ no scrollbars */
+}
+
+.perfStage.flipped .perfPanel{
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+
+.perfRow{
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.perfRow:last-child{ border-bottom:none; }
+
+.perfRowTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.perfEx{
+  font-weight:900;
+  font-size:15px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width: 70%;
+}
+
+.perfDelta{
+  font-weight:900;
+  font-size:14px;
+  white-space:nowrap;
+}
+
+.perfBase{
+  font-size:12px;
+  color: rgba(234,240,255,.55);
+  margin-top:4px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.perfClose{
+  position:absolute;
+  top:14px;
+  right:14px;
+  z-index:5;
+
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  font-weight:900;
+  font-size:12px;
+  line-height:1;
+}
+
+.perfHdrTitle{
+  font-weight:950;
+  letter-spacing:.3px;
+  font-size:14px;
+}
+
+.perfHdrSub{
+  margin-top:6px;
+  font-size:12px;
+  color: rgba(234,240,255,.55);
+}
+
+.perfFocus{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid rgba(255,255,255,.12);
+  font-size:13px;
+  font-weight:800;
+  line-height:1.2;
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* iPhone: keep it feeling big without pushing off-screen */
+@media (max-width: 500px){
+  .perfSide{ padding:16px; }
+  .perfPanel{ top:66px; }
+  .perfEx{ font-size:14px; }
+  .perfDelta{ font-size:13px; }
+}
 /* ✅ Day strip: day + date number + label (Compact Hybrid) */
 .routineDayStrip{
   display:flex;
@@ -2937,6 +3089,52 @@ const Dates = {
       else state.attendance.push(dateISO);
       Storage.save(state);
     }
+    function openTodayPerformanceModal({ label, top3, focusQuote }){
+  const stage = el("div", { class:"perfStage flipped" }, []);
+
+  const card = el("div", { class:"perfCard" }, [
+    // FRONT (not shown because we start flipped)
+    el("div", { class:"perfSide perfFront" }, [
+      el("div", { style:"font-weight:950;font-size:18px;", text: label || "Workout" }),
+      el("div", { class:"perfHdrSub", text:"Tap to view performance" })
+    ]),
+
+    // BACK (shown)
+    el("div", { class:"perfSide perfBack" }, [
+      el("div", { class:"perfHdrTitle", text:"TODAY'S PERFORMANCE" }),
+      el("div", { class:"perfHdrSub", text:`${label || "Workout"} • Compared to last 2 weeks` })
+    ])
+  ]);
+
+  const panel = el("div", { class:"perfPanel" }, [
+    ...top3.map(row => (
+      el("div", { class:"perfRow" }, [
+        el("div", { class:"perfRowTop" }, [
+          el("div", { class:"perfEx", text: row.name }),
+          el("div", { class:"perfDelta", text: row.r })
+        ]),
+        el("div", { class:"perfBase", text: row.base })
+      ])
+    )),
+    el("div", { class:"perfFocus", text: focusQuote || "Stay progressive." })
+  ]);
+
+  const closeBtn = el("button", {
+    class:"perfClose",
+    onClick: (e) => { e.preventDefault(); Modal.close(); }
+  }, ["Close"]);
+
+  stage.appendChild(card);
+  stage.appendChild(panel);
+  stage.appendChild(closeBtn);
+
+  Modal.open({
+    title: "",
+    center: true,
+    size: "md",
+    bodyNode: el("div", { class:"perfWrap" }, [ stage ])
+  });
+}
     /********************
      * Attendance Helpers (Step 9)
      ********************/
@@ -6931,10 +7129,37 @@ if(tapCardEl && Math.abs(dx) < TAP_SLOP){
       UIState.routine.flipIdx = null;
       selectedIndex = idx;
       repaint();
-    } else {
-  // If you tap the active card -> open expanded overlay (centered)
-  UIState.routine.flipIdx = null; // make sure small card is not flipped
+        } else {
+      // If you tap the active card -> open expanded "Today's Performance" modal (auto-flipped)
+      UIState.routine.flipIdx = null; // ensure the small card isn't flipped
 
+      // Build day data in THIS scope (prevents 'd not defined' crashes)
+      const dayForOverlay = getDay(idx) || { label:"Workout", isRest:false, exercises:[] };
+
+      // Build Top 3 list (use real exercise names, placeholder deltas for now)
+      const top3 = (dayForOverlay.exercises || []).slice(0, 3).map((ex, i) => {
+        const name = (ex?.name || ex?.nameSnap || `Exercise ${i+1}`);
+        const r = (i === 0) ? "+10 lb" : (i === 1) ? "+2 reps @ 70 lb" : "+5 lb";
+        const base = (i === 0) ? "(225 vs 215 avg)" : (i === 1) ? "(8 vs 6 avg)" : "(185 vs 180 avg)";
+        return { name, r, base };
+      });
+
+      while(top3.length < 3){
+        const k = top3.length + 1;
+        top3.push({ name:`Exercise ${k}`, r:"—", base:"" });
+      }
+
+      const focusQuote = "Strength is trending upward. Stay progressive.";
+
+      // OPEN the big modal card (this is the expanded centered card)
+      openTodayPerformanceModal({
+        label: dayForOverlay.label || "Workout",
+        top3,
+        focusQuote
+      });
+
+      // IMPORTANT: do NOT repaint here; modal is the UI action
+    }
   // ✅ Build overlay data INSIDE this scope (so we don't reference undefined vars)
   const dayForOverlay = getDay(idx) || { label:"Workout", isRest:false, exercises:[] };
   const workoutTitle = (dayForOverlay.label || "Workout");
