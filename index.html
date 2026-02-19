@@ -6932,16 +6932,36 @@ if(tapCardEl && Math.abs(dx) < TAP_SLOP){
       selectedIndex = idx;
       repaint();
     } else {
-      // If you tap the active card -> open expanded overlay (centered)
-      UIState.routine.flipIdx = null;
+  // If you tap the active card -> open expanded overlay (centered)
+  UIState.routine.flipIdx = null; // make sure small card is not flipped
 
-      openPerfOverlay({
-        workoutTitle: (d && d.label) ? d.label : "Workout",
-        workoutSub: `${(d && d.label) ? d.label : "Workout"} • Compared to last 2 weeks`,
-        top3,
-        focusQuote
-      });
-    }
+  // ✅ Build overlay data INSIDE this scope (so we don't reference undefined vars)
+  const dayForOverlay = getDay(idx) || { label:"Workout", isRest:false, exercises:[] };
+  const workoutTitle = (dayForOverlay.label || "Workout");
+  const selectedDateISO_forOverlay = getSelectedDateISO(idx);
+
+  const focusQuote = "Strength is trending upward. Stay progressive.";
+
+  const top3 = (dayForOverlay.exercises || []).slice(0, 3).map((ex, i) => {
+    const name = (ex?.name || ex?.nameSnap || `Exercise ${i+1}`);
+    const r = (i === 0) ? "+10 lb" : (i === 1) ? "+2 reps @ 70 lb" : "+5 lb";
+    const base = (i === 0) ? "(225 vs 215 avg)" : (i === 1) ? "(8 vs 6 avg)" : "(185 vs 180 avg)";
+    return { name, r, base };
+  });
+
+  while(top3.length < 3){
+    const k = top3.length + 1;
+    top3.push({ name:`Exercise ${k}`, r:"—", base:"(no baseline yet)" });
+  }
+
+  openPerfOverlay({
+    workoutTitle,
+    workoutSub: `${workoutTitle} • Compared to last 2 weeks`,
+    dateISO: selectedDateISO_forOverlay,
+    top3,
+    focusQuote
+  });
+}
   }else{
     repaint();
   }
