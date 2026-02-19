@@ -7638,45 +7638,53 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
         weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
 
         // Backward compatible: accept older numeric values (0/1) if they exist
-        const ws = state.profile?.weekStartsOn;
-        const normalized =
-          (ws === 0 || ws === "0" || ws === "sun") ? "sun" :
-          (ws === 1 || ws === "1" || ws === "mon") ? "mon" :
-          "mon";
-        weekSelect.value = normalized;
+const ws = state.profile?.weekStartsOn;
+const normalized =
+  (ws === 0 || ws === "0" || ws === "sun") ? "sun" :
+  (ws === 1 || ws === "1" || ws === "mon") ? "mon" :
+  "mon";
+weekSelect.value = normalized;
 
+// ────────────────────────────
+// Toggles (live UI state → saved on Save changes)
+// ────────────────────────────
+let hideRestDays = !!state.profile?.hideRestDays;
 
-                    let hideRestDays = !!state.profile?.hideRestDays;
-            
-            const hideRestSwitch = el("div", {
-              class: "switch" + (hideRestDays ? " on" : ""),
-              onClick: () => {
-                hideRestDays = !hideRestDays;
-                hideRestSwitch.classList.toggle("on", hideRestDays);
-              }
-            });
-            
-            let show3DPreview = (state.profile?.show3DPreview !== false); // default ON
-            
-            const show3DSwitch = el("div", {
-              class: "switch" + (show3DPreview ? " on" : ""),
-              onClick: () => {
-                show3DPreview = !show3DPreview;
-                show3DSwitch.classList.toggle("on", show3DPreview);
-              }
-            });
+const hideRestSwitch = el("div", {
+  class: "switch" + (hideRestDays ? " on" : ""),
+  onClick: () => {
+    hideRestDays = !hideRestDays;
+    hideRestSwitch.classList.toggle("on", hideRestDays);
+  }
+});
 
-        function saveProfile(){
-          state.profile = state.profile || {};
-          state.profile.name = (nameInput.value || "").trim();
-          state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
-          state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
-          state.profile.hideRestDays = !!hideRestDays;
-          state.profile.show3DPreview = !!show3DPreview;
-          Storage.save(state);
-          showToast("Saved");
-          renderView();
-        }
+// ✅ DEFAULT: 3D Preview ON unless user explicitly turned it off before
+let show3DPreview = (state.profile && ("show3DPreview" in state.profile))
+  ? !!state.profile.show3DPreview
+  : true;
+
+const show3DSwitch = el("div", {
+  class: "switch" + (show3DPreview ? " on" : ""),
+  onClick: () => {
+    show3DPreview = !show3DPreview;
+    show3DSwitch.classList.toggle("on", show3DPreview);
+  }
+});
+
+function saveProfile(){
+  state.profile = state.profile || {};
+  state.profile.name = (nameInput.value || "").trim();
+  state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
+  state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
+
+  // ✅ persist both toggles
+  state.profile.hideRestDays = !!hideRestDays;
+  state.profile.show3DPreview = !!show3DPreview;
+
+  Storage.save(state);
+  showToast("Saved");
+  renderView();
+}
 
         // --- Existing import/export helpers (reuse your current functions) ---
         function openImportPasteModal(){
