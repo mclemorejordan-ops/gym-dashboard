@@ -1410,7 +1410,40 @@ body.modalOpen{
    Routine — 3D Square Carousel + Day Strip (Option C - compact)
    (visual-only)
    ───────────────────────────── */
+/* Routine carousel: when 3D preview is OFF, tighten day strip spacing */
+.carouselCard.no3d .routineDayStrip{
+  margin-top: 0 !important;
+}
 
+/* Routine day pill: top row (MON 18) + label (Push/Rest) */
+.routineDayBtn .dTop{
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap:6px;
+  font-weight: 950;
+  letter-spacing: .6px;
+  line-height: 1;
+}
+
+.routineDayBtn .dNum{
+  font-weight: 900;
+  opacity: .85;
+  font-size: 12px;
+  letter-spacing: .2px;
+}
+
+.routineDayBtn .dLbl{
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 850;
+  opacity: .75;
+  line-height: 1.05;
+  max-width: 60px;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .carouselCard{
   padding: 12px;
   display:flex;
@@ -6407,115 +6440,160 @@ fixedHost.appendChild(el("div", { class:"card" }, [
         }, ["▶ Start Today"])
       ]),
 
-      el("div", {
-        class:"manageLink",
-        onClick: () => navigate("routine_editor")
-      }, ["Manage Routine ▾"])
-    ]));
+      el("div", { class:"rHdrRow", style:"margin-top:10px; align-items:center;" }, [
+
+  el("div", {
+    class:"manageLink",
+    onClick: () => navigate("routine_editor")
+  }, ["Manage Routine ▾"]),
+
+  el("button", {
+    class:"btn ghost",
+    onClick: () => {
+      state.profile = state.profile || {};
+      const cur = (state.profile?.show3DPreview !== false); // default ON
+      state.profile.show3DPreview = !cur;
+      Storage.save(state);
+      repaint(); // ✅ instant swap
+    }
+  }, [
+    `3D Preview: ${((state.profile?.show3DPreview !== false)) ? "ON" : "OFF"} 👁`
+  ])
+
+])
 
     if(!day){
       scrollHost.appendChild(el("div", { class:"card note" }, ["No day found."]));
       return;
     }
 
-    // ────────────────────────────
-    // 3D Card Carousel (visual container)
-    // ────────────────────────────
-fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
-  (() => {
-    let down = false;
-    let startX = 0;
-    let dx = 0;
-    const THRESH = 55;
+   // ────────────────────────────
+// 3D Card Carousel (visual container)
+// ────────────────────────────
+const show3DPreview = (state.profile?.show3DPreview !== false); // default ON
 
-    function onDown(e){
-      down = true;
-      startX = e.clientX;
-      dx = 0;
-      try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-    }
-    function onMove(e){
-      if(!down) return;
-      dx = e.clientX - startX;
-      // (visual-only: we keep drag simple; snap happens on release)
-    }
-    function onEnd(){
-      if(!down) return;
-      down = false;
-
-      if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
-      else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
-
-      repaint();
-    }
-
-    const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-    const c3d = el("div", {
-      class:"c3d",
-      onPointerDown: onDown,
-      onPointerMove: onMove,
-      onPointerUp: onEnd,
-      onPointerCancel: onEnd,
-      onLostPointerCapture: onEnd
-    }, []);
-
-    // Show selected ±2
-    const offsets = [-2,-1,0,1,2];
-    offsets.forEach(off => {
-      const idx = (selectedIndex + off + 7) % 7;
-      const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
-
-      const abs = Math.abs(off);
-      const scale = (off === 0) ? 1 : (1 - abs * 0.10);
-      const x = off * 92;              // ✅ tighter spacing (more compact)
-      const z = -(abs * 95);           // ✅ less depth than before
-      const y = abs * 6;
-      const rot = off * -22;           // ✅ slightly tighter rotation
-      const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
-
-      const chips = [];
-      chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
-      if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
-
-      const card = el("div", {
-        class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
-        style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
-      }, [
-        el("div", {}, [
-          el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
-          el("div", { class:"c3dLabel", text: d.label || "Day" }),
-          el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
-        ]),
-        el("div", { class:"c3dChips" }, chips)
-      ]);
-
-      // Tap any card to jump (visual-only)
-      card.addEventListener("click", () => {
-        selectedIndex = idx;
-        repaint();
-      });
-
-      c3d.appendChild(card);
-    });
-
-    return c3d;
-  })(),
-
-  // Fixed day strip under carousel (tap to jump)
-  el("div", { class:"routineDayStrip" }, [
+function dayStripNode(){
+  return el("div", { class:"routineDayStrip" }, [
     ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
-      const label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
+      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      const dayName = names[i].toUpperCase();
+
+      const iso = getSelectedDateISO(i);
+      const dayNum = (() => {
+        try{ return new Date(iso).getDate(); }catch(_){ return ""; }
+      })();
+
+      const d = getDay(i) || {};
+      const lbl = (d.isRest ? "Rest" : (d.label || "")).trim() || (d.isRest ? "Rest" : "");
+
       return el("button", {
         class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
         onClick: () => { selectedIndex = i; repaint(); }
       }, [
-        el("div", { text: label }),
+        el("div", { class:"dTop" }, [
+          el("div", { class:"dDow", text: dayName }),
+          el("div", { class:"dNum", text: String(dayNum || "") })
+        ]),
+        el("div", { class:"dLbl", text: lbl }),
         el("div", { class:"dot" })
       ]);
     })
-  ])
-]));
+  ]);
+}
+
+if(show3DPreview){
+
+  // ✅ Keep your existing 3D carousel code exactly as-is
+  fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+    (() => {
+      let down = false;
+      let startX = 0;
+      let dx = 0;
+      const THRESH = 55;
+
+      function onDown(e){
+        down = true;
+        startX = e.clientX;
+        dx = 0;
+        try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+      }
+      function onMove(e){
+        if(!down) return;
+        dx = e.clientX - startX;
+      }
+      function onEnd(){
+        if(!down) return;
+        down = false;
+
+        if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
+        else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
+
+        repaint();
+      }
+
+      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+      const c3d = el("div", {
+        class:"c3d",
+        onPointerDown: onDown,
+        onPointerMove: onMove,
+        onPointerUp: onEnd,
+        onPointerCancel: onEnd,
+        onLostPointerCapture: onEnd
+      }, []);
+
+      const offsets = [-2,-1,0,1,2];
+      offsets.forEach(off => {
+        const idx = (selectedIndex + off + 7) % 7;
+        const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
+
+        const abs = Math.abs(off);
+        const scale = (off === 0) ? 1 : (1 - abs * 0.10);
+        const x = off * 92;
+        const z = -(abs * 95);
+        const y = abs * 6;
+        const rot = off * -22;
+        const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
+
+        const chips = [];
+        chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
+        if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
+
+        const card = el("div", {
+          class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
+          style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+        }, [
+          el("div", {}, [
+            el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
+            el("div", { class:"c3dLabel", text: d.label || "Day" }),
+            el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+          ]),
+          el("div", { class:"c3dChips" }, chips)
+        ]);
+
+        card.addEventListener("click", () => {
+          selectedIndex = idx;
+          repaint();
+        });
+
+        c3d.appendChild(card);
+      });
+
+      return c3d;
+    })(),
+
+    // ✅ Updated day strip (now includes date # + label)
+    dayStripNode()
+  ]));
+
+} else {
+
+  // ✅ OFF mode: no 3D stage, only day strip
+  fixedHost.appendChild(el("div", { class:"card carouselCard no3d" }, [
+    dayStripNode()
+  ]));
+
+}
 
 
     // Rest Day
@@ -7568,23 +7646,33 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
         weekSelect.value = normalized;
 
 
-        let hideRestDays = !!state.profile?.hideRestDays;
-
-const hideRestSwitch = el("div", {
-  class: "switch" + (hideRestDays ? " on" : ""),
-  onClick: () => {
-    hideRestDays = !hideRestDays;
-    hideRestSwitch.classList.toggle("on", hideRestDays);
-  }
-});
-
+                    let hideRestDays = !!state.profile?.hideRestDays;
+            
+            const hideRestSwitch = el("div", {
+              class: "switch" + (hideRestDays ? " on" : ""),
+              onClick: () => {
+                hideRestDays = !hideRestDays;
+                hideRestSwitch.classList.toggle("on", hideRestDays);
+              }
+            });
+            
+            let show3DPreview = (state.profile?.show3DPreview !== false); // default ON
+            
+            const show3DSwitch = el("div", {
+              class: "switch" + (show3DPreview ? " on" : ""),
+              onClick: () => {
+                show3DPreview = !show3DPreview;
+                show3DSwitch.classList.toggle("on", show3DPreview);
+              }
+            });
 
         function saveProfile(){
           state.profile = state.profile || {};
           state.profile.name = (nameInput.value || "").trim();
           state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
           state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
-state.profile.hideRestDays = !!hideRestDays;
+          state.profile.hideRestDays = !!hideRestDays;
+          state.profile.show3DPreview = !!show3DPreview;
           Storage.save(state);
           showToast("Saved");
           renderView();
@@ -7693,6 +7781,13 @@ state.profile.hideRestDays = !!hideRestDays;
               el("div", { class:"meta", text:"Keep Home focused on training days" })
             ]),
             hideRestSwitch
+          ]),
+                    el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"3D Preview" }),
+              el("div", { class:"meta", text:"Show or hide the 3D week cards on Routine" })
+            ]),
+            show3DSwitch
           ]),
           el("div", { style:"height:12px" }),
           el("div", { class:"btnrow" }, [
