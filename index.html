@@ -6441,26 +6441,22 @@ fixedHost.appendChild(el("div", { class:"card" }, [
       ]),
 
       el("div", { class:"rHdrRow", style:"margin-top:10px; align-items:center;" }, [
+        el("div", {
+          class:"manageLink",
+          onClick: () => navigate("routine_editor")
+        }, ["Manage Routine ▾"]),
 
-  el("div", {
-    class:"manageLink",
-    onClick: () => navigate("routine_editor")
-  }, ["Manage Routine ▾"]),
-
-  el("button", {
-    class:"btn ghost",
-    onClick: () => {
-      state.profile = state.profile || {};
-      const cur = (state.profile?.show3DPreview !== false); // default ON
-      state.profile.show3DPreview = !cur;
-      Storage.save(state);
-      repaint(); // ✅ instant swap
-    }
-  }, [
-    `3D Preview: ${((state.profile?.show3DPreview !== false)) ? "ON" : "OFF"} 👁`
-  ])
-
-])
+        el("button", {
+          class: "subPill " + (show3DPreview ? "ok" : "off"),
+          onClick: () => {
+            state.profile = state.profile || {};
+            state.profile.show3DPreview = !show3DPreview;
+            Storage.save(state);
+            repaint(); // instant swap
+          }
+        }, [`3D Preview: ${show3DPreview ? "ON" : "OFF"} 👁`])
+      ])
+    ]));
 
     if(!day){
       scrollHost.appendChild(el("div", { class:"card note" }, ["No day found."]));
