@@ -1663,8 +1663,13 @@ body.modalOpen{
   position:absolute;
   inset:0;
   border-radius:18px;
+  /* Neutral outline (badge + dot carry status color) */
   border: 1px solid rgba(255,255,255,.14);
-  background: radial-gradient(120% 140% at 10% 0%, rgba(255,255,255,.12), rgba(255,255,255,.04));
+
+  /* ✅ Black transparent card (no white wash) */
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgba(255,255,255,.06), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,.42), rgba(0,0,0,.18));
   box-shadow: 0 18px 60px rgba(0,0,0,.55);
   backdrop-filter: blur(10px);
   transition: transform 220ms ease, opacity 220ms ease, filter 220ms ease;
@@ -1674,8 +1679,9 @@ body.modalOpen{
 .rV2Card.backR{ transform: translateX(120px) scale(.92); opacity:.22; filter: blur(.2px); }
 
 .rV2Card.active{
-  border-color: rgba(55,214,122,.38);
-  box-shadow: 0 26px 70px rgba(0,0,0,.62), 0 0 0 1px rgba(55,214,122,.12) inset;
+  /* Keep active card “present” but still neutral */
+  border-color: rgba(255,255,255,.18);
+  box-shadow: 0 26px 70px rgba(0,0,0,.62), 0 0 0 1px rgba(255,255,255,.08) inset;
 }
 
 .rV2CardInner{ padding:18px; }
@@ -1687,16 +1693,17 @@ body.modalOpen{
   gap:14px;
 }
 
+/* Text style closer to rest of app */
 .rV2Day .dow{
-  font-size:28px;
-  font-weight: 1000;
-  letter-spacing:.08em;
+  font-size:24px;
+  font-weight: 900;
+  letter-spacing:.06em;
 }
 .rV2Day .lift{
-  font-size:16px;
-  color: rgba(255,255,255,.62);
+  font-size:14px;
+  color: rgba(255,255,255,.66);
   margin-top:6px;
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .rV2ExRight{
@@ -1708,19 +1715,20 @@ body.modalOpen{
 .rV2ExPill{
   display:inline-flex;
   align-items:center;
+  gap:8px; /* ✅ space between “6” and “Exercises” */
   padding:8px 10px;
   border-radius:999px;
   background: rgba(255,255,255,.06);
   border: 1px solid rgba(255,255,255,.14);
-  color: rgba(255,255,255,.82);
-  font-weight: 950;
+  color: rgba(255,255,255,.86);
+  font-weight: 850;
 }
-.rV2ExCount{ font-size:20px; line-height:1; }
+.rV2ExCount{ font-size:18px; line-height:1; font-weight: 950; }
 .rV2ExLabel{
-  font-size:12px;
-  letter-spacing:.10em;
+  font-size:11px;
+  letter-spacing:.08em;
   text-transform:uppercase;
-  opacity:.8;
+  opacity:.82;
 }
 
 .rV2Badges{
@@ -1735,38 +1743,32 @@ body.modalOpen{
   border-radius:999px;
   background: rgba(255,255,255,.06);
   border: 1px solid rgba(255,255,255,.14);
-  font-weight: 950;
-  color: rgba(255,255,255,.86);
+  font-weight: 850;
+  color: rgba(255,255,255,.88);
 }
-.rV2Badge.good{
-  border-color: rgba(55,214,122,.35);
-  background: rgba(55,214,122,.08);
+
+/* Status colors (only badge + dot) */
+.rV2Badge.status-complete{
+  border-color: rgba(61,220,151,.38);
+  background: rgba(61,220,151,.10);
   color: rgba(255,255,255,.92);
 }
-
-.rV2Nav{
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 6px;
-  pointer-events:none;
+.rV2Badge.status-progress{
+  /* ✅ Amber / Yellow */
+  border-color: rgba(255,193,7,.45);
+  background: rgba(255,193,7,.14);
+  color: rgba(255,255,255,.92);
 }
-.rV2Chev{
-  pointer-events:auto;
-  width:46px; height:46px;
-  border-radius:999px;
-  display:grid; place-items:center;
+.rV2Badge.status-pending{
+  border-color: rgba(255,255,255,.14);
   background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.12);
-  color: rgba(255,255,255,.88);
-  font-weight:1000;
-  cursor:pointer;
-  transition: transform 120ms ease;
+  color: rgba(255,255,255,.86);
 }
-.rV2Chev:active{ transform: scale(.96); }
-
+.rV2Badge.status-rest{
+  border-color: rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.78);
+}
 .rV2Week{
   padding:12px 10px;
   display:grid;
@@ -1811,19 +1813,19 @@ body.modalOpen{
   margin:8px auto 0;
 }
 
+/* Active outline stays neutral */
 .rV2DayBtn.active{
-  border-color: rgba(55,214,122,.42);
-  box-shadow: 0 0 0 1px rgba(55,214,122,.12) inset;
+  border-color: rgba(255,255,255,.22);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset;
   color: rgba(255,255,255,.92);
 }
-.rV2DayBtn.active .rV2Dot{ background: rgba(55,214,122,.95); }
-/* ✅ Day strip: day + date number + label (Compact Hybrid) */
-.routineDayStrip{
-  display:flex;
-  gap: 8px;
-  justify-content:space-between;
-  margin-top: 20px;
-}
+
+/* Dot colors by status (badge + dot only) */
+.rV2DayBtn.status-complete .rV2Dot{ background: rgba(61,220,151,.95); }
+.rV2DayBtn.status-progress .rV2Dot{ background: rgba(255,193,7,.95); }
+.rV2DayBtn.status-pending .rV2Dot{ background: rgba(255,255,255,.32); }
+.rV2DayBtn.status-rest .rV2Dot{ background: rgba(255,255,255,.18); }
+
 
 .routineDayBtn{
   flex: 1 1 0;
@@ -6599,10 +6601,11 @@ return el("div", { class:"card" }, [
   }
 }
 
-function isDayComplete(dateISO, day){
+function isDayStarted(dateISO, day){
   const ex = (day?.exercises || []);
   if(ex.length === 0) return false;
-  return ex.every(rx => hasRoutineExerciseLog(dateISO, rx.id));
+  // Started = at least one exercise has any log for this date
+  return ex.some(rx => hasRoutineExerciseLog(dateISO, rx.id));
 }
   function repaint(){
   routine = Routines.getActive();
@@ -6807,66 +6810,86 @@ fixedHost.appendChild(el("div", { class:"rV2Module" }, [
       el("div", { class:"rV2Card backR" }),
 
       (() => {
-        const d = getDay(selectedIndex) || { label:"Day", isRest:false, exercises:[] };
-        const exCount = (d.exercises || []).length;
-        const isTraining = !d.isRest;
-        const badge1 = isTraining ? "Training Day" : "Rest Day";
-        const badge2 = "Active";
+  const d = getDay(selectedIndex) || { label:"Day", isRest:false, exercises:[] };
+  const exCount = (d.exercises || []).length;
+  const isTraining = !d.isRest;
+  const dateISO = getSelectedDateISO(selectedIndex);
 
-        return el("div", { class:"rV2Card active" }, [
-          el("div", { class:"rV2CardInner" }, [
-            el("div", { class:"rV2TopLine" }, [
-              el("div", { class:"rV2Day" }, [
-                el("div", { class:"dow", text: dowShort(selectedIndex) }),
-                el("div", { class:"lift", text: d.isRest ? "Rest" : (d.label || "Training") })
-              ]),
-              el("div", { class:"rV2ExRight" }, [
-                el("div", { class:"rV2ExPill" }, [
-                  el("div", { class:"rV2ExCount", text: String(exCount) }),
-                  el("div", { class:"rV2ExLabel", text:"Exercises" })
-                ])
-              ])
-            ]),
+  // Badge 1 stays the same
+  const badge1 = isTraining ? "Training Day" : "Rest Day";
 
-            el("div", { class:"rV2Badges" }, [
-              el("div", { class:"rV2Badge", text: badge1 }),
-              el("div", { class:"rV2Badge" + (isTraining ? " good" : ""), text: badge2 })
-            ])
+  // Badge 2: status
+  let badge2 = "Pending";
+  let badge2Class = "status-pending";
+
+  if(!isTraining){
+    badge2 = "Recovery";
+    badge2Class = "status-rest";
+  } else if(isDayComplete(dateISO, d)){
+    badge2 = "Completed";
+    badge2Class = "status-complete";
+  } else if(isDayStarted(dateISO, d)){
+    badge2 = "In Progress";
+    badge2Class = "status-progress";
+  }
+
+  return el("div", { class:"rV2Card active" }, [
+    el("div", { class:"rV2CardInner" }, [
+      el("div", { class:"rV2TopLine" }, [
+        el("div", { class:"rV2Day" }, [
+          el("div", { class:"dow", text: dowShort(selectedIndex) }),
+          el("div", { class:"lift", text: d.isRest ? "Rest" : (d.label || "Training") })
+        ]),
+        el("div", { class:"rV2ExRight" }, [
+          el("div", { class:"rV2ExPill" }, [
+            el("div", { class:"rV2ExCount", text: String(exCount) }),
+            el("div", { class:"rV2ExLabel", text:"Exercises" })
           ])
-        ]);
-      })()
-    ]),
+        ])
+      ]),
 
-    // arrows
-    el("div", { class:"rV2Nav" }, [
-      el("button", { class:"rV2Chev", ariaLabel:"Previous day", onClick: prevDay }, ["‹"]),
-      el("button", { class:"rV2Chev", ariaLabel:"Next day", onClick: nextDay }, ["›"])
+      el("div", { class:"rV2Badges" }, [
+        el("div", { class:"rV2Badge", text: badge1 }),
+        el("div", { class:"rV2Badge " + badge2Class, text: badge2 })
+      ])
     ])
-  ])] : []),
+  ]);
+})()
 
   ...(show3DPreview ? [el("div", { class:"rV2Sep" })] : []),
 
   // WEEK GRID (always visible)
-  el("div", { class:"rV2Week" }, [
-    ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
-      const d = getDay(i) || { label:"", isRest:false, exercises:[] };
-      const label = d.isRest ? "Rest" : (d.label || "Training");
+el("div", { class:"rV2Week" }, [
+  ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
+    const d = getDay(i) || { label:"", isRest:false, exercises:[] };
+    const label = d.isRest ? "Rest" : (d.label || "Training");
+    const dateISO = getSelectedDateISO(i);
 
-      return el("button", {
-        class: "rV2DayBtn" + (i === selectedIndex ? " active" : ""),
-        onClick: () => setIdx(i, i > selectedIndex ? "next" : "prev")
-      }, [
-        el("span", { class:"n", text: dowShort(i) }),
-        el("span", { class:"d", text: String(dayNum(i) || "") }),
+    // ✅ Status class drives DOT color (outline stays neutral)
+    let statusClass = "status-pending";
+    if(d.isRest){
+      statusClass = "status-rest";
+    }else if(isDayComplete(dateISO, d)){
+      statusClass = "status-complete";
+    }else if(isDayStarted(dateISO, d)){
+      statusClass = "status-progress";
+    }
 
-        // ✅ If 3D Preview ON, do NOT render labels (your prior requirement)
-        ...(!show3DPreview ? [el("span", { class:"lbl", text: label })] : []),
+    return el("button", {
+      class: "rV2DayBtn " + statusClass + (i === selectedIndex ? " active" : ""),
+      onClick: () => setIdx(i, i > selectedIndex ? "next" : "prev")
+    }, [
+      el("span", { class:"n", text: dowShort(i) }),
+      el("span", { class:"d", text: String(dayNum(i) || "") }),
 
-        el("div", { class:"rV2Dot" })
-      ]);
-    })
-  ])
-]));
+      // ✅ If 3D Preview ON, do NOT render labels (your prior requirement)
+      ...(!show3DPreview ? [el("span", { class:"lbl", text: label })] : []),
+
+      el("div", { class:"rV2Dot" })
+    ]);
+  })
+])
+]));  // keep your existing closing exactly as-is
 
 // ────────────────────────────
 // Swipe (only when 3D preview is ON)
