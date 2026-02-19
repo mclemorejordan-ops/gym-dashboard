@@ -6457,131 +6457,120 @@ fixedHost.appendChild(el("div", { class:"card" }, [
       return;
     }
 
-   // ────────────────────────────
-// 3D Card Carousel (visual container)
-// ────────────────────────────
 
-const dayStripNode = () => el("div", { class:"routineDayStrip" }, [
-  ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
-    const d = getDay(i) || {};
-    const iso = getSelectedDateISO(i);
+     // ────────────────────────────
+    // 3D Card Carousel (visual container)
+    // ────────────────────────────
+fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+  (() => {
+    let down = false;
+    let startX = 0;
+    let dx = 0;
+    const THRESH = 55;
 
-    const dayNum = (() => {
-      try{ return new Date(String(iso) + "T00:00:00").getDate(); }
-      catch(_){ return ""; }
-    })();
+    function onDown(e){
+      down = true;
+      startX = e.clientX;
+      dx = 0;
+      try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+    }
+    function onMove(e){
+      if(!down) return;
+      dx = e.clientX - startX;
+      // (visual-only: we keep drag simple; snap happens on release)
+    }
+    function onEnd(){
+      if(!down) return;
+      down = false;
 
-    const dow = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
-    const dayLabel = d.isRest ? "Rest" : (d.label || d.title || "");
+      if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
+      else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
 
-    return el("button", {
-      class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
-      onClick: () => { selectedIndex = i; repaint(); }
-    }, [
-      el("div", { class:"dTop" }, [
-        el("span", { class:"dow", text: dow }),
-        el("span", { class:"num", text: String(dayNum || "") })
-      ]),
-      el("div", { class:"dLbl", text: dayLabel }),
-      el("div", { class:"dot" })
-    ]);
-  })
-]);
+      repaint();
+    }
 
-if(show3DPreview){
+    const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-  fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+    const c3d = el("div", {
+      class:"c3d",
+      onPointerDown: onDown,
+      onPointerMove: onMove,
+      onPointerUp: onEnd,
+      onPointerCancel: onEnd,
+      onLostPointerCapture: onEnd
+    }, []);
 
-    (() => {
-      let down = false;
-      let startX = 0;
-      let dx = 0;
-      const THRESH = 55;
+    // Show selected ±2
+    const offsets = [-2,-1,0,1,2];
+    offsets.forEach(off => {
+      const idx = (selectedIndex + off + 7) % 7;
+      const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
 
-      function onDown(e){
-        down = true;
-        startX = e.clientX;
-        dx = 0;
-        try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-      }
-      function onMove(e){
-        if(!down) return;
-        dx = e.clientX - startX;
-      }
-      function onEnd(){
-        if(!down) return;
-        down = false;
+      const abs = Math.abs(off);
+      const scale = (off === 0) ? 1 : (1 - abs * 0.10);
+      const x = off * 92;              // ✅ tighter spacing (more compact)
+      const z = -(abs * 95);           // ✅ less depth than before
+      const y = abs * 6;
+      const rot = off * -22;           // ✅ slightly tighter rotation
+      const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
 
-        if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
-        else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
+      const chips = [];
+      chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
+      if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
 
+      const card = el("div", {
+        class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
+        style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+      }, [
+        el("div", {}, [
+          el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
+          el("div", { class:"c3dLabel", text: d.label || "Day" }),
+          el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+        ]),
+        el("div", { class:"c3dChips" }, chips)
+      ]);
+
+      // Tap any card to jump (visual-only)
+      card.addEventListener("click", () => {
+        selectedIndex = idx;
         repaint();
-      }
-
-      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-      const c3d = el("div", {
-        class:"c3d",
-        onPointerDown: onDown,
-        onPointerMove: onMove,
-        onPointerUp: onEnd,
-        onPointerCancel: onEnd,
-        onLostPointerCapture: onEnd
-      }, []);
-
-      const offsets = [-2,-1,0,1,2];
-
-      offsets.forEach(off => {
-        const idx = (selectedIndex + off + 7) % 7;
-        const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
-
-        const abs = Math.abs(off);
-        const scale = (off === 0) ? 1 : (1 - abs * 0.10);
-        const x = off * 92;
-        const z = -(abs * 95);
-        const y = abs * 6;
-        const rot = off * -22;
-        const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
-
-        const chips = [];
-        chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
-        if(idx === selectedIndex)
-          chips.push(el("div", { class:"c3dChip active", text:"Active" }));
-
-        const card = el("div", {
-          class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
-          style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
-        }, [
-          el("div", {}, [
-            el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
-            el("div", { class:"c3dLabel", text: d.label || "Day" }),
-            el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
-          ]),
-          el("div", { class:"c3dChips" }, chips)
-        ]);
-
-        card.addEventListener("click", () => {
-          selectedIndex = idx;
-          repaint();
-        });
-
-        c3d.appendChild(card);
       });
 
-      return c3d;
-    })(),
+      c3d.appendChild(card);
+    });
 
-    dayStripNode()
+    return c3d;
+  })(),
 
-  ]));
+  // Fixed day strip under carousel (tap to jump)
+  el("div", { class:"routineDayStrip" }, [
+    ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
+  const dow = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
 
-} else {
+  // Date number for that day
+  const iso = getSelectedDateISO(i);
+  const dayNum = (() => {
+    try{ return new Date(String(iso) + "T00:00:00").getDate(); }catch(_){ return ""; }
+  })();
 
-  fixedHost.appendChild(el("div", { class:"card carouselCard no3d" }, [
-    dayStripNode()
-  ]));
+  // Routine label (Push/Pull/Legs/etc) + Rest label
+  const d = getDay(i) || {};
+  const dayLabel = (d.isRest ? "Rest" : (d.label || d.title || ""));
 
-}
+  return el("button", {
+    class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
+    onClick: () => { selectedIndex = i; repaint(); }
+  }, [
+    el("div", { class:"dTop" }, [
+      el("span", { class:"dow", text: dow }),
+      el("span", { class:"num", text: String(dayNum || "") })
+    ]),
+    el("div", { class:"dLbl", text: dayLabel || "" }),
+    el("div", { class:"dot" })
+  ]);
+})
+  ])
+]));
 
 
     // Rest Day
