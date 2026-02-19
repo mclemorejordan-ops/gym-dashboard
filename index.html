@@ -1548,7 +1548,43 @@ body.modalOpen{
   justify-content:space-between;
   margin-top: 20px; 
 }
+/* ✅ Day strip: add day number + label (Compact Hybrid) */
+.routineDayBtn{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  padding: 10px 8px;
+  min-width: 54px;
+}
 
+.routineDayBtn .dow{
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .6px;
+  opacity: .85;
+}
+
+.routineDayBtn .num{
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.routineDayBtn .lbl{
+  font-size: 11px;
+  font-weight: 850;
+  opacity: .75;
+  max-width: 70px;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.routineDayBtn.rest .lbl{
+  opacity: .9;
+}
 .routineDayBtn{
   flex: 1 1 0;
   min-width: 0;
@@ -5128,11 +5164,15 @@ else root.appendChild(el("div", { class:"card" }, [
           }
 
           const profile = {
-            name: cleanName,
-            proteinGoal: Math.round(cleanProtein),
-            weekStartsOn,
-            hideRestDays: !!hideRestDays
-          };
+          name: cleanName,
+          proteinGoal: Math.round(cleanProtein),
+          weekStartsOn,
+          hideRestDays: !!hideRestDays,
+        
+          // ✅ NEW: 3D Preview default (ON)
+          show3DPreview: true
+        };
+
 
           // Seed library FIRST so template exercises can resolve to real exerciseIds
           ExerciseLibrary.ensureSeeded();
@@ -6384,28 +6424,46 @@ fixedHost.appendChild(el("div", { class:"card" }, [
 
       el("div", { style:"height:10px" }),
 
-      el("div", { class:"rHdrRow" }, [
-        el("button", {
-          class:"btn ghost",
-          onClick: (e) => openRoutinePicker(e.currentTarget)
-        }, [`${routine.name} ▼`]),
+      // ✅ NEW: persisted preference (default ON)
+let show3DPreview = (state.profile?.show3DPreview !== false);
 
-        el("button", {
-          class:"btn primary",
-          onClick: () => {
-            selectedIndex = todayIndex;
-            repaint();
-            setTimeout(()=>{
-              const first = scrollHost.querySelector("[data-unlogged='true']");
-              if(first){
-                first.scrollIntoView({ behavior:"smooth", block:"center" });
-                first.classList.add("pulse");
-                setTimeout(()=>first.classList.remove("pulse"),1200);
-              }
-            },0);
+function setShow3DPreview(v){
+  state.profile = state.profile || {};
+  state.profile.show3DPreview = !!v;
+  Storage.save(state);
+  renderView(); // re-render Routine cleanly
+}
+
+el("div", { class:"rHdrRow" }, [
+  el("button", {
+    class:"btn ghost",
+    onClick: (e) => openRoutinePicker(e.currentTarget)
+  }, [`${routine.name} ▼`]),
+
+  el("div", { style:"display:flex; gap:10px; align-items:center;" }, [
+    el("button", {
+      class:"btn mini",
+      onClick: () => setShow3DPreview(!show3DPreview)
+    }, [`3D Preview: ${show3DPreview ? "ON" : "OFF"} 👁`]),
+
+    el("button", {
+      class:"btn primary",
+      onClick: () => {
+        selectedIndex = todayIndex;
+        repaint();
+        setTimeout(()=>{
+          const first = scrollHost.querySelector("[data-unlogged='true']");
+          if(first){
+            first.scrollIntoView({ behavior:"smooth", block:"center" });
+            first.classList.add("pulse");
+            setTimeout(()=>first.classList.remove("pulse"),1200);
           }
-        }, ["▶ Start Today"])
-      ]),
+        },0);
+      }
+    }, ["▶ Start Today"])
+  ])
+]),
+
 
       el("div", {
         class:"manageLink",
@@ -6421,100 +6479,113 @@ fixedHost.appendChild(el("div", { class:"card" }, [
     // ────────────────────────────
     // 3D Card Carousel (visual container)
     // ────────────────────────────
-fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
-  (() => {
-    let down = false;
-    let startX = 0;
-    let dx = 0;
-    const THRESH = 55;
+// ✅ Only render the 3D carousel when enabled
+if(show3DPreview){
+  fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+    (() => {
+      let down = false;
+      let startX = 0;
+      let dx = 0;
+      const THRESH = 55;
 
-    function onDown(e){
-      down = true;
-      startX = e.clientX;
-      dx = 0;
-      try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-    }
-    function onMove(e){
-      if(!down) return;
-      dx = e.clientX - startX;
-      // (visual-only: we keep drag simple; snap happens on release)
-    }
-    function onEnd(){
-      if(!down) return;
-      down = false;
+      function onDown(e){
+        down = true;
+        startX = e.clientX;
+        dx = 0;
+        try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+      }
+      function onMove(e){
+        if(!down) return;
+        dx = e.clientX - startX;
+      }
+      function onEnd(){
+        if(!down) return;
+        down = false;
 
-      if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
-      else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
+        if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
+        else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
 
-      repaint();
-    }
-
-    const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-    const c3d = el("div", {
-      class:"c3d",
-      onPointerDown: onDown,
-      onPointerMove: onMove,
-      onPointerUp: onEnd,
-      onPointerCancel: onEnd,
-      onLostPointerCapture: onEnd
-    }, []);
-
-    // Show selected ±2
-    const offsets = [-2,-1,0,1,2];
-    offsets.forEach(off => {
-      const idx = (selectedIndex + off + 7) % 7;
-      const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
-
-      const abs = Math.abs(off);
-      const scale = (off === 0) ? 1 : (1 - abs * 0.10);
-      const x = off * 92;              // ✅ tighter spacing (more compact)
-      const z = -(abs * 95);           // ✅ less depth than before
-      const y = abs * 6;
-      const rot = off * -22;           // ✅ slightly tighter rotation
-      const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
-
-      const chips = [];
-      chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
-      if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
-
-      const card = el("div", {
-        class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
-        style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
-      }, [
-        el("div", {}, [
-          el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
-          el("div", { class:"c3dLabel", text: d.label || "Day" }),
-          el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
-        ]),
-        el("div", { class:"c3dChips" }, chips)
-      ]);
-
-      // Tap any card to jump (visual-only)
-      card.addEventListener("click", () => {
-        selectedIndex = idx;
         repaint();
+      }
+
+      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+      const c3d = el("div", {
+        class:"c3d",
+        onPointerDown: onDown,
+        onPointerMove: onMove,
+        onPointerUp: onEnd,
+        onPointerCancel: onEnd,
+        onLostPointerCapture: onEnd
+      }, []);
+
+      const offsets = [-2,-1,0,1,2];
+      offsets.forEach(off => {
+        const idx = (selectedIndex + off + 7) % 7;
+        const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
+
+        const abs = Math.abs(off);
+        const scale = (off === 0) ? 1 : (1 - abs * 0.10);
+        const x = off * 92;
+        const z = -(abs * 95);
+        const y = abs * 6;
+        const rot = off * -22;
+        const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
+
+        const chips = [];
+        chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
+        if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
+
+        const card = el("div", {
+          class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
+          style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+        }, [
+          el("div", {}, [
+            el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
+            el("div", { class:"c3dLabel", text: d.label || "Day" }),
+            el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+          ]),
+          el("div", { class:"c3dChips" }, chips)
+        ]);
+
+        card.addEventListener("click", () => {
+          selectedIndex = idx;
+          repaint();
+        });
+
+        c3d.appendChild(card);
       });
 
-      c3d.appendChild(card);
-    });
+      return c3d;
+    })()
+  ]));
+}
 
-    return c3d;
-  })(),
-
-  // Fixed day strip under carousel (tap to jump)
   el("div", { class:"routineDayStrip" }, [
-    ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
-      const label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
-      return el("button", {
-        class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
-        onClick: () => { selectedIndex = i; repaint(); }
-      }, [
-        el("div", { text: label }),
-        el("div", { class:"dot" })
-      ]);
-    })
-  ])
+  ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
+    const d = getDay(i) || { label:"", isRest:false, exercises:[] };
+
+    // date number for the week (uses your already-defined weekStartISO)
+    const dateISO = Dates.addDaysISO(weekStartISO, (i - (weekStartsOn === "sun" ? 0 : 1) + 7) % 7);
+    const dayNum = (() => {
+      try{ return new Date(dateISO + "T00:00:00").getDate(); }
+      catch(_){ return ""; }
+    })();
+
+    const dow = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
+    const dayLabel = d.isRest ? "Rest" : (d.label || "Training");
+
+    return el("button", {
+      class: "routineDayBtn" + (i === selectedIndex ? " sel" : "") + (d.isRest ? " rest" : ""),
+      onClick: () => { selectedIndex = i; repaint(); }
+    }, [
+      el("div", { class:"dow", text: dow }),
+      el("div", { class:"num", text: String(dayNum || "") }),
+      el("div", { class:"lbl", text: dayLabel }),
+      el("div", { class:"dot" })
+    ]);
+  })
+])
 ]));
 
 
@@ -7569,6 +7640,7 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
 
 
         let hideRestDays = !!state.profile?.hideRestDays;
+        let show3DPreview = (state.profile?.show3DPreview !== false); // default ON
 
 const hideRestSwitch = el("div", {
   class: "switch" + (hideRestDays ? " on" : ""),
@@ -7577,6 +7649,15 @@ const hideRestSwitch = el("div", {
     hideRestSwitch.classList.toggle("on", hideRestDays);
   }
 });
+           // ✅ NEW: 3D Preview switch (persisted)
+const show3DSwitch = el("div", {
+  class: "switch" + (show3DPreview ? " on" : ""),
+  onClick: () => {
+    show3DPreview = !show3DPreview;
+    show3DSwitch.classList.toggle("on", show3DPreview);
+  }
+});
+
 
 
         function saveProfile(){
@@ -7584,7 +7665,8 @@ const hideRestSwitch = el("div", {
           state.profile.name = (nameInput.value || "").trim();
           state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
           state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
-state.profile.hideRestDays = !!hideRestDays;
+          state.profile.hideRestDays = !!hideRestDays;
+          state.profile.show3DPreview = !!show3DPreview;
           Storage.save(state);
           showToast("Saved");
           renderView();
@@ -7694,6 +7776,13 @@ state.profile.hideRestDays = !!hideRestDays;
             ]),
             hideRestSwitch
           ]),
+          el("div", { class:"setRow" }, [
+  el("div", {}, [
+    el("div", { style:"font-weight:820;", text:"3D Preview" }),
+    el("div", { class:"meta", text:"Show/hide the 3D routine card preview on the Routine page" })
+  ]),
+  show3DSwitch
+]),
           el("div", { style:"height:12px" }),
           el("div", { class:"btnrow" }, [
             el("button", { class:"btn primary", onClick: () => {
