@@ -5127,6 +5127,14 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
           ]),
           el("div", { class:"setRow" }, [
             el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Track protein" }),
+              el("div", { class:"meta", text:"Enable or disable protein tracking across the app" })
+            ]),
+            trackProteinSwitch
+          ]),
+          
+          el("div", { class:"setRow", style: trackProtein ? "" : "display:none;" }, [
+            el("div", {}, [
               el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
               el("div", { class:"meta", text:"grams/day" })
             ]),
