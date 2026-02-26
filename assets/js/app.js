@@ -366,6 +366,33 @@ const Storage = {
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
 
+// ─────────────────────────────
+// Profile helpers (Protein toggle + Week start mapping)
+// ─────────────────────────────
+function isProteinEnabled(){
+  // Backward compatible default: enabled unless explicitly turned off
+  return (state?.profile?.trackProtein !== false);
+}
+
+function normalizedWeekStartsOn(){
+  const ws = state?.profile?.weekStartsOn;
+  return (ws === 0 || ws === "0" || ws === "sun") ? "sun" : "mon";
+}
+
+// Convert JS Date.getDay() (0=Sun..6=Sat) into our "routine order index"
+// where index 0 is the user's chosen week start.
+function routineIndexFromJsDow(jsDow, weekStartsOn){
+  const wd = Number(jsDow);
+  if(!Number.isFinite(wd)) return 0;
+  return (weekStartsOn === "sun") ? wd : ((wd + 6) % 7); // Mon-start => Mon=0 ... Sun=6
+}
+
+function weekdayNames(weekStartsOn){
+  return (weekStartsOn === "sun")
+    ? ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+    : ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+}
+
 /********************
  * Backup / Import (Step 10)
  ********************/
@@ -580,15 +607,18 @@ const Dates = {
     }
 
     function getTodayWorkout(){
-      const routine = Routines.getActive();
-      if(!routine || !(routine.days?.length)) return { routine: null, day: null, dayIndex: null };
-
-      const today = new Date();
-      const idx = today.getDay(); // 0=Sun..6=Sat
-      // Our routine days are stored order 0..6 (Day 1..Day 7)
-      const day = routine.days.find(d => d.order === idx) || routine.days[idx] || null;
-      return { routine, day, dayIndex: idx };
-    }
+    const routine = Routines.getActive();
+    if(!routine || !(routine.days?.length)) return { routine: null, day: null, dayIndex: null };
+  
+    const weekStartsOn = normalizedWeekStartsOn();
+    const today = new Date();
+    const jsDow = today.getDay(); // 0=Sun..6=Sat
+    const idx = routineIndexFromJsDow(jsDow, weekStartsOn);
+  
+    // Our routine days are stored order 0..6 where 0 == user's week start
+    const day = routine.days.find(d => d.order === idx) || routine.days[idx] || null;
+    return { routine, day, dayIndex: idx };
+  }
 
     function isTrained(dateISO){
       return (state.attendance || []).includes(dateISO);
@@ -831,60 +861,74 @@ const RoutineTemplates = [
           { label:"Day 7", isRest:false }
         ];}}
     ];
-      function createRoutineFromTemplate(templateKey, routineName){
-      const tpl = RoutineTemplates.find(t => t.key === templateKey);
-      if(!tpl) throw new Error("Invalid template key");
+      function createRoutineFromTemplate(templateKey, routineName, weekStartsOn="mon"){
+  const tpl = RoutineTemplates.find(t => t.key === templateKey);
+  if(!tpl) throw new Error("Invalid template key");
 
-      // Ensure library exists so we can resolve IDs by name
-      try{ ExerciseLibrary.ensureSeeded(); }catch(e){ /* safe */ }
+  // Ensure library exists so we can resolve IDs by name
+  try{ ExerciseLibrary.ensureSeeded(); }catch(e){ /* safe */ }
 
-      const routineId = uid("rt");
-      const days = tpl.buildDays().map((d, idx) => ({
-        id: uid("day"),
-        order: idx,
-        label: d.label,
-        isRest: !!d.isRest,
-        exercises: []
-      }));
+  const routineId = uid("rt");
 
-      // Helper: resolve exercise by name in library (by type)
-      function findLibItem(type, name){
-        const arr = (state.exerciseLibrary?.[type] || []);
-        const n = normName(name);
-        return arr.find(x => normName(x.name) === n) || null;
-      }
+  // Template days are authored in Mon→Sun order (based on your template comments).
+  // If user picks Sun-start, rotate so day[0] is Sunday, then Mon..Sat.
+  const rawDays = tpl.buildDays();
+  const daysSrc = (weekStartsOn === "sun")
+    ? [rawDays[6], ...rawDays.slice(0,6)]
+    : rawDays.slice();
 
-      // Seed exercises if provided by template
-      if(typeof tpl.buildExerciseIndexMap === "function"){
-        const map = tpl.buildExerciseIndexMap() || {};
-        Object.keys(map).forEach(k => {
-          const idx = Number(k);
-          const day = days[idx];
-          if(!day || day.isRest) return;
+  const days = daysSrc.map((d, idx) => ({
+    id: uid("day"),
+    order: idx,
+    label: d.label,
+    isRest: !!d.isRest,
+    exercises: []
+  }));
 
-          const items = map[k] || [];
-          day.exercises = items.map(item => {
-            const libItem = findLibItem(item.type, item.name);
-            return {
-              id: uid("rx"),
-              exerciseId: libItem?.id || null,
-              type: item.type,
-              nameSnap: libItem?.name || item.name,
-              plan: item.plan || null,        // { sets, reps, restSec }
-              createdAt: Date.now()
-            };
-          });
-        });
-      }
+  // Helper: resolve exercise by name in library (by type)
+  function findLibItem(type, name){
+    const arr = (state.exerciseLibrary?.[type] || []);
+    const n = normName(name);
+    return arr.find(x => normName(x.name) === n) || null;
+  }
 
-      return {
-        id: routineId,
-        name: routineName || tpl.name,
-        templateKey: tpl.key,
-        createdAt: Date.now(),
-        days
-      };
-    }
+  // Seed exercises if provided by template
+  if(typeof tpl.buildExerciseIndexMap === "function"){
+    const map = tpl.buildExerciseIndexMap() || {};
+    Object.keys(map).forEach(k => {
+      const oldIdx = Number(k);
+      if(!Number.isFinite(oldIdx)) return;
+
+      // If we rotated days for Sun-start, shift exercise-day keys too:
+      // old 6 (Sun) -> new 0, old 0 (Mon) -> new 1 ... old 5 (Sat) -> new 6
+      const idx = (weekStartsOn === "sun") ? ((oldIdx + 1) % 7) : oldIdx;
+
+      const day = days[idx];
+      if(!day || day.isRest) return;
+
+      const items = map[k] || [];
+      day.exercises = items.map(item => {
+        const libItem = findLibItem(item.type, item.name);
+        return {
+          id: uid("rx"),
+          exerciseId: libItem?.id || null,
+          type: item.type,
+          nameSnap: libItem?.name || item.name,
+          plan: item.plan || null,        // { sets, reps, restSec }
+          createdAt: Date.now()
+        };
+      });
+    });
+  }
+
+  return {
+    id: routineId,
+    name: routineName || tpl.name,
+    templateKey: tpl.key,
+    createdAt: Date.now(),
+    days
+  };
+}
         // ────────────────────────────
     // Repair: backfill missing exerciseId links
     // - Fixes routines created before library seeding
@@ -1248,14 +1292,15 @@ lib.core = [
         Storage.save(state);
       },
       addFromTemplate(templateKey, nameOverride=null){
-        ExerciseLibrary.ensureSeeded();
-        const tplName = RoutineTemplates.find(t => t.key === templateKey)?.name || "Routine";
-        const routine = createRoutineFromTemplate(templateKey, nameOverride || tplName);
-        this.getAll().push(routine);
-        state.activeRoutineId = routine.id;
-        Storage.save(state);
-        return routine;
-      },
+      ExerciseLibrary.ensureSeeded();
+      const tplName = RoutineTemplates.find(t => t.key === templateKey)?.name || "Routine";
+      const weekStartsOn = normalizedWeekStartsOn();
+      const routine = createRoutineFromTemplate(templateKey, nameOverride || tplName, weekStartsOn);
+      this.getAll().push(routine);
+      state.activeRoutineId = routine.id;
+      Storage.save(state);
+      return routine;
+    },
       duplicate(routineId){
         const r = this.getAll().find(x => x.id === routineId);
         if(!r) throw new Error("Routine not found.");
@@ -2794,156 +2839,185 @@ else root.appendChild(el("div", { class:"card" }, [
      * 7) Views
      ********************/
     const Views = {
-      Onboarding(){
-        let hideRestDays = true;
-        let selectedTpl = "ppl";
+ Onboarding(){
+  let hideRestDays = true;
+  let selectedTpl = "ppl";
 
-        const errorBox = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+  // NEW: protein toggle + conditional goal input
+  let trackProtein = true;
 
-        const switchNode = el("div", { class:"switch on" });
-        switchNode.addEventListener("click", () => {
-          hideRestDays = !hideRestDays;
-          switchNode.classList.toggle("on", hideRestDays);
-        });
+  const errorBox = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
 
-        const tplCardsHost = el("div", { class:"tplGrid" });
-        const renderTplCards = () => {
-          tplCardsHost.innerHTML = "";
-          RoutineTemplates.forEach(t => {
-            tplCardsHost.appendChild(el("div", {
-              class: "tpl" + (t.key === selectedTpl ? " selected" : ""),
-              onClick: () => { selectedTpl = t.key; renderTplCards(); }
-            }, [
-              el("div", { class:"name", text: t.name }),
-              el("div", { class:"desc", text: t.desc })
-            ]));
-          });
-        };
-        renderTplCards();
+  const hideRestSwitch = el("div", { class:"switch on" });
+  hideRestSwitch.addEventListener("click", () => {
+    hideRestDays = !hideRestDays;
+    hideRestSwitch.classList.toggle("on", hideRestDays);
+  });
 
-        const nameInput = el("input", { type:"text", placeholder:"Jordan" });
-        const proteinInput = el("input", { type:"number", inputmode:"numeric", placeholder:"180", min:"0" });
+  const trackProteinSwitch = el("div", { class:"switch on" });
+  trackProteinSwitch.addEventListener("click", () => {
+    trackProtein = !trackProtein;
+    trackProteinSwitch.classList.toggle("on", trackProtein);
+    proteinWrap.style.display = trackProtein ? "" : "none";
+  });
 
-        const weekSelect = el("select", {});
-        weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
-        weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
-        weekSelect.value = "mon";
+  const tplCardsHost = el("div", { class:"tplGrid" });
+  const renderTplCards = () => {
+    tplCardsHost.innerHTML = "";
+    RoutineTemplates.forEach(t => {
+      tplCardsHost.appendChild(el("div", {
+        class: "tpl" + (t.key === selectedTpl ? " selected" : ""),
+        onClick: () => { selectedTpl = t.key; renderTplCards(); }
+      }, [
+        el("div", { class:"name", text: t.name }),
+        el("div", { class:"desc", text: t.desc })
+      ]));
+    });
+  };
+  renderTplCards();
 
-        const finish = () => {
-          errorBox.style.display = "none";
-          errorBox.textContent = "";
+  const nameInput = el("input", { type:"text", placeholder:"Jordan" });
 
-          const cleanName = (nameInput.value || "").trim();
-          const cleanProtein = Number(proteinInput.value);
-          const weekStartsOn = weekSelect.value === "sun" ? "sun" : "mon";
+  const weekSelect = el("select", {});
+  weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
+  weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
+  weekSelect.value = "mon";
 
-          if(!cleanName){
-            errorBox.textContent = "Please enter your name.";
-            errorBox.style.display = "block";
-            return;
-          }
-          if(!Number.isFinite(cleanProtein) || cleanProtein <= 0){
-            errorBox.textContent = "Please enter a valid daily protein goal (grams).";
-            errorBox.style.display = "block";
-            return;
-          }
+  const proteinInput = el("input", { type:"number", inputmode:"numeric", placeholder:"180", min:"0" });
 
-          const profile = {
-          name: cleanName,
-          proteinGoal: Math.round(cleanProtein),
-          weekStartsOn,
-          hideRestDays: !!hideRestDays,
-        
-          // ✅ NEW: 3D Preview default (ON)
-          show3DPreview: true
-        };
+  const proteinWrap = el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Daily protein goal (grams)" }), proteinInput ]),
+    el("div", { class:"note", text:"You can change this later in Settings." })
+  ]);
 
+  const finish = () => {
+    errorBox.style.display = "none";
+    errorBox.textContent = "";
 
-          // Seed library FIRST so template exercises can resolve to real exerciseIds
-          ExerciseLibrary.ensureSeeded();
+    const cleanName = (nameInput.value || "").trim();
+    const weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
 
-          const routineName = RoutineTemplates.find(t => t.key === selectedTpl)?.name || "Routine";
-          const routine = createRoutineFromTemplate(selectedTpl, routineName);
+    if(!cleanName){
+      errorBox.textContent = "Please enter your name.";
+      errorBox.style.display = "block";
+      return;
+    }
 
-          state.profile = profile;
-          state.routines = [routine];
-          state.activeRoutineId = routine.id;
+    let proteinGoal = 0;
+    if(trackProtein){
+      const cleanProtein = Number(proteinInput.value);
+      if(!Number.isFinite(cleanProtein) || cleanProtein <= 0){
+        errorBox.textContent = "Please enter a valid daily protein goal (grams).";
+        errorBox.style.display = "block";
+        return;
+      }
+      proteinGoal = Math.round(cleanProtein);
+    }
 
-          // Repair any missing links (older data / edge cases)
-          repairExerciseLinks();
+    const profile = {
+      name: cleanName,
+      trackProtein: !!trackProtein,
+      proteinGoal: proteinGoal,
+      weekStartsOn,
+      hideRestDays: !!hideRestDays,
 
+      // ✅ NEW: 3D Preview default (ON)
+      show3DPreview: true
+    };
 
-          Storage.save(state);
-          navigate("home");
-          bindHeaderPills();
-          setHeaderPills();
-          checkForUpdates();
+    // Seed library FIRST so template exercises can resolve to real exerciseIds
+    ExerciseLibrary.ensureSeeded();
 
-        };
+    const routineName = RoutineTemplates.find(t => t.key === selectedTpl)?.name || "Routine";
+    const routine = createRoutineFromTemplate(selectedTpl, routineName, weekStartsOn);
 
-        return el("div", { class:"grid" }, [
-          el("div", { class:"card" }, [
-            el("h2", { text:"Welcome" }),
-            el("div", { class:"kpi" }, [
-              el("div", { class:"big", text:"Let’s set up your dashboard" }),
-              el("div", { class:"small", text:"Create your profile and choose a routine template. You can edit everything later." })
-            ])
+    state.profile = profile;
+    state.routines = [routine];
+    state.activeRoutineId = routine.id;
+
+    // Repair any missing links (older data / edge cases)
+    repairExerciseLinks();
+
+    Storage.save(state);
+    navigate("home");
+    bindHeaderPills();
+    setHeaderPills();
+    checkForUpdates();
+  };
+
+  return el("div", { class:"onbV1" }, [
+    el("div", { class:"card onbHero" }, [
+      el("div", { class:"kpi" }, [
+        el("div", { class:"big", text:"Welcome to Performance Coach" }),
+        el("div", { class:"small", text:"Create your profile and choose a template. You can change everything later." })
+      ])
+    ]),
+
+    el("div", { class:"card" }, [
+      el("h2", { text:"Profile" }),
+      el("div", { class:"form" }, [
+        el("div", { class:"row2" }, [
+          el("label", {}, [ el("span", { text:"Name" }), nameInput ]),
+          el("label", {}, [ el("span", { text:"Week starts on" }), weekSelect ])
+        ]),
+
+        el("div", { class:"row2" }, [
+          el("div", { class:"toggle" }, [
+            el("div", { class:"ttext" }, [
+              el("div", { class:"a", text:"Track protein" }),
+              el("div", { class:"b", text:"Turn this off to hide protein features across the app." })
+            ]),
+            trackProteinSwitch
           ]),
-          el("div", { class:"card" }, [
-            el("h2", { text:"Create profile" }),
-            el("div", { class:"form" }, [
-              el("div", { class:"row2" }, [
-                el("label", {}, [ el("span", { text:"Name" }), nameInput ]),
-                el("label", {}, [ el("span", { text:"Protein goal (grams/day)" }), proteinInput ])
-              ]),
-              el("div", { class:"row2" }, [
-                el("label", {}, [ el("span", { text:"Week starts on" }), weekSelect ]),
-                el("div", { class:"toggle" }, [
-                  el("div", { class:"ttext" }, [
-                    el("div", { class:"a", text:"Hide rest days" }),
-                    el("div", { class:"b", text:"Rest days won’t appear on Home (Routine can still show them later)" })
-                  ]),
-                  switchNode
-                ])
-              ]),
-              errorBox
-            ])
-          ]),
-          el("div", { class:"card" }, [
-            el("h2", { text:"Choose a routine template" }),
-            tplCardsHost,
-            el("div", { style:"height:10px" }),
-            el("div", { class:"btnrow" }, [
-              el("button", { class:"btn primary", onClick: finish }, ["Finish setup"]),
-              el("button", {
-                class:"btn danger",
-                onClick: () => {
-                  Modal.open({
-                    title: "Reset local data",
-                    bodyNode: el("div", {}, [
-                      el("div", { class:"note", text:"This clears everything saved in this browser for the app." }),
-                      el("div", { style:"height:12px" }),
-                      el("div", { class:"btnrow" }, [
-                        el("button", {
-                          class:"btn danger",
-                          onClick: () => {
-                            try{ BackupVault.forceSnapshot(state, "pre-reset"); }catch(_){ }
-                            Storage.reset();
-                            state = Storage.load();
-                            Modal.close();
-                            navigate("home");
-                          }
-                        }, ["Reset"]),
-                        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-                      ])
-                    ])
-                  });
-                }
-              }, ["Reset"])
-            ])
+          el("div", { class:"toggle" }, [
+            el("div", { class:"ttext" }, [
+              el("div", { class:"a", text:"Hide rest days" }),
+              el("div", { class:"b", text:"Rest days won’t appear on Home (Routine can still show them later)." })
+            ]),
+            hideRestSwitch
           ])
-        ]);
-      },
+        ]),
+
+        proteinWrap,
+        errorBox
+      ])
+    ]),
+
+    el("div", { class:"card" }, [
+      el("h2", { text:"Routine template" }),
+      tplCardsHost,
+      el("div", { style:"height:10px" }),
+      el("div", { class:"btnrow" }, [
+        el("button", { class:"btn primary", onClick: finish }, ["Finish setup"]),
+        el("button", {
+          class:"btn danger",
+          onClick: () => {
+            Modal.open({
+              title: "Reset local data",
+              bodyNode: el("div", {}, [
+                el("div", { class:"note", text:"This clears everything saved in this browser for the app." }),
+                el("div", { style:"height:12px" }),
+                el("div", { class:"btnrow" }, [
+                  el("button", {
+                    class:"btn danger",
+                    onClick: () => {
+                      try{ BackupVault.forceSnapshot(state, "pre-reset"); }catch(_){ }
+                      Storage.reset();
+                      state = Storage.load();
+                      Modal.close();
+                      navigate("home");
+                    }
+                  }, ["Reset"]),
+                  el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                ])
+              ])
+            });
+          }
+        }, ["Reset"])
+      ])
+    ])
+  ]);
+},
 
         Home(){
         ExerciseLibrary.ensureSeeded();
@@ -3131,6 +3205,20 @@ el("div", { class:"card" }, [
         ]);
       },
       ProteinHistory(){
+        
+        if(!isProteinEnabled()){
+  return el("div", { class:"grid" }, [
+    el("div", { class:"card" }, [
+      el("h2", { text:"Protein is turned off" }),
+      el("div", { class:"note", text:"Enable protein tracking in Settings → Profile to use Protein History." }),
+      el("div", { style:"height:12px" }),
+      el("div", { class:"btnrow" }, [
+        el("button", { class:"btn primary", onClick: () => navigate("settings") }, ["Go to Settings"]),
+        el("button", { class:"btn", onClick: () => navigate("home") }, ["Back to Home"])
+      ])
+    ])
+  ]);
+}
 
         const root = el("div", { class:"grid" });
 
@@ -3388,22 +3476,20 @@ const root = el("div", { class:"routinePage" });
     return root;
   }
 
-  const today = new Date();
-  const todayIndex = today.getDay();               // 0=Sun..6=Sat
-  const todayISO = Dates.todayISO(); // local date (fixes Feb 14 UTC bug)
+const today = new Date();
+const todayISO = Dates.todayISO(); // local date (fixes Feb 14 UTC bug)
 
-  let selectedIndex = todayIndex;
+const weekStartsOn = normalizedWeekStartsOn();
+const weekStartISO = Dates.startOfWeekISO(todayISO, weekStartsOn);
 
-    const weekStartsOn = state.profile?.weekStartsOn || "mon";
-  const weekStartISO = Dates.startOfWeekISO(todayISO, weekStartsOn);
+// "Today" in our routine-order index (0..6 where 0 is user's week start)
+const todayIndex = routineIndexFromJsDow(today.getDay(), weekStartsOn);
+let selectedIndex = todayIndex;
 
-  // Map selected weekday index (0=Sun..6=Sat) to an actual calendar date in the current week
-  function getSelectedDateISO(index){
-    const offset = (weekStartsOn === "sun")
-      ? index
-      : ((index - 1 + 7) % 7); // Mon=0 ... Sun=6
-    return Dates.addDaysISO(weekStartISO, offset);
-  }
+// Map selected index (0..6 in start-of-week order) to an actual calendar date in the current week
+function getSelectedDateISO(index){
+  return Dates.addDaysISO(weekStartISO, index);
+}
   // Label date as Today / Tomorrow / "Feb 15"
 function prettyDayTag(dateISO){
   // ✅ hard guard
@@ -3767,8 +3853,8 @@ if(show3DPreview){
         repaint();
       }
 
-      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
+      const names = weekdayNames(weekStartsOn);
+      
       const c3d = el("div", {
         class:"c3d",
         onPointerDown: onDown,
@@ -3821,17 +3907,17 @@ if(show3DPreview){
 }
 
 fixedHost.appendChild(el("div", { class:"routineDayStrip" }, [
-  ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
+  ...[0,1,2,3,4,5,6].map(i => {
     const d = getDay(i) || { label:"", isRest:false, exercises:[] };
 
-    // date number for the week (uses your already-defined weekStartISO)
-    const dateISO = Dates.addDaysISO(weekStartISO, (i - (weekStartsOn === "sun" ? 0 : 1) + 7) % 7);
+    // date number for the week (weekStartISO already respects weekStartsOn)
+    const dateISO = Dates.addDaysISO(weekStartISO, i);
     const dayNum = (() => {
       try{ return new Date(dateISO + "T00:00:00").getDate(); }
       catch(_){ return ""; }
     })();
 
-    const dow = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
+    const dow = weekdayNames(weekStartsOn)[i].toUpperCase();
     const dayLabel = d.isRest ? "Rest" : (d.label || "Training");
 
     return el("button", {
@@ -4881,9 +4967,24 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
         };
 
         // --- Profile controls ---
-        const nameInput = el("input", { type:"text", value: state.profile?.name || "" });
-        const proteinInput = el("input", { type:"number", min:"0", step:"1", value: state.profile?.proteinGoal || 150 });
+       const nameInput = el("input", { type:"text", value: state.profile?.name || "" });
 
+let trackProtein = (state.profile?.trackProtein !== false);
+const trackProteinSwitch = el("div", {
+  class: "switch" + (trackProtein ? " on" : ""),
+  onClick: () => {
+    trackProtein = !trackProtein;
+    trackProteinSwitch.classList.toggle("on", trackProtein);
+    proteinRow.style.display = trackProtein ? "" : "none";
+  }
+});
+
+const proteinInput = el("input", { type:"number", min:"0", step:"1", value: state.profile?.proteinGoal || 150 });
+
+// Wrap so we can show/hide cleanly
+const proteinRow = el("div", { class:"row2", style: trackProtein ? "" : "display:none;" }, [
+  el("label", {}, [ el("span", { text:"Protein goal (grams/day)" }), proteinInput ])
+]);
                const weekSelect = el("select", {});
         weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
         weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
@@ -4919,16 +5020,20 @@ const show3DSwitch = el("div", {
 
 
         function saveProfile(){
-          state.profile = state.profile || {};
-          state.profile.name = (nameInput.value || "").trim();
-          state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
-          state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
-          state.profile.hideRestDays = !!hideRestDays;
-          state.profile.show3DPreview = !!show3DPreview;
-          Storage.save(state);
-          showToast("Saved");
-          renderView();
-        }
+        state.profile = state.profile || {};
+        state.profile.name = (nameInput.value || "").trim();
+      
+        state.profile.trackProtein = !!trackProtein;
+        state.profile.proteinGoal = trackProtein ? Math.max(0, Number(proteinInput.value || 0)) : 0;
+      
+        state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
+        state.profile.hideRestDays = !!hideRestDays;
+        state.profile.show3DPreview = !!show3DPreview;
+      
+        Storage.save(state);
+        showToast("Saved");
+        renderView();
+      }
 
         // --- Existing import/export helpers (reuse your current functions) ---
         function openImportPasteModal(){
