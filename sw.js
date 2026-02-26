@@ -14,9 +14,12 @@ const APP_SHELL = [
   "./index.html",
   "./assets/css/app.css",
   "./assets/js/app.js",
-  "./assets/js/modals/protein.modal.js",
-  "./assets/js/modals/logsets.modal.js",
-  "./assets/js/modals/exercise-addedit.modal.js",
+  "./assets/js/pages/onboarding.page.js",
+  "./assets/js/pages/home.page.js",
+  "./assets/js/pages/routine.page.js",
+  "./assets/js/pages/progress.page.js",
+  "./assets/js/pages/settings.page.js",
+  "./assets/js/boot.js",
   "./manifest.webmanifest",
   "./icon.svg"
 ];
