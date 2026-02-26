@@ -3195,8 +3195,9 @@ cards.push(
 );
 
 return el("div", { class:"grid cols2" }, cards);
-      
-      ProteinHistory(){
+        },
+
+        ProteinHistory(){
         
         if(!isProteinEnabled()){
   return el("div", { class:"grid" }, [
