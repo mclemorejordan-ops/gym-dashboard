@@ -2814,12 +2814,30 @@ else root.appendChild(el("div", { class:"card" }, [
     hideRestSwitch.classList.toggle("on", hideRestDays);
   });
 
-  const trackProteinSwitch = el("div", { class:"switch on" });
-  trackProteinSwitch.addEventListener("click", () => {
+  let proteinGoalRow = null;
+
+const trackProteinSwitch = el("div", {
+  class: "switch" + (trackProtein ? " on" : ""),
+  onClick: () => {
     trackProtein = !trackProtein;
     trackProteinSwitch.classList.toggle("on", trackProtein);
-    proteinWrap.style.display = trackProtein ? "" : "none";
-  });
+
+    // ✅ Live show/hide the goal row immediately (no save required)
+    if(proteinGoalRow){
+      proteinGoalRow.style.display = trackProtein ? "" : "none";
+    }
+
+    // Optional: if turning ON and goal is 0/empty, seed a reasonable default
+    if(trackProtein){
+      const v = Number(proteinInput.value || 0);
+      if(!Number.isFinite(v) || v <= 0){
+        proteinInput.value = "150";
+      }
+      // Put cursor in the box
+      try{ proteinInput.focus(); }catch(_){}
+    }
+  }
+});
 
   const tplCardsHost = el("div", { class:"tplGrid" });
   const renderTplCards = () => {
@@ -5125,21 +5143,37 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
             ]),
             nameInput
           ]),
-          el("div", { class:"setRow" }, [
-            el("div", {}, [
-              el("div", { style:"font-weight:820;", text:"Track protein" }),
-              el("div", { class:"meta", text:"Enable or disable protein tracking across the app" })
-            ]),
-            trackProteinSwitch
+          let proteinGoalRow = null;
+
+        const trackProteinSwitch = el("div", {
+          class: "switch" + (trackProtein ? " on" : ""),
+          onClick: () => {
+            trackProtein = !trackProtein;
+            trackProteinSwitch.classList.toggle("on", trackProtein);
+        
+            // ✅ Live show/hide immediately (no Save needed)
+            if(proteinGoalRow){
+              proteinGoalRow.style.display = trackProtein ? "" : "none";
+            }
+        
+            // Optional: if turning ON and goal is empty/0, seed a default + focus
+            if(trackProtein){
+              const v = Number(proteinInput.value || 0);
+              if(!Number.isFinite(v) || v <= 0){
+                proteinInput.value = "150";
+              }
+              try{ proteinInput.focus(); }catch(_){}
+            }
+          }
+        });
+                  
+          (proteinGoalRow = el("div", { class:"setRow", style: trackProtein ? "" : "display:none;" }, [
+          el("div", {}, [
+            el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
+            el("div", { class:"meta", text:"grams/day" })
           ]),
-          
-          el("div", { class:"setRow", style: trackProtein ? "" : "display:none;" }, [
-            el("div", {}, [
-              el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
-              el("div", { class:"meta", text:"grams/day" })
-            ]),
-            proteinInput
-          ]),
+          proteinInput
+        ])),
           el("div", { class:"setRow" }, [
             el("div", {}, [
               el("div", { style:"font-weight:820;", text:"Week starts on" }),
@@ -5155,12 +5189,12 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
             hideRestSwitch
           ]),
           el("div", { class:"setRow" }, [
-  el("div", {}, [
-    el("div", { style:"font-weight:820;", text:"3D Preview" }),
-    el("div", { class:"meta", text:"Show/hide the 3D routine card preview on the Routine page" })
-  ]),
-  show3DSwitch
-]),
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"3D Preview" }),
+              el("div", { class:"meta", text:"Show/hide the 3D routine card preview on the Routine page" })
+            ]),
+            show3DSwitch
+          ]),
           el("div", { style:"height:12px" }),
           el("div", { class:"btnrow" }, [
             el("button", { class:"btn primary", onClick: () => {
