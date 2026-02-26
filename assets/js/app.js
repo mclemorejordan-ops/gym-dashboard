@@ -4956,7 +4956,7 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
 const nameInput = el("input", { type:"text", value: state.profile?.name || "" });
 
 // Track protein toggle (default ON unless explicitly false)
-let trackProtein = (state.profile?.trackProtein !== false);
+let trackProteinEnabled = (state.profile?.trackProtein !== false);
 
 // Protein goal input
 const proteinInput = el("input", {
@@ -5001,7 +5001,7 @@ const show3DSwitch = el("div", {
 // Protein goal row (created first so toggle can show/hide instantly)
 const proteinGoalRow = el("div", {
   class:"setRow",
-  style: trackProtein ? "" : "display:none;"
+  style: trackProteinEnabled ? "" : "display:none;"
 }, [
   el("div", {}, [
     el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
@@ -5011,15 +5011,15 @@ const proteinGoalRow = el("div", {
 ]);
 
 const trackProteinSwitch = el("div", {
-  class: "switch" + (trackProtein ? " on" : ""),
+  class: "switch" + (trackProteinEnabled ? " on" : ""),
   onClick: () => {
-    trackProtein = !trackProtein;
-    trackProteinSwitch.classList.toggle("on", trackProtein);
+    trackProteinEnabled = !trackProteinEnabled;
+    trackProteinSwitch.classList.toggle("on", trackProteinEnabled);
 
     // Live show/hide immediately (no Save needed)
-    proteinGoalRow.style.display = trackProtein ? "" : "none";
+    proteinGoalRow.style.display = trackProteinEnabled ? "" : "none";
 
-    if(trackProtein){
+    if(trackProteinEnabled){
       const v = Number(proteinInput.value || 0);
       if(!Number.isFinite(v) || v <= 0){
         proteinInput.value = "150";
@@ -5100,10 +5100,10 @@ function saveProfile(){
   state.profile.name = (nameInput.value || "").trim();
 
   // Persist protein tracking preference
-  state.profile.trackProtein = !!trackProtein;
+  state.profile.trackProtein = !!trackProteinEnabled;
 
   // If tracking is off, store goal as 0
-  state.profile.proteinGoal = trackProtein
+  state.profile.proteinGoal = trackProteinEnabled
     ? Math.max(0, Number(proteinInput.value || 0))
     : 0;
 
