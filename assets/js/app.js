@@ -4952,263 +4952,172 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
           return item;
         };
 
-                // --- Profile controls ---
-        const nameInput = el("input", { type:"text", value: state.profile?.name || "" });
+        // --- Profile controls ---
+const nameInput = el("input", { type:"text", value: state.profile?.name || "" });
 
-        // ✅ NEW: Track Protein toggle (default ON)
-        let trackProtein = (state.profile?.trackProtein !== false);
+// Track protein toggle (default ON unless explicitly false)
+let trackProtein = (state.profile?.trackProtein !== false);
 
-        const proteinInput = el("input", {
-          type:"number",
-          min:"0",
-          step:"1",
-          value: state.profile?.proteinGoal || 150
-        });
+// Protein goal input
+const proteinInput = el("input", {
+  type:"number",
+  min:"0",
+  step:"1",
+  value: (state.profile?.proteinGoal ?? 150)
+});
 
-        // Wrap so we can show/hide cleanly
-        const proteinRow = el("div", {
-          class:"row2",
-          style: trackProtein ? "" : "display:none;"
-        }, [
-          el("label", {}, [ el("span", { text:"Protein goal (grams/day)" }), proteinInput ])
-        ]);
+// Week starts selector
+const weekSelect = el("select", {});
+weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
+weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
 
-        const trackProteinSwitch = el("div", {
-          class: "switch" + (trackProtein ? " on" : ""),
-          onClick: () => {
-            trackProtein = !trackProtein;
-            trackProteinSwitch.classList.toggle("on", trackProtein);
-            proteinRow.style.display = trackProtein ? "" : "none";
-          }
-        });
+// Backward compatible: accept older numeric values (0/1) if they exist
+const ws = state.profile?.weekStartsOn;
+const normalized =
+  (ws === 0 || ws === "0" || ws === "sun") ? "sun" :
+  (ws === 1 || ws === "1" || ws === "mon") ? "mon" :
+  "mon";
+weekSelect.value = normalized;
 
-        const weekSelect = el("select", {});
-        weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
-        weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
+let hideRestDays = !!state.profile?.hideRestDays;
+let show3DPreview = (state.profile?.show3DPreview !== false); // default ON
 
-        // Backward compatible: accept older numeric values (0/1) if they exist
-        const ws = state.profile?.weekStartsOn;
-        const normalized =
-          (ws === 0 || ws === "0" || ws === "sun") ? "sun" :
-          (ws === 1 || ws === "1" || ws === "mon") ? "mon" :
-          "mon";
-        weekSelect.value = normalized;
+const hideRestSwitch = el("div", {
+  class: "switch" + (hideRestDays ? " on" : ""),
+  onClick: () => {
+    hideRestDays = !hideRestDays;
+    hideRestSwitch.classList.toggle("on", hideRestDays);
+  }
+});
 
-        let hideRestDays = !!state.profile?.hideRestDays;
-        let show3DPreview = (state.profile?.show3DPreview !== false); // default ON
+const show3DSwitch = el("div", {
+  class: "switch" + (show3DPreview ? " on" : ""),
+  onClick: () => {
+    show3DPreview = !show3DPreview;
+    show3DSwitch.classList.toggle("on", show3DPreview);
+  }
+});
 
-        const hideRestSwitch = el("div", {
-          class: "switch" + (hideRestDays ? " on" : ""),
-          onClick: () => {
-            hideRestDays = !hideRestDays;
-            hideRestSwitch.classList.toggle("on", hideRestDays);
-          }
-        });
+// Protein goal row (created first so toggle can show/hide instantly)
+const proteinGoalRow = el("div", {
+  class:"setRow",
+  style: trackProtein ? "" : "display:none;"
+}, [
+  el("div", {}, [
+    el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
+    el("div", { class:"meta", text:"grams/day" })
+  ]),
+  proteinInput
+]);
 
-        // ✅ NEW: 3D Preview switch (persisted)
-        const show3DSwitch = el("div", {
-          class: "switch" + (show3DPreview ? " on" : ""),
-          onClick: () => {
-            show3DPreview = !show3DPreview;
-            show3DSwitch.classList.toggle("on", show3DPreview);
-          }
-        });
+const trackProteinSwitch = el("div", {
+  class: "switch" + (trackProtein ? " on" : ""),
+  onClick: () => {
+    trackProtein = !trackProtein;
+    trackProteinSwitch.classList.toggle("on", trackProtein);
 
+    // Live show/hide immediately (no Save needed)
+    proteinGoalRow.style.display = trackProtein ? "" : "none";
 
+    if(trackProtein){
+      const v = Number(proteinInput.value || 0);
+      if(!Number.isFinite(v) || v <= 0){
+        proteinInput.value = "150";
+      }
+      try{ proteinInput.focus(); }catch(_){}
+    }
+  }
+});
 
-          function saveProfile(){
-          state.profile = state.profile || {};
-          state.profile.name = (nameInput.value || "").trim();
+// Profile body (ALL rows must be inside this single array)
+const profileBody = el("div", {}, [
+  el("div", { class:"setRow" }, [
+    el("div", {}, [
+      el("div", { style:"font-weight:820;", text:"Name" }),
+      el("div", { class:"meta", text:"Shown on Home" })
+    ]),
+    nameInput
+  ]),
 
-          // ✅ NEW
-          state.profile.trackProtein = !!trackProtein;
-          state.profile.proteinGoal = trackProtein
-            ? Math.max(0, Number(proteinInput.value || 0))
-            : 0;
+  el("div", { class:"setRow" }, [
+    el("div", {}, [
+      el("div", { style:"font-weight:820;", text:"Track protein" }),
+      el("div", { class:"meta", text:"Enable or disable protein tracking across the app" })
+    ]),
+    trackProteinSwitch
+  ]),
 
-          state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
-          state.profile.hideRestDays = !!hideRestDays;
-          state.profile.show3DPreview = !!show3DPreview;
+  proteinGoalRow,
 
-          Storage.save(state);
-          showToast("Saved");
-          renderView();
-        }
+  el("div", { class:"setRow" }, [
+    el("div", {}, [
+      el("div", { style:"font-weight:820;", text:"Week starts on" }),
+      el("div", { class:"meta", text:"Used for attendance + default routines" })
+    ]),
+    weekSelect
+  ]),
 
-        // --- Existing import/export helpers (reuse your current functions) ---
-        function openImportPasteModal(){
-          const ta = el("textarea", {
-            style:"width:100%; min-height: 260px; border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size: 12px; outline:none; resize: vertical;",
-            placeholder:"Paste your backup JSON here…"
-          });
+  el("div", { class:"setRow" }, [
+    el("div", {}, [
+      el("div", { style:"font-weight:820;", text:"Hide rest days" }),
+      el("div", { class:"meta", text:"Keep Home focused on training days" })
+    ]),
+    hideRestSwitch
+  ]),
 
-          const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+  el("div", { class:"setRow" }, [
+    el("div", {}, [
+      el("div", { style:"font-weight:820;", text:"3D Preview" }),
+      el("div", { class:"meta", text:"Show/hide the 3D routine card preview on the Routine page" })
+    ]),
+    show3DSwitch
+  ]),
 
+  el("div", { style:"height:12px" }),
+
+  el("div", { class:"btnrow" }, [
+    el("button", {
+      class:"btn primary",
+      onClick: () => {
+        try{ saveProfile(); }
+        catch(e){
           Modal.open({
-            title: "Import from paste",
+            title:"Save failed",
             bodyNode: el("div", {}, [
-              el("div", { class:"note", text:"This will overwrite your current data in this browser." }),
-              el("div", { style:"height:10px" }),
-              ta,
-              err,
+              el("div", { class:"note", text: e?.message || "Could not save settings." }),
               el("div", { style:"height:12px" }),
-              el("div", { class:"btnrow" }, [
-                el("button", {
-                  class:"btn danger",
-                  onClick: () => {
-                    err.style.display = "none";
-                    try{
-                      importBackupJSON(ta.value || "");
-                      Modal.close();
-                      navigate("home");
-                    }catch(e){
-                      err.textContent = e.message || "Import failed.";
-                      err.style.display = "block";
-                    }
-                  }
-                }, ["Import (overwrite)"]),
-                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-              ])
+              el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
             ])
           });
         }
+      }
+    }, ["Save changes"])
+  ])
+]);
 
-        function openImportFileModal(){
-          const input = el("input", { type:"file", accept:"application/json,.json" });
-          const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+function saveProfile(){
+  state.profile = state.profile || {};
+  state.profile.name = (nameInput.value || "").trim();
 
-          Modal.open({
-            title: "Import from file",
-            bodyNode: el("div", {}, [
-              el("div", { class:"note", text:"Choose a .json backup file. Import overwrites current data." }),
-              el("div", { style:"height:10px" }),
-              input,
-              err,
-              el("div", { style:"height:12px" }),
-              el("div", { class:"btnrow" }, [
-                el("button", {
-                  class:"btn danger",
-                  onClick: async () => {
-                    err.style.display = "none";
-                    try{
-                      const f = input.files?.[0];
-                      if(!f) throw new Error("Select a JSON file first.");
-                      const txt = await f.text();
-                      importBackupJSON(txt);
-                      Modal.close();
-                      navigate("home");
-                    }catch(e){
-                      err.textContent = e.message || "Import failed.";
-                      err.style.display = "block";
-                    }
-                  }
-                }, ["Import (overwrite)"]),
-                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-              ])
-            ])
-          });
-        }
+  // Persist protein tracking preference
+  state.profile.trackProtein = !!trackProtein;
 
-        // --- Protein controls (Profile section) ---
-        let trackProtein = (state.profile?.trackProtein !== false);
+  // If tracking is off, store goal as 0
+  state.profile.proteinGoal = trackProtein
+    ? Math.max(0, Number(proteinInput.value || 0))
+    : 0;
 
-        // Protein goal row (created first so the toggle can reference it safely)
-        const proteinGoalRow = el("div", {
-          class:"setRow",
-          style: trackProtein ? "" : "display:none;"
-        }, [
-          el("div", {}, [
-            el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
-            el("div", { class:"meta", text:"grams/day" })
-          ]),
-          proteinInput
-        ]);
+  state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
+  state.profile.hideRestDays = !!hideRestDays;
+  state.profile.show3DPreview = !!show3DPreview;
 
-        const trackProteinSwitch = el("div", {
-          class: "switch" + (trackProtein ? " on" : ""),
-          onClick: () => {
-            trackProtein = !trackProtein;
-            trackProteinSwitch.classList.toggle("on", trackProtein);
+  Storage.save(state);
+  showToast("Saved");
+  renderView();
+}
 
-            // ✅ Live show/hide immediately (no Save needed)
-            proteinGoalRow.style.display = trackProtein ? "" : "none";
 
-            // Optional: if turning ON and goal is empty/0, seed a default + focus
-            if(trackProtein){
-              const v = Number(proteinInput.value || 0);
-              if(!Number.isFinite(v) || v <= 0){
-                proteinInput.value = "150";
-              }
-              try{ proteinInput.focus(); }catch(_){}
-            }
-          }
-        });
-
-        const profileBody = el("div", {}, [
-          el("div", { class:"setRow" }, [
-            el("div", {}, [
-              el("div", { style:"font-weight:820;", text:"Name" }),
-              el("div", { class:"meta", text:"Shown on Home" })
-            ]),
-            nameInput
-          ]),
-
-          // ✅ Track protein toggle
-          el("div", { class:"setRow" }, [
-            el("div", {}, [
-              el("div", { style:"font-weight:820;", text:"Track protein" }),
-              el("div", { class:"meta", text:"Enable or disable protein tracking across the app" })
-            ]),
-            trackProteinSwitch
-          ]),
-
-          // ✅ Goal row (live hidden/shown)
-          proteinGoalRow,
-
-          el("div", { class:"setRow" }, [
-            el("div", {}, [
-              el("div", { style:"font-weight:820;", text:"Week starts on" }),
-              el("div", { class:"meta", text:"Affects Home week view" })
-            ]),
-            weekSelect
-          ]),
-
-          el("div", { class:"setRow" }, [
-            el("div", {}, [
-              el("div", { style:"font-weight:820;", text:"Hide rest days" }),
-              el("div", { class:"meta", text:"Keep Home focused on training days" })
-            ]),
-            hideRestSwitch
-          ]),
-
-          el("div", { class:"setRow" }, [
-            el("div", {}, [
-              el("div", { style:"font-weight:820;", text:"3D Preview" }),
-              el("div", { class:"meta", text:"Show/hide the 3D routine card preview on the Routine page" })
-            ]),
-            show3DSwitch
-          ]),
-
-          el("div", { style:"height:12px" }),
-
-          el("div", { class:"btnrow" }, [
-            el("button", { class:"btn primary", onClick: () => {
-              try{ saveProfile(); }
-              catch(e){
-                Modal.open({
-                  title:"Save failed",
-                  bodyNode: el("div", {}, [
-                    el("div", { class:"note", text: e?.message || "Could not save settings." }),
-                    el("div", { style:"height:12px" }),
-                    el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
-                  ])
-                });
-              }
-            }}, ["Save changes"])
-          ])
-        ]);
-
-                // ────────────────────────────
+        // ────────────────────────────
         // Routines section (Recovery + Management)
         // ────────────────────────────
         function openCreateRoutineModal(afterCreateRoute=null){
