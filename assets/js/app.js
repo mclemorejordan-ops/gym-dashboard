@@ -4437,7 +4437,7 @@ cards.push(
   );
 
   return el("div", { class:"grid" }, cards);
-},
+}},
 
         ProteinHistory(){
         
