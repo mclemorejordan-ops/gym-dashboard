@@ -133,13 +133,13 @@ header{
       padding: 14px;
     }
     .card h2{
-      margin: 0 0 10px 0;
-      font-size: 14px;
-      letter-spacing: .3px;
-      color: var(--muted);
-      font-weight: 650;
-      text-transform: uppercase;
-    }
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        letter-spacing: .3px;
+        color: var(--text); /* 🔥 changed to white */
+        font-weight: 750;
+        text-transform: uppercase;
+      }
 
     .btnrow{ display:flex; gap: 10px; flex-wrap: wrap; }
     .btn{
@@ -181,15 +181,16 @@ header{
       padding: 8px 0 0 0;
     }
     .kpi .big{
-      font-size: 22px;
-      font-weight: 760;
-      letter-spacing: .2px;
-    }
+        font-size: 22px;
+        font-weight: 760;
+        letter-spacing: .2px;
+        color: var(--text); /* ensures no inheritance */
+      }
     .kpi .small{
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.35;
-    }
+        font-size: 13px;
+        color: var(--text); /* 🔥 changed to white */
+        line-height: 1.35;
+      }
     /* Progress Overview (stacked like screenshot) */
     .overviewList{
       display: grid;
