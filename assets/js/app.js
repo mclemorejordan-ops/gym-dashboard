@@ -3055,6 +3055,15 @@ else root.appendChild(el("div", { class:"card" }, [
   const weekStartsOn = state.profile?.weekStartsOn || "mon";
   const weekStartISO = Dates.startOfWeekISO(todayISO, weekStartsOn);
 
+  const weekEndISO = Dates.addDaysISO(weekStartISO, 6);
+
+  // Coaching window start = later of (weekStartISO, user startDateISO)
+  const userStartISO = state.profile?.startDateISO || todayISO;
+  const coachStartISO = (String(userStartISO) > String(weekStartISO)) ? userStartISO : weekStartISO;
+  
+  // Clamp: never start coaching after today
+  const coachStartClampedISO = (String(coachStartISO) > String(todayISO)) ? todayISO : coachStartISO;
+    
   const { routine, day } = getTodayWorkout();
 
   // ----------------------------
@@ -3202,12 +3211,17 @@ const workoutsGoal = (explicitWorkoutsGoal !== null) ? explicitWorkoutsGoal : pl
     ? "—"
     : `${wDeltaWeek < 0 ? "↓" : (wDeltaWeek > 0 ? "↑" : "•")} ${Math.abs(wDeltaWeek).toFixed(1)} lb`;
 
-  // Pace: compare completed workouts vs where you should be by today
-  const dayIdx = Dates.diffDaysISO(weekStartISO, todayISO); // 0..6
-  const expectedByNow = Math.ceil(workoutsGoal * ((Math.min(6, Math.max(0, dayIdx)) + 1) / 7));
-  const paceKey = (workoutsDone >= expectedByNow) ? "on" : "behind";
-  const paceLabel = (paceKey === "on") ? "Pace: On Track" : "Pace: Slightly Behind";
+// Pace should respect when the user started.
+// If user started mid-week, expectation is based only on coachStart..weekEnd.
+const activeDayIdx = Dates.diffDaysISO(coachStartClampedISO, todayISO); // 0..N
+const activeDaysTotal = Math.max(1, Dates.diffDaysISO(coachStartClampedISO, weekEndISO) + 1); // include today & end
+const activeDaysElapsed = Math.min(activeDaysTotal, Math.max(1, activeDayIdx + 1)); // include today
 
+// Expected workouts by now within the active window
+const expectedByNow = Math.ceil(workoutsGoal * (activeDaysElapsed / activeDaysTotal));
+
+const paceKey = (workoutsDone >= expectedByNow) ? "on" : "behind";
+const paceLabel = (paceKey === "on") ? "Pace: On Track" : "Pace: Slightly Behind";
 // ----------------------------
 // Coach Insight (dual-layer: Weekly Execution + Primary Goal)
 // Always includes one next action.
@@ -3243,9 +3257,12 @@ function buildCoachInsight(){
   const hasProteinData = !!(proteinOn && proteinGoal > 0);
   const hasWeightData = (wDeltaWeek !== null);
 
-  const remainingDays = Math.max(0, 6 - Math.min(6, Math.max(0, dayIdx)));
+  // Remaining time should respect coaching window (coachStart..weekEnd)
+  const remainingDays = Math.max(1, Dates.diffDaysISO(todayISO, weekEndISO) + 1); // include today
   const remainingWorkouts = Math.max(0, workoutsGoal - workoutsDone);
 
+// If the user started mid-week, make the language reflect that
+const startedMidWeek = (String(coachStartClampedISO) > String(weekStartISO));
 if(!workoutsGoal || workoutsGoal <= 0){
   return {
     line1: "Pick a routine so I can coach your week.",
@@ -3294,8 +3311,11 @@ if(!workoutsGoal || workoutsGoal <= 0){
   if(weeklyBehind){
     const need = remainingWorkouts;
     const days = remainingDays + 1; // include today
-    line1 = `You’re behind pace for ${workoutsGoal}/week — ${need} workout${need===1?"":"s"} left with ${days} day${days===1?"":"s"} remaining.`;
-
+    line1 = startedMidWeek
+  ? `You started mid-week — from ${coachStartClampedISO} you have ${remainingWorkouts} workout${remainingWorkouts===1?"":"s"} left with ${remainingDays} day${remainingDays===1?"":"s"} remaining.`
+  : `You’re behind pace — ${remainingWorkouts} workout${remainingWorkouts===1?"":"s"} left with ${remainingDays} day${remainingDays===1?"":"s"} remaining.`;
+    
+    
     // Connect to goal (B) briefly
     if(primaryTitle){
       line2 = `That’s the main constraint for: ${primaryTitle}.`;
