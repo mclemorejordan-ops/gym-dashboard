@@ -3247,12 +3247,20 @@ function anchoredRoutineIndexForDate(dateISO){
   const routine = getActiveRoutineSafe();
   if(!routine || !Array.isArray(routine.days) || routine.days.length === 0) return null;
 
-  const startISO = state.profile?.startDateISO || dateISO;
   const cycleLen = routine.days.length;
+
+  // ✅ If the routine is a 7-day week (most templates), anchor it to the user's week start
+  // so Mon-start => Mon=Day 0, Tue=Day 1, ... Fri=Day 4 (Pull for PPL).
+  const weekStartsOn = normalizedWeekStartsOn();
+  const weekAnchorISO = Dates.startOfWeekISO(dateISO, weekStartsOn);
+
+  // For non-7-day cycles, keep the old behavior (anchor to user start date) so multi-week cycles still work.
+  const startISO = (cycleLen === 7)
+    ? weekAnchorISO
+    : (state.profile?.startDateISO || weekAnchorISO);
 
   const offset = Dates.diffDaysISO(startISO, dateISO);
   const idx = ((offset % cycleLen) + cycleLen) % cycleLen; // safe modulo
-
   return idx;
 }
 
