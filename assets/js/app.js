@@ -4020,7 +4020,7 @@ function goalsListNode(){
   const goals = (state.profile.goals || []).filter(g => String(g?.type || "") !== "manual");
 
   if(goals.length === 0){
-    return el("div", { class:"note", text:"No goals yet. Tap “Edit Goals” to add goals with auto-updating progress." });
+    return el("div", { class:"note", text:"No goals yet. Tap “Edit Goals” to add goals." });
   }
 
   return el("div", { class:"goalsList" }, goals.map(g => {
@@ -4355,8 +4355,7 @@ cards.push(
     el("div", { class:"card" }, [
       el("div", { class:"homeRow" }, [
         el("div", {}, [
-          el("h2", { text:"Goals" }),
-          el("div", { class:"note", text:"Auto-updating from logs (Phase 2). Manual list for now." })
+          el("h2", { text:"Goals" })
         ]),
         el("button", { class:"btn", onClick: openGoalsEditor }, ["Edit Goals"])
       ]),
