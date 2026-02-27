@@ -3590,43 +3590,73 @@ function goalsListNode(){
     ])
   );
 
-  // This Week (centered dots, aggregated metrics)
-  cards.push(
-    el("div", { class:"card" }, [
-      el("div", { class:"homeRow" }, [
-        el("div", {}, [
-          el("h2", { text:"This Week" }),
-          el("div", { class:"note", text: weekLabel })
+  // This Week (centered dots, summary + separate cards)
+cards.push(
+  el("div", { class:"card" }, [
+    el("div", { class:"homeRow" }, [
+      el("div", {}, [
+        el("h2", { text:"This Week" }),
+        el("div", { class:"note", text: weekLabel })
+      ]),
+      el("button", { class:"btn", onClick: openWeekDetails }, ["View details"])
+    ]),
+
+    el("div", { style:"height:10px" }),
+    dots,
+    el("div", { style:"height:12px" }),
+
+    // ✅ NEW: 3 separate metric cards
+    el("div", { class:"homeMetricCards" }, [
+      el("button", {
+        class:"homeMetricCard",
+        onClick: () => navigate("attendance")
+      }, [
+        el("div", { class:"homeMetricTop" }, [
+          el("div", { class:"homeMetricTitle", text:"Attendance" }),
+          el("div", { class:"homeMetricPill", text:`${workoutsDone}/${workoutsGoal}` })
         ]),
-        el("button", { class:"btn", onClick: openWeekDetails }, ["View details"])
+        el("div", { class:"homeMetricSub", text:"Workouts completed this week" }),
+        el("div", { class:"homeMetricVal", text:`${workoutsDone} / ${workoutsGoal}` })
       ]),
 
-      el("div", { style:"height:10px" }),
-      dots,
-      el("div", { style:"height:12px" }),
-
-      el("div", { class:"homeWeekMetrics" }, [
-        el("div", { class:"homeMini" }, [
-          el("div", { class:"lab", text:"Workouts" }),
-          el("div", { class:"val", text:`${workoutsDone} / ${workoutsGoal}` })
+      el("button", {
+        class:"homeMetricCard",
+        onClick: () => navigate("weight")
+      }, [
+        el("div", { class:"homeMetricTop" }, [
+          el("div", { class:"homeMetricTitle", text:"Weight" }),
+          el("div", { class:"homeMetricPill", text:wDeltaText })
         ]),
-        el("div", { class:"homeMini" }, [
-          el("div", { class:"lab", text:"Protein Goal Days" }),
-          el("div", { class:"val", text: proteinOn ? `${proteinGoalDays} / 7` : "Off" })
-        ]),
-        el("div", { class:"homeMini" }, [
-          el("div", { class:"lab", text:"Weight Change" }),
-          el("div", { class:"val", text: wDeltaText })
-        ])
+        el("div", { class:"homeMetricSub", text:"Change since week start" }),
+        el("div", { class:"homeMetricVal", text:wDeltaText })
       ]),
 
-      el("div", { style:"height:10px" }),
-      el("div", { class:"homeRow" }, [
-        el("div", { class:"tag", text:`Consistency: ${workoutsDone === 0 ? "Start small" : (workoutsDone >= 5 ? "Strong" : "Building")}` }),
-        el("div", { class:"tag " + (paceKey === "on" ? "good" : "warn"), text: paceLabel })
+      el("button", {
+        class:"homeMetricCard" + (proteinOn ? "" : " disabled"),
+        onClick: () => {
+          if(!proteinOn){
+            showToast("Protein is turned off in Settings");
+            return;
+          }
+          navigate("protein_history");
+        }
+      }, [
+        el("div", { class:"homeMetricTop" }, [
+          el("div", { class:"homeMetricTitle", text:"Protein" }),
+          el("div", { class:"homeMetricPill", text: proteinOn ? `${proteinGoalDays}/7` : "Off" })
+        ]),
+        el("div", { class:"homeMetricSub", text: proteinOn ? "Days you hit your goal" : "Enable in Settings → Profile" }),
+        el("div", { class:"homeMetricVal", text: proteinOn ? `${proteinGoalDays} / 7` : "Off" })
       ])
+    ]),
+
+    el("div", { style:"height:12px" }),
+    el("div", { class:"homeRow" }, [
+      el("div", { class:"tag", text:`Consistency: ${workoutsDone === 0 ? "Start small" : (workoutsDone >= 5 ? "Strong" : "Building")}` }),
+      el("div", { class:"tag " + (paceKey === "on" ? "good" : "warn"), text: paceLabel })
     ])
-  );
+  ])
+);
 
   // Goals
   cards.push(
