@@ -4063,15 +4063,28 @@ function goalsListNode(){
       ? Math.max(0, Math.min(100, Math.round(display.pct)))
       : null;
 
-    return el("div", { class:"goalItem" }, [
-      el("div", {}, [
-        el("div", { style:"font-weight:900;", text: display.title || "Goal" }),
-        el("div", { class:"note", text: display.sub || "" })
-      ]),
+    // ✅ V2 visuals: progress bar under subtext (replaces radial/ring style)
+    const left = el("div", { class:"goalLeft" }, [
+      el("div", { class:"goalName", text: display.title || "Goal" }),
+      el("div", { class:"goalSubtext", text: display.sub || "" }),
       (pct === null)
-        ? el("div", { class:"tag", text:"—" })
-        : el("div", { class:"tag good", text:`${pct}%` })
+        ? el("div", { style:"height:2px" })
+        : el("div", {
+            class:"goalBar",
+            role:"progressbar",
+            "aria-valuemin":"0",
+            "aria-valuemax":"100",
+            "aria-valuenow": String(pct)
+          }, [
+            el("div", { class:"goalBarFill", style:`width:${pct}%;` })
+          ])
     ]);
+
+    const right = (pct === null)
+      ? el("div", { class:"goalPct", text:"—" })
+      : el("div", { class:"goalPct", text:`${pct}%` });
+
+    return el("div", { class:"goalItem" }, [ left, right ]);
   }).filter(Boolean));
 }
   // ----------------------------
