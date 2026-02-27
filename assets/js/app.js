@@ -3382,26 +3382,6 @@ function buildCoachInsight(){
     };
   }
 
-  // (the rest of your buildCoachInsight() stays the same below this)
-
-  // Reliability signals
-  const hasProteinData = !!(proteinOn && proteinGoal > 0);
-  const hasWeightData = (wDeltaWeek !== null);
-
-  // Weekly execution layer
-  const weeklyBehind = (paceKey === "behind");
-  const weeklyOnTrack = (paceKey === "on");
-
-  // --- If today is a rest day, coach recovery + small action
-  if(todayIsRest){
-    const nextUp = remainingLabels[0] ? `Next up: ${remainingLabels[0]}.` : "Next up: your next training day.";
-    return {
-      line1: `Today is a rest day — recovery is part of the plan.`,
-      line2: `${nextUp}`,
-      action: "Next: do 10 minutes of mobility or an easy walk to stay in rhythm."
-    };
-  }
-
   // --- FOUNDATION FIRST: if behind pace, coach the remaining window + today’s plan
   if(weeklyBehind){
     const windowLine = startedMidWeek
