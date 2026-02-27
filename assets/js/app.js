@@ -3167,14 +3167,6 @@ function getExplicitWorkoutsWeekGoal(){
   return Number.isFinite(t) ? Math.max(0, Math.round(t)) : null;
 }
 
-function getPlannedWorkoutsThisWeek(){
-  if(!routine || !routine.days || !routine.days.length) return 0;
-
-  const startISO = state.profile?.startDateISO || Dates.todayISO();
-  const cycleLen = routine.days.length;
-
-  let planned = 0;
-
   function getPlannedWorkoutsThisWeek(){
   if(!routine || !routine.days || !routine.days.length) return 0;
 
