@@ -3585,29 +3585,99 @@ function goalsListNode(){
 
       el("div", { style:"height:10px" }),
 
-      // Top 3 planned exercises
-      (top3.length === 0)
-        ? el("div", { class:"note", text: (!routine ? "Select a routine to see planned exercises." : (day?.isRest ? "Rest day." : "Add exercises in Routine Editor.")) })
-        : el("div", { class:"exList" }, top3.map(n =>
-            el("div", { class:"exItem" }, [
-              el("div", { class:"left" }, [
-                el("div", { class:"name", text: n }),
-                el("div", { class:"meta", text:"Planned" })
-              ]),
-              el("div", { class:"chip", text:"Top" })
-            ])
-          )),
+      // Top 3 planned exercises (show last logged performance; supports weightlifting/cardio/core)
+(top3.length === 0)
+  ? el("div", { class:"note", text: (!routine ? "Select a routine to see planned exercises." : (day?.isRest ? "Rest day." : "Add exercises in Routine Editor.")) })
+  : el("div", { class:"exList" }, (day.exercises || []).slice(0,3).map(rx => {
+
+      const exName = resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap);
+
+      // Time formatter (local + safe)
+      const fmtTimeSec = (sec) => {
+        const s = Math.max(0, Math.floor(Number(sec) || 0));
+        const m = Math.floor(s / 60);
+        const r = s % 60;
+        return `${m}:${String(r).padStart(2,"0")}`;
+      };
+
+      // Find last logged entry for this routineExerciseId (any type)
+      LogEngine.ensure();
+      const last = (state.logs?.workouts || [])
+        .filter(e => e && e.routineExerciseId === rx.id)
+        .sort((a,b) => (b.dateISO || "").localeCompare(a.dateISO || "") || (b.createdAt||0)-(a.createdAt||0))[0];
+
+      let metaText = "No previous logs";
+
+      if(last){
+        const type = last.type || rx.type;
+
+        // Weightlifting: show best set from last session
+        if(type === "weightlifting"){
+          const sets = Array.isArray(last.sets) ? last.sets : [];
+          let best = null;
+          for(const s of sets){
+            const w = Number(s.weight) || 0;
+            const r = Math.max(0, Math.floor(Number(s.reps) || 0));
+            if(!best || w > best.w || (w === best.w && r > best.r)){
+              best = { w, r };
+            }
+          }
+          if(best && best.w > 0){
+            metaText = best.r > 0 ? `Last: ${best.w} lb × ${best.r}` : `Last: ${best.w} lb`;
+          } else {
+            metaText = "No previous logs";
+          }
+        }
+
+        // Cardio: show distance + time (+ incline if present)
+        else if(type === "cardio"){
+          const sum = last.summary || LogEngine.computeCardioSummary(last.sets || []);
+          const dist = Number(sum.distance) || 0;
+          const t = Number(sum.timeSec) || 0;
+          const inc = (sum.incline == null) ? "" : ` • Incline: ${sum.incline}`;
+          if(dist > 0 || t > 0){
+            metaText = `Last: ${dist > 0 ? dist : "—"} • ${t > 0 ? fmtTimeSec(t) : "—"}${inc}`;
+          } else {
+            metaText = "No previous logs";
+          }
+        }
+
+        // Core: show sets×reps OR time (+ weight if present)
+        else if(type === "core"){
+          const s0 = (Array.isArray(last.sets) ? last.sets : [])[0] || {};
+          const sets = Math.max(0, Math.floor(Number(s0.sets) || 0));
+          const reps = Math.max(0, Math.floor(Number(s0.reps) || 0));
+          const timeSec = Math.max(0, Math.floor(Number(s0.timeSec) || 0));
+          const w = Number(s0.weight) || 0;
+
+          const repPart = (sets > 0 && reps > 0) ? `${sets}×${reps}` : "";
+          const timePart = (timeSec > 0) ? fmtTimeSec(timeSec) : "";
+          const detail = [repPart, timePart].filter(Boolean).join(" • ");
+          const wPart = (w > 0) ? ` @ ${w}` : "";
+
+          metaText = detail ? `Last: ${detail}${wPart}` : "No previous logs";
+        }
+
+        // Fallback
+        else {
+          metaText = "No previous logs";
+        }
+      }
+
+      return el("div", { class:"exItem" }, [
+        el("div", { class:"left" }, [
+          el("div", { class:"name", text: exName }),
+          el("div", { class:"meta", text: metaText })
+        ])
+      ]);
+    })),
 
       el("div", { style:"height:10px" }),
 
-      // Status row
-      el("div", { class:"homeRow" }, [
-        el("div", { class:"kpi" }, [
-          el("div", { class:"big", text: status.label }),
-          el("div", { class:"small", text:"Status (auto from set logging)" })
-        ]),
-        el("div", { class:"tag" + (status.kind ? ` ${status.kind}` : ""), text: status.tag })
-      ])
+      // Status pill only (keep "Not Started" pill, remove redundant left text)
+el("div", { class:"homeRow", style:"justify-content:flex-end;" }, [
+  el("div", { class:"tag" + (status.kind ? ` ${status.kind}` : ""), text: status.tag })
+])
     ])
   );
 
