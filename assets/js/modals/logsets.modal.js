@@ -2,6 +2,12 @@ function openExerciseLogger(rx, day, defaultDateISO){
   ExerciseLibrary.ensureSeeded();
   LogEngine.ensure();
 
+    const routine = Routines.getActive();
+  if(!routine){
+    showToast("No active routine found.");
+    return;
+  }
+
   const type = rx.type;
   const exerciseId = rx.exerciseId;
   const exName = resolveExerciseName(type, exerciseId, rx.nameSnap);
@@ -209,7 +215,7 @@ function buildWeightliftingForm(){
         type,
         exerciseId,
         routineExerciseId: rx.id,
-        routineId: routine.id,
+        routineId: routine?.id || null,
         dayId: day.id,
         dayOrder: day.order,
         sets,
@@ -290,7 +296,7 @@ function buildWeightliftingForm(){
           type,
           exerciseId,
           routineExerciseId: rx.id,
-          routineId: routine.id,
+          routineId: routine?.id || null,
           dayId: day.id,
           dayOrder: day.order,
           sets,
@@ -375,7 +381,7 @@ return el("div", { class:"card" }, [
           type,
           exerciseId,
           routineExerciseId: rx.id,
-          routineId: routine.id,
+          routineId: routine?.id || null,
           dayId: day.id,
           dayOrder: day.order,
           sets,
