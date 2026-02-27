@@ -3127,7 +3127,7 @@ trainedThisWeek.forEach((d) => {
 
   const workoutsDone = trainedThisWeek.filter(x => x.trained).length;
 
-     // ----------------------------
+// ----------------------------
 // Attendance target (NO default "workouts/week" goal)
 // - If user has an explicit workouts_week goal, use it.
 // - Otherwise derive from routine plan, aligned to user startDateISO.
@@ -3222,6 +3222,69 @@ const expectedByNow = Math.ceil(workoutsGoal * (activeDaysElapsed / activeDaysTo
 
 const paceKey = (workoutsDone >= expectedByNow) ? "on" : "behind";
 const paceLabel = (paceKey === "on") ? "Pace: On Track" : "Pace: Slightly Behind";
+
+
+// ----------------------------
+// Routine anchoring helpers (based on profile.startDateISO)
+// - Maps calendar dates to routine day index anchored to user start
+// - Produces "today plan" + "remaining plans this week" (from coachStart..weekEnd)
+// ----------------------------
+function getActiveRoutineSafe(){
+  try { return Routines.getActive(); } catch(e){ return null; }
+}
+
+function anchoredRoutineIndexForDate(dateISO){
+  const routine = getActiveRoutineSafe();
+  if(!routine || !Array.isArray(routine.days) || routine.days.length === 0) return null;
+
+  const startISO = state.profile?.startDateISO || dateISO;
+  const cycleLen = routine.days.length;
+
+  const offset = Dates.diffDaysISO(startISO, dateISO);
+  const idx = ((offset % cycleLen) + cycleLen) % cycleLen; // safe modulo
+
+  return idx;
+}
+
+function anchoredRoutineDayForDate(dateISO){
+  const routine = getActiveRoutineSafe();
+  if(!routine || !Array.isArray(routine.days) || routine.days.length === 0) return null;
+
+  const idx = anchoredRoutineIndexForDate(dateISO);
+  if(idx === null) return null;
+
+  // In your data model, days use order (0..len-1)
+  return (routine.days || []).find(d => Number(d.order) === Number(idx)) || null;
+}
+
+// Planned training days remaining in the coaching window (coachStartClampedISO..weekEndISO)
+function plannedDaysRemainingThisWeek(){
+  const routine = getActiveRoutineSafe();
+  if(!routine || !Array.isArray(routine.days) || routine.days.length === 0) return [];
+
+  const out = [];
+  for(let i=0;i<7;i++){
+    const dISO = Dates.addDaysISO(weekStartISO, i);
+
+    // Only include days inside the user-aware coaching window
+    if(dISO < coachStartClampedISO) continue;
+    if(dISO > weekEndISO) continue;
+
+    const dayObj = anchoredRoutineDayForDate(dISO);
+    if(!dayObj) continue;
+
+    // Only count non-rest days
+    if(dayObj.isRest) continue;
+
+    out.push({ dateISO: dISO, label: String(dayObj.label || "Workout") });
+  }
+  return out;
+}
+
+const todayPlan = anchoredRoutineDayForDate(todayISO);     // {label,isRest,...} or null
+const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},...]
+
+
 // ----------------------------
 // Coach Insight (dual-layer: Weekly Execution + Primary Goal)
 // Always includes one next action.
@@ -3252,138 +3315,129 @@ function buildCoachInsight(){
   const primaryTitle = (primary?.title || primary?.name || "").toString().trim();
   const primaryType = inferGoalType(primary);
 
-  // Reliability: don’t pretend to know what we can’t know.
-  const hasWorkoutsData = true; // workoutsDone always computed
-  const hasProteinData = !!(proteinOn && proteinGoal > 0);
-  const hasWeightData = (wDeltaWeek !== null);
+  // If no weekly plan exists (no routine AND no workouts_goal), coach user to set it
+  if(!workoutsGoal || workoutsGoal <= 0){
+    return {
+      line1: "I can’t pace your week yet — pick a routine to set your plan.",
+      line2: "Once it’s set, I’ll coach your remaining days automatically.",
+      action: "Next: go to Routine and select your program."
+    };
+  }
 
-  // Remaining time should respect coaching window (coachStart..weekEnd)
-  const remainingDays = Math.max(1, Dates.diffDaysISO(todayISO, weekEndISO) + 1); // include today
+  // User-start-aware remaining window (calendar week end, but ignoring days before coachStartClampedISO)
+  const remainingDays = Math.max(1, Dates.diffDaysISO(todayISO, weekEndISO) + 1);
   const remainingWorkouts = Math.max(0, workoutsGoal - workoutsDone);
 
-// If the user started mid-week, make the language reflect that
-const startedMidWeek = (String(coachStartClampedISO) > String(weekStartISO));
-if(!workoutsGoal || workoutsGoal <= 0){
-  return {
-    line1: "Pick a routine so I can coach your week.",
-    line2: "Once your plan is set, I’ll track pace automatically.",
-    action: "Next: go to Routine and select your program."
-  };
-}
+  const startedMidWeek = (String(coachStartClampedISO) > String(weekStartISO));
+
+  // Today / remaining plan (anchored to profile.startDateISO)
+  const todayLabel = todayPlan ? String(todayPlan.label || "Workout") : "Workout";
+  const todayIsRest = !!(todayPlan && todayPlan.isRest);
+
+  const remainingLabels = remainingPlans
+    .filter(x => x.dateISO >= todayISO)        // from today forward
+    .map(x => x.label);
+
+  // Reliability signals
+  const hasProteinData = !!(proteinOn && proteinGoal > 0);
+  const hasWeightData = (wDeltaWeek !== null);
 
   // Weekly execution layer
   const weeklyBehind = (paceKey === "behind");
   const weeklyOnTrack = (paceKey === "on");
 
-  // Goal layer (simple, rule-based)
-  let goalState = "unknown";
-  if(primaryType === "weight_target"){
-    goalState = hasWeightData ? "known" : "needs_data";
-  } else if(primaryType === "strength_target"){
-    // Strength progress requires enough logs; we treat as needs_data if none this week.
-    goalState = (workoutsDone > 0) ? "known" : "needs_data";
-  } else if(primaryType === "workouts_week"){
-    goalState = "known";
-  } else if(primaryType === "cardio_target"){
-    goalState = (workoutsDone > 0) ? "known" : "needs_data";
-  } else {
-    goalState = primaryTitle ? "known" : "unknown";
+  // --- If today is a rest day, coach recovery + small action
+  if(todayIsRest){
+    const nextUp = remainingLabels[0] ? `Next up: ${remainingLabels[0]}.` : "Next up: your next training day.";
+    return {
+      line1: `Today is a rest day — recovery is part of the plan.`,
+      line2: `${nextUp}`,
+      action: "Next: do 10 minutes of mobility or an easy walk to stay in rhythm."
+    };
   }
 
-  // PRIORITY MATRIX:
-  // 1) If weekly execution is broken (behind), coach weekly.
-  // 2) Else if weekly ok, coach the primary goal bottleneck (protein/weight/strength).
-  // 3) Always finish with one small next action.
-
-  let line1 = "";
-  let line2 = "";
-  let action = "";
-
-  // --- Case 0: not enough signal to coach (very early week + no logs)
-  if(!hasWorkoutsData){
-    line1 = "I don’t have enough data to coach yet.";
-    line2 = "Log one workout to unlock a real plan.";
-    action = "Next: log your workout today.";
-    return { line1, line2, action };
-  }
-
-  // --- Case 1: Weekly execution behind (Foundation wins)
+  // --- FOUNDATION FIRST: if behind pace, coach the remaining window + today’s plan
   if(weeklyBehind){
-    const need = remainingWorkouts;
-    const days = remainingDays + 1; // include today
-    line1 = startedMidWeek
-  ? `You started mid-week — from ${coachStartClampedISO} you have ${remainingWorkouts} workout${remainingWorkouts===1?"":"s"} left with ${remainingDays} day${remainingDays===1?"":"s"} remaining.`
-  : `You’re behind pace — ${remainingWorkouts} workout${remainingWorkouts===1?"":"s"} left with ${remainingDays} day${remainingDays===1?"":"s"} remaining.`;
-    
-    
-    // Connect to goal (B) briefly
-    if(primaryTitle){
-      line2 = `That’s the main constraint for: ${primaryTitle}.`;
-    } else {
-      line2 = "Fix the week first — progress follows consistency.";
-    }
+    const windowLine = startedMidWeek
+      ? `You started mid-week — ${remainingWorkouts} workout${remainingWorkouts===1?"":"s"} left with ${remainingDays} day${remainingDays===1?"":"s"} remaining.`
+      : `You’re behind pace — ${remainingWorkouts} workout${remainingWorkouts===1?"":"s"} left with ${remainingDays} day${remainingDays===1?"":"s"} remaining.`;
 
-    // Always one small next action
-    action = "Next: do a 35–45 min minimum session today (main lift + 2 accessories).";
-    return { line1, line2, action };
+    const remainLine = remainingLabels.length
+      ? `Remaining plan: ${remainingLabels.join(", ")}.`
+      : "Your remaining plan is light — keep it simple and execute.";
+
+    return {
+      line1: `Today: ${todayLabel}. ${windowLine}`,
+      line2: remainLine,
+      action: `Next: start ${todayLabel} and log your first set — momentum beats perfect.`
+    };
   }
 
-  // --- Case 2: Weekly execution on track (now coach the primary goal)
+  // --- On track: coach the goal layer, but still reference Today + remaining plan
   if(weeklyOnTrack){
-    // If protein tracking exists and is weak, it often becomes the bottleneck for body comp goals.
-    if(hasProteinData && proteinGoalDays <= 2 && primaryType === "weight_target"){
-      line1 = "Training is on track — protein is the missing lever this week.";
-      line2 = `Goal days: ${proteinGoalDays}/7 at ${proteinGoal}g.`;
-      action = `Next: hit ${proteinGoal}g today (make it non-negotiable).`;
-      return { line1, line2, action };
-    }
+    const remainLine = remainingLabels.length
+      ? `Remaining plan: ${remainingLabels.join(", ")}.`
+      : "Your remaining plan is straightforward — execute and recover.";
 
-    // Weight goal + weight data
+    // Weight goal: protein/weight feedback
     if(primaryType === "weight_target"){
       if(!hasWeightData){
-        line1 = "You’re executing the week, but we can’t steer without weight data.";
-        line2 = primaryTitle ? `Goal: ${primaryTitle}.` : "Log one weigh-in to calibrate.";
-        action = "Next: log tomorrow morning’s weight (same time, same conditions).";
-        return { line1, line2, action };
+        return {
+          line1: `Today: ${todayLabel}. You’re on pace this week.`,
+          line2: `Goal: ${primaryTitle || "Body composition"}. Log weight so I can steer. ${remainLine}`,
+          action: "Next: log tomorrow morning’s weight (same time, same conditions)."
+        };
       }
 
-      // Weight trend present
-      line1 = "You’re on track this week.";
-      line2 = `Weight trend: ${wDeltaText}.`;
-      action = hasProteinData
-        ? `Next: repeat today’s structure and hit ${proteinGoal}g.`
-        : "Next: repeat today’s structure and stay consistent.";
-      return { line1, line2, action };
+      if(hasProteinData && proteinGoalDays <= 2){
+        return {
+          line1: `Today: ${todayLabel}. Training is on track — protein is the lever.`,
+          line2: `Goal days: ${proteinGoalDays}/7 at ${proteinGoal}g. ${remainLine}`,
+          action: `Next: hit ${proteinGoal}g today (plan 2 protein meals).`
+        };
+      }
+
+      return {
+        line1: `Today: ${todayLabel}. You’re on pace this week.`,
+        line2: `Weight trend: ${wDeltaText}. ${remainLine}`,
+        action: hasProteinData
+          ? `Next: repeat today’s structure and hit ${proteinGoal}g.`
+          : "Next: repeat today’s structure and stay consistent."
+      };
     }
 
     // Strength goal
     if(primaryType === "strength_target"){
-      line1 = "You’re consistent this week — now we push performance.";
-      line2 = primaryTitle ? `Focus: ${primaryTitle}.` : "Focus: your primary lift.";
-      action = "Next: beat last time by +1 rep OR +2.5–5 lb on your top set.";
-      return { line1, line2, action };
+      return {
+        line1: `Today: ${todayLabel}. You’re consistent — now we push performance.`,
+        line2: `${primaryTitle ? `Focus: ${primaryTitle}. ` : ""}${remainLine}`,
+        action: "Next: beat last time by +1 rep OR +2.5–5 lb on your top set."
+      };
     }
 
-    // Cardio goal (simple)
+    // Cardio goal
     if(primaryType === "cardio_target"){
-      line1 = "You’re on track this week — keep the engine improving.";
-      line2 = primaryTitle ? `Focus: ${primaryTitle}.` : "Focus: cardio consistency.";
-      action = "Next: add 10–15 minutes of easy cardio today (zone 2 pace).";
-      return { line1, line2, action };
+      return {
+        line1: `Today: ${todayLabel}. You’re on pace — build the engine.`,
+        line2: `${primaryTitle ? `Focus: ${primaryTitle}. ` : ""}${remainLine}`,
+        action: "Next: add 10–15 minutes of easy cardio today (zone 2 pace)."
+      };
     }
 
-    // Workout-week goal or manual
-    line1 = "You’re on track this week.";
-    line2 = primaryTitle ? `Keep your focus on: ${primaryTitle}.` : "Keep momentum and don’t break the streak.";
-    action = "Next: lock in your next session time now (schedule it).";
-    return { line1, line2, action };
+    // No specific goal type / manual goals
+    return {
+      line1: `Today: ${todayLabel}. You’re on pace this week.`,
+      line2: `${primaryTitle ? `Keep focus on: ${primaryTitle}. ` : ""}${remainLine}`,
+      action: `Next: start ${todayLabel} and log your first set.`
+    };
   }
 
-  // --- Fallback (shouldn’t happen often)
-  line1 = "You’re moving in the right direction.";
-  line2 = primaryTitle ? `Focus: ${primaryTitle}.` : "Stay consistent.";
-  action = "Next: do one small win today (walk, stretch, or prep a high-protein meal).";
-  return { line1, line2, action };
+  // --- Fallback (rare)
+  return {
+    line1: `Today: ${todayLabel}. Keep moving in the right direction.`,
+    line2: remainingLabels.length ? `Remaining plan: ${remainingLabels.join(", ")}.` : "Stay consistent.",
+    action: `Next: start ${todayLabel} and log your first set.`
+  };
 }
 
 const coach = buildCoachInsight();
