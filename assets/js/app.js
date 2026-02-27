@@ -3137,139 +3137,413 @@ else root.appendChild(el("div", { class:"card" }, [
   const weekLabel = weekStartsOn === "sun" ? "This Week (Sun–Sat)" : "This Week (Mon–Sun)";
 
   const openWeekDetails = () => {
-    Modal.open({
-      title: "This Week",
-      bodyNode: el("div", {}, [
-        el("div", { class:"note", text:"Details view is Phase 2. For now, jump into the existing pages:" }),
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", { class:"btn", onClick: () => { Modal.close(); navigate("attendance"); } }, ["Attendance"]),
-          el("button", { class:"btn", onClick: () => { Modal.close(); navigate("weight"); } }, ["Weight"]),
-          el("button", {
-            class:"btn",
-            onClick: () => {
-              if(proteinOn){ Modal.close(); navigate("protein_history"); }
-              else { showToast("Protein tracking is disabled in Settings → Profile."); }
-            }
-          }, ["Protein"])
-        ])
-      ])
-    });
-  };
+  const rows = [];
+  const weekEndISO = Dates.addDaysISO(weekStartISO, 6);
 
-  // ----------------------------
-  // Goals (Phase 1: manual list, stored in profile; automation later)
-  // ----------------------------
-  if(!Array.isArray(state.profile?.goals)) state.profile.goals = [];
+  for(let i=0;i<7;i++){
+    const dISO = Dates.addDaysISO(weekStartISO, i);
+    const trained = isTrained(dISO);
 
-  const openGoalsEditor = () => {
-    const working = (state.profile.goals || []).map(g => ({
-      title: String(g?.title || ""),
-      sub: String(g?.sub || ""),
-      pct: (typeof g?.pct === "number" ? g.pct : null)
-    }));
+    // Protein
+    const pTotal = proteinOn ? totalProtein(dISO) : 0;
+    const pMet = (proteinOn && proteinGoal > 0) ? (pTotal >= proteinGoal) : false;
 
-    function addRow(){
-      working.push({ title:"", sub:"", pct:null });
-      render();
-    }
+    // Weight (entry for day if any)
+    const wEntry = (state.logs?.weight || []).find(x => x.dateISO === dISO);
+    const wVal = wEntry ? wEntry.weight : null;
 
-    function render(){
-      body.innerHTML = "";
-
-      if(working.length === 0){
-        body.appendChild(el("div", { class:"note", text:"No goals yet. Add one below." }));
-      }
-
-      working.forEach((g, idx) => {
-        const titleInput = el("input", { type:"text", value:g.title, placeholder:"Goal title (e.g., Bench 225 lb)" });
-        const subInput = el("input", { type:"text", value:g.sub, placeholder:"Subtext (e.g., Current: 205 lb • 20 lb to goal)" });
-        const pctInput = el("input", { type:"number", inputmode:"numeric", min:"0", max:"100", step:"1", value:(g.pct===null?"":String(g.pct)), placeholder:"%" });
-
-        titleInput.addEventListener("input", () => { g.title = titleInput.value; });
-        subInput.addEventListener("input", () => { g.sub = subInput.value; });
-        pctInput.addEventListener("input", () => {
-          const v = pctInput.value === "" ? null : Number(pctInput.value);
-          g.pct = (v===null) ? null : (Number.isFinite(v) ? Math.max(0, Math.min(100, Math.round(v))) : null);
-        });
-
-        body.appendChild(el("div", { class:"goalEditRow" }, [
-          el("div", { class:"goalEditCols" }, [
-            el("label", {}, [ el("span", { text:"Goal" }), titleInput ]),
-            el("label", {}, [ el("span", { text:"Subtext" }), subInput ]),
-            el("label", {}, [ el("span", { text:"%" }), pctInput ])
-          ]),
-          el("div", { style:"height:10px" }),
-          el("button", {
-            class:"btn danger",
-            onClick: () => { working.splice(idx,1); render(); }
-          }, ["Remove"])
-        ]));
-        body.appendChild(el("div", { style:"height:10px" }));
-      });
-
-      body.appendChild(el("div", { class:"btnrow" }, [
-        el("button", { class:"btn", onClick: addRow }, ["+ Add goal"])
-      ]));
-    }
-
-    const body = el("div", {}, []);
-    render();
-
-    Modal.open({
-      title: "Edit Goals",
-      bodyNode: el("div", {}, [
-        body,
-        el("div", { style:"height:12px" }),
-        el("div", { class:"note", text:"Phase 2 will auto-generate these values from your logs. For now, this is a manual list." }),
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]),
-          el("button", {
-            class:"btn primary",
-            onClick: () => {
-              // sanitize + save
-              const cleaned = working
-                .map(x => ({
-                  title: (x.title || "").trim(),
-                  sub: (x.sub || "").trim(),
-                  pct: (x.pct===null ? null : Number(x.pct))
-                }))
-                .filter(x => x.title.length > 0)
-                .map(x => ({ title:x.title, sub:x.sub, pct: (Number.isFinite(x.pct) ? x.pct : null) }));
-
-              state.profile.goals = cleaned;
-              Storage.save(state);
-              Modal.close();
-              renderView();
-            }
-          }, ["Save"])
-        ])
-      ])
-    });
-  };
-
-  function goalsListNode(){
-    const goals = (state.profile.goals || []);
-    if(goals.length === 0){
-      return el("div", { class:"note", text:"No goals yet. Tap “Edit Goals” to add goals with auto-updating subtext." });
-    }
-
-    return el("div", { class:"goalsList" }, goals.map(g => {
-      const title = String(g?.title || "");
-      const sub = String(g?.sub || "");
-      const pct = (typeof g?.pct === "number" && Number.isFinite(g.pct)) ? Math.max(0, Math.min(100, Math.round(g.pct))) : null;
-
-      return el("div", { class:"goalItem" }, [
-        el("div", { class:"goalLeft" }, [
-          el("div", { class:"goalName", text: title }),
-          sub ? el("div", { class:"goalSubtext", text: sub }) : el("div", { class:"goalSubtext", text:"" })
-        ]),
-        el("div", { class:"goalPct", text: (pct===null ? "Active" : `${pct}%`) })
-      ]);
-    }));
+    rows.push({ dISO, trained, pTotal, pMet, wVal });
   }
 
+  // Helper formatters
+  const dow = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const dayLabels = rows.map((r, i) => `${dow[i]} • ${r.dISO}`);
+
+  const trainedCount = rows.filter(r=>r.trained).length;
+  const proteinMetCount = rows.filter(r=>r.pMet).length;
+
+  // Weight delta in-week (first available vs last available)
+  const weightsInWeek = rows.filter(r => Number.isFinite(r.wVal)).map(r=>r.wVal);
+  let deltaInWeek = null;
+  if(weightsInWeek.length >= 2){
+    deltaInWeek = round2(weightsInWeek[weightsInWeek.length-1] - weightsInWeek[0]);
+  }
+
+  const summary = el("div", {}, [
+    el("div", { class:"note", text:`${weekLabel} • ${weekStartISO} → ${weekEndISO}` }),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"homeWeekMetrics" }, [
+      el("div", { class:"homeMini" }, [
+        el("div", { class:"lab", text:"Workouts" }),
+        el("div", { class:"val", text:`${workoutsDone} / ${workoutsGoal}` })
+      ]),
+      el("div", { class:"homeMini" }, [
+        el("div", { class:"lab", text:"Trained Days" }),
+        el("div", { class:"val", text:`${trainedCount} / 7` })
+      ]),
+      el("div", { class:"homeMini" }, [
+        el("div", { class:"lab", text:"Protein Goal Days" }),
+        el("div", { class:"val", text: proteinOn ? `${proteinMetCount} / 7` : "Off" })
+      ])
+    ]),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"note", text:`Weight (in-week): ${deltaInWeek === null ? "—" : ((deltaInWeek < 0 ? "↓ " : "↑ ") + Math.abs(deltaInWeek).toFixed(1) + " lb")}` })
+  ]);
+
+  const list = el("div", { style:"margin-top:12px; display:flex; flex-direction:column; gap:10px;" });
+
+  rows.forEach((r, i) => {
+    const left = el("div", {}, [
+      el("div", { style:"font-weight:900;", text: dayLabels[i] }),
+      el("div", { class:"note", text:
+        `Workout: ${r.trained ? "✅" : "—"}`
+        + (proteinOn ? ` • Protein: ${Math.round(r.pTotal)}g${(proteinGoal>0 ? (r.pMet ? " ✅" : " —") : "")}` : "")
+        + ` • Weight: ${Number.isFinite(r.wVal) ? (r.wVal + " lb") : "—"}`
+      })
+    ]);
+
+    const right = el("div", { class:"tag " + (r.trained ? "good" : ""), text: r.trained ? "Trained" : "Rest" });
+
+    list.appendChild(
+      el("div", { class:"goalItem" }, [ left, right ])
+    );
+  });
+
+  Modal.open({
+    title: "This Week — Details",
+    bodyNode: el("div", {}, [
+      summary,
+      el("div", { style:"height:12px" }),
+      list,
+      el("div", { style:"height:14px" }),
+      el("div", { class:"btnrow" }, [
+        el("button", { class:"btn", onClick: () => { Modal.close(); navigate("attendance"); } }, ["Attendance"]),
+        el("button", { class:"btn", onClick: () => { Modal.close(); navigate("weight"); } }, ["Weight"]),
+        el("button", {
+          class:"btn",
+          onClick: () => {
+            if(proteinOn){ Modal.close(); navigate("protein_history"); }
+            else { showToast("Protein tracking is disabled in Settings → Profile."); }
+          }
+        }, ["Protein"])
+      ])
+    ])
+  });
+};
+
+  // ----------------------------
+// Goals (Phase 2: structured + auto from logs; manual still supported)
+// ----------------------------
+if(!Array.isArray(state.profile?.goals)) state.profile.goals = [];
+
+function getLatestWeight(){
+  WeightEngine.ensure();
+  const latest = WeightEngine.latest();
+  return latest ? Number(latest.weight) : null;
+}
+
+function getBestLiftWeight(exType, exId){
+  try{
+    const bests = LogEngine.lifetimeBests(exType, exId);
+    return Number.isFinite(bests?.bestWeight) ? Number(bests.bestWeight) : null;
+  }catch(e){
+    return null;
+  }
+}
+
+function computeGoalDisplay(goal){
+  // Backwards compatible (Phase 1 manual goals)
+  const legacyTitle = (goal?.title ?? goal?.name ?? "").toString().trim();
+  const legacySub   = (goal?.sub ?? "").toString().trim();
+  const legacyPct   = (typeof goal?.pct === "number" && Number.isFinite(goal.pct)) ? Math.max(0, Math.min(100, Math.round(goal.pct))) : null;
+
+  const type = (goal?.type || "manual").toString();
+
+  // Manual goal
+  if(type === "manual"){
+    return {
+      title: legacyTitle || "Goal",
+      sub: legacySub,
+      pct: legacyPct
+    };
+  }
+
+  // Workouts per week
+  if(type === "workouts_week"){
+    const target = Math.max(0, Math.round(Number(goal?.target ?? state.profile?.workoutsPerWeekGoal ?? 4)));
+    const done = workoutsDone;
+    const remaining = Math.max(0, target - done);
+    return {
+      title: goal?.title?.trim() || `${target} workouts per week`,
+      sub: `${done} / ${target} completed • ${remaining} remaining`,
+      pct: (target > 0) ? Math.round((done / target) * 100) : null
+    };
+  }
+
+  // Weight target
+  if(type === "weight_target"){
+    const target = Number(goal?.targetWeight);
+    const start = Number(goal?.startWeight);
+    const current = getLatestWeight();
+
+    if(!Number.isFinite(target) || !Number.isFinite(current)){
+      return {
+        title: goal?.title?.trim() || "Weight goal",
+        sub: "Log weight to track progress",
+        pct: null
+      };
+    }
+
+    const losing = Number.isFinite(start) ? (start >= target) : (current >= target);
+    const toGo = Math.abs(current - target);
+
+    let pct = null;
+    if(Number.isFinite(start) && start !== target){
+      const denom = Math.abs(start - target);
+      const numer = losing ? (start - current) : (current - start);
+      pct = Math.max(0, Math.min(100, Math.round((numer / denom) * 100)));
+    }
+
+    return {
+      title: goal?.title?.trim() || `Reach ${target} lb`,
+      sub: `Current: ${current.toFixed(1)} lb • ${toGo.toFixed(1)} lb to goal`,
+      pct
+    };
+  }
+
+  // Strength target (best weight)
+  if(type === "strength_target"){
+    const exType = (goal?.exerciseType || "weightlifting").toString();
+    const exId = goal?.exerciseId;
+    const target = Number(goal?.targetWeight);
+
+    const exName = resolveExerciseName(exType, exId, goal?.exerciseName || "Exercise");
+    const best = (exId ? getBestLiftWeight(exType, exId) : null);
+
+    if(!Number.isFinite(target) || !Number.isFinite(best)){
+      return {
+        title: goal?.title?.trim() || `${exName} ${Number.isFinite(target) ? target : ""}`.trim(),
+        sub: "Log sets to track progress",
+        pct: null
+      };
+    }
+
+    const toGo = Math.max(0, target - best);
+    const pct = (target > 0) ? Math.max(0, Math.min(100, Math.round((best / target) * 100))) : null;
+
+    return {
+      title: goal?.title?.trim() || `${exName} ${target} lb`,
+      sub: `Current: ${best.toFixed(0)} lb • ${toGo.toFixed(0)} lb to goal`,
+      pct
+    };
+  }
+
+  // Fallback
+  return { title: legacyTitle || "Goal", sub: legacySub, pct: legacyPct };
+}
+
+const openGoalsEditor = () => {
+  // Normalize working goals
+  const working = (state.profile.goals || []).map(g => ({
+    type: (g?.type || "manual"),
+    title: String(g?.title || g?.name || ""),
+    sub: String(g?.sub || ""),
+    pct: (typeof g?.pct === "number" ? g.pct : null),
+
+    // workouts_week
+    target: (Number.isFinite(Number(g?.target)) ? Number(g.target) : null),
+
+    // weight_target
+    startWeight: (Number.isFinite(Number(g?.startWeight)) ? Number(g.startWeight) : null),
+    targetWeight: (Number.isFinite(Number(g?.targetWeight)) ? Number(g.targetWeight) : null),
+
+    // strength_target
+    exerciseType: String(g?.exerciseType || "weightlifting"),
+    exerciseId: g?.exerciseId || null,
+    targetLiftWeight: (Number.isFinite(Number(g?.targetWeight)) ? Number(g.targetWeight) : null)
+  }));
+
+  function addRow(){
+    working.push({ type:"manual", title:"", sub:"", pct:null, target:null, startWeight:null, targetWeight:null, exerciseType:"weightlifting", exerciseId:null, targetLiftWeight:null });
+    render();
+  }
+
+  function render(){
+    body.innerHTML = "";
+
+    if(working.length === 0){
+      body.appendChild(el("div", { class:"note", text:"No goals yet. Add one below." }));
+    }
+
+    const exerciseOptions = (state.exerciseLibrary?.weightlifting || []).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+
+    working.forEach((g, idx) => {
+      const typeSel = el("select", {}, [
+        el("option", { value:"manual", text:"Manual" }),
+        el("option", { value:"workouts_week", text:"Workouts per week" }),
+        el("option", { value:"weight_target", text:"Target weight" }),
+        el("option", { value:"strength_target", text:"Strength target (best weight)" })
+      ]);
+      typeSel.value = g.type;
+
+      typeSel.addEventListener("change", () => {
+        g.type = typeSel.value;
+        // Helpful defaults
+        if(g.type === "workouts_week" && !Number.isFinite(Number(g.target))) g.target = Number(state.profile?.workoutsPerWeekGoal || 4);
+        if(g.type === "weight_target"){
+          const cur = getLatestWeight();
+          if(!Number.isFinite(Number(g.startWeight)) && Number.isFinite(cur)) g.startWeight = cur;
+        }
+        render();
+      });
+
+      const titleInput = el("input", { type:"text", value:g.title, placeholder:"Goal title (optional — auto titles work too)" });
+      titleInput.addEventListener("input", () => { g.title = titleInput.value; });
+
+      const subInput = el("input", { type:"text", value:g.sub, placeholder:"Subtext (manual only — auto goals generate this)" });
+      subInput.addEventListener("input", () => { g.sub = subInput.value; });
+
+      const pctInput = el("input", { type:"number", inputmode:"numeric", min:"0", max:"100", step:"1", value:(g.pct===null?"":String(g.pct)), placeholder:"%" });
+      pctInput.addEventListener("input", () => {
+        const v = pctInput.value === "" ? null : Number(pctInput.value);
+        g.pct = (v===null) ? null : (Number.isFinite(v) ? Math.max(0, Math.min(100, Math.round(v))) : null);
+      });
+
+      // Type-specific fields
+      const typeFields = [];
+
+      if(g.type === "workouts_week"){
+        const targetInput = el("input", { type:"number", min:"0", step:"1", value:(g.target===null?"":String(g.target)), placeholder:"Target workouts/week" });
+        targetInput.addEventListener("input", () => { g.target = targetInput.value === "" ? null : Number(targetInput.value); });
+        typeFields.push(el("label", {}, [ el("span", { text:"Target" }), targetInput ]));
+      }
+
+      if(g.type === "weight_target"){
+        const targetW = el("input", { type:"number", min:"0", step:"0.1", value:(g.targetWeight===null?"":String(g.targetWeight)), placeholder:"Target weight" });
+        targetW.addEventListener("input", () => { g.targetWeight = targetW.value === "" ? null : Number(targetW.value); });
+
+        const startW = el("input", { type:"number", min:"0", step:"0.1", value:(g.startWeight===null?"":String(g.startWeight)), placeholder:"Start weight (auto-filled)" });
+        startW.addEventListener("input", () => { g.startWeight = startW.value === "" ? null : Number(startW.value); });
+
+        typeFields.push(el("label", {}, [ el("span", { text:"Target weight" }), targetW ]));
+        typeFields.push(el("label", {}, [ el("span", { text:"Start weight" }), startW ]));
+      }
+
+      if(g.type === "strength_target"){
+        const exSel = el("select", {}, [
+          el("option", { value:"", text:"Select exercise" }),
+          ...exerciseOptions.map(ex => el("option", { value: ex.id, text: ex.name }))
+        ]);
+        exSel.value = g.exerciseId || "";
+        exSel.addEventListener("change", () => { g.exerciseId = exSel.value || null; });
+
+        const targetLift = el("input", { type:"number", min:"0", step:"1", value:(g.targetLiftWeight===null?"":String(g.targetLiftWeight)), placeholder:"Target weight" });
+        targetLift.addEventListener("input", () => { g.targetLiftWeight = targetLift.value === "" ? null : Number(targetLift.value); });
+
+        typeFields.push(el("label", {}, [ el("span", { text:"Exercise" }), exSel ]));
+        typeFields.push(el("label", {}, [ el("span", { text:"Target weight" }), targetLift ]));
+      }
+
+      body.appendChild(el("div", { class:"goalEditRow" }, [
+        el("div", { class:"goalEditCols" }, [
+          el("label", {}, [ el("span", { text:"Type" }), typeSel ]),
+          el("label", {}, [ el("span", { text:"Title" }), titleInput ]),
+          ...(g.type === "manual" ? [
+            el("label", {}, [ el("span", { text:"Subtext" }), subInput ]),
+            el("label", {}, [ el("span", { text:"%" }), pctInput ])
+          ] : typeFields)
+        ]),
+        el("div", { style:"height:10px" }),
+        el("button", { class:"btn danger", onClick: () => { working.splice(idx, 1); render(); } }, ["Remove"])
+      ]));
+
+      body.appendChild(el("div", { style:"height:10px" }));
+    });
+
+    body.appendChild(el("div", { class:"btnrow" }, [
+      el("button", { class:"btn", onClick: addRow }, ["+ Add goal"])
+    ]));
+  }
+
+  const body = el("div", {}, []);
+  render();
+
+  Modal.open({
+    title: "Edit Goals",
+    bodyNode: el("div", {}, [
+      body,
+      el("div", { style:"height:12px" }),
+      el("div", { class:"note", text:"Phase 2: Auto goals compute subtext + % from your logs. Manual goals still supported." }),
+      el("div", { style:"height:12px" }),
+      el("div", { class:"btnrow" }, [
+        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]),
+        el("button", {
+          class:"btn primary",
+          onClick: () => {
+            const cleaned = working.map(x => {
+              const base = {
+                type: String(x.type || "manual"),
+                title: (x.title || "").trim()
+              };
+
+              if(base.type === "manual"){
+                base.sub = (x.sub || "").trim();
+                base.pct = (x.pct===null ? null : Number(x.pct));
+                return base;
+              }
+
+              if(base.type === "workouts_week"){
+                base.target = Number.isFinite(Number(x.target)) ? Math.max(0, Math.round(Number(x.target))) : Math.max(0, Math.round(Number(state.profile?.workoutsPerWeekGoal || 4)));
+                return base;
+              }
+
+              if(base.type === "weight_target"){
+                const cur = getLatestWeight();
+                base.startWeight = Number.isFinite(Number(x.startWeight)) ? Number(x.startWeight) : (Number.isFinite(cur) ? cur : null);
+                base.targetWeight = Number.isFinite(Number(x.targetWeight)) ? Number(x.targetWeight) : null;
+                return base;
+              }
+
+              if(base.type === "strength_target"){
+                base.exerciseType = "weightlifting";
+                base.exerciseId = x.exerciseId || null;
+                base.targetWeight = Number.isFinite(Number(x.targetLiftWeight)) ? Math.max(0, Math.round(Number(x.targetLiftWeight))) : null;
+                return base;
+              }
+
+              return base;
+            }).filter(g => (g.title && g.title.length > 0) || g.type !== "manual"); // allow auto goals without title
+
+            state.profile.goals = cleaned;
+            Storage.save(state);
+            Modal.close();
+            renderView();
+          }
+        }, ["Save"])
+      ])
+    ])
+  });
+};
+
+function goalsListNode(){
+  const goals = (state.profile.goals || []);
+  if(goals.length === 0){
+    return el("div", { class:"note", text:"No goals yet. Tap “Edit Goals” to add goals with auto-updating progress." });
+  }
+
+  return el("div", { class:"goalsList" }, goals.map(g => {
+    const display = computeGoalDisplay(g);
+    const pct = (typeof display.pct === "number" && Number.isFinite(display.pct)) ? Math.max(0, Math.min(100, Math.round(display.pct))) : null;
+
+    return el("div", { class:"goalItem" }, [
+      el("div", { class:"goalLeft" }, [
+        el("div", { class:"goalName", text: display.title }),
+        display.sub ? el("div", { class:"goalSubtext", text: display.sub }) : el("div", { class:"goalSubtext", text:"" })
+      ]),
+      el("div", { class:"goalPct", text: (pct===null ? "Active" : `${pct}%`) })
+    ]);
+  }));
+}
   // ----------------------------
   // Render (Option A: Today, This Week, Goals)
   // ----------------------------
