@@ -3059,26 +3059,26 @@ else root.appendChild(el("div", { class:"card" }, [
 // Coaching window (respects when user starts)
 // - User may start mid-week; insight + attendance should only consider start day → week end
 // ----------------------------
+const todayISO = Dates.todayISO();
+const weekStartsOn = state.profile?.weekStartsOn || "mon";
+const weekStartISO = Dates.startOfWeekISO(todayISO, weekStartsOn);
+const weekEndISO = Dates.addDaysISO(weekStartISO, 6); // KEEP ONE declaration only
+
 const userStartISO = state.profile?.startDateISO || todayISO;
-const weekEndISO = Dates.addDaysISO(weekStartISO, 6);   // ← keep ONE here
 
 // Clamp start into this week window so math never goes weird
 const coachStartClampedISO =
   (userStartISO < weekStartISO) ? weekStartISO :
   (userStartISO > weekEndISO)   ? weekEndISO :
   userStartISO;
-  
+
+// Helpful flags (NO DUPLICATE DECLARATIONS ANYWHERE ELSE)
 const startedMidWeek = (userStartISO > weekStartISO);
+
+// Remaining days in the active coaching window (includes today->weekEnd, exclusive diff)
 const remainingDaysInWindow = Math.max(0, Dates.diffDaysISO(todayISO, weekEndISO));
-  
-  // Coaching window start = later of (weekStartISO, user startDateISO)
-  const userStartISO = state.profile?.startDateISO || todayISO;
-  const coachStartISO = (String(userStartISO) > String(weekStartISO)) ? userStartISO : weekStartISO;
-  
-  // Clamp: never start coaching after today
-  const coachStartClampedISO = (String(coachStartISO) > String(todayISO)) ? todayISO : coachStartISO;
-    
-  const { routine, day } = getTodayWorkout();
+
+const { routine, day } = getTodayWorkout();
 
   // ----------------------------
   // Today (planned)
@@ -3257,7 +3257,7 @@ function buildCoachInsight(){
   const remainingWorkouts = Math.max(0, workoutsGoal - workoutsDone);
 
 // If the user started mid-week, make the language reflect that
-const startedMidWeek = (String(coachStartClampedISO) > String(weekStartISO));
+// startedMidWeek already computed in Home() scope
 if(!workoutsGoal || workoutsGoal <= 0){
   return {
     line1: "Pick a routine so I can coach your week.",
