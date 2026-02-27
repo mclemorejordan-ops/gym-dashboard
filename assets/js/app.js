@@ -3730,8 +3730,10 @@ function computeGoalDisplay(goal){
       };
     }
 
-    const pct = (target > 0) ? Math.max(0, Math.min(100, Math.round((best / target) * 100))) : null;
-
+let pct = (target > 0)
+  ? Math.max(0, Math.round((best / target) * 100))
+  : null;
+      
     // Subtext formatting matching log style
     if(exType === "cardio"){
       if(metric === "timeSec"){
