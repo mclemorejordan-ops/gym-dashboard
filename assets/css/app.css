@@ -2179,10 +2179,7 @@ button.mini.added{
     grid-template-columns: repeat(3, 1fr);
   }
 }
-/* ─────────────────────────────
-   This Week: dot labels + coach insight
-   ───────────────────────────── */
-
+/* This Week: dot labels */
 .homeWeekDotLabels{
   display:flex;
   gap: 10px;
@@ -2197,8 +2194,8 @@ button.mini.added{
   color: rgba(255,255,255,.55);
 }
 
+/* Coach Insight block */
 .coachInsight{
-  margin-top: 12px;
   padding: 12px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,.10);
@@ -2213,7 +2210,15 @@ button.mini.added{
 
 .coachText{
   margin-top: 6px;
+  white-space: pre-line;
   font-size: 12px;
   line-height: 1.35;
-  color: rgba(255,255,255,.70);
+  color: rgba(255,255,255,.72);
+}
+
+.coachAction{
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(255,255,255,.86);
 }
