@@ -3730,10 +3730,8 @@ function computeGoalDisplay(goal){
       };
     }
 
-const pctRaw = (target > 0)
-  ? Math.max(0, Math.round((best / target) * 100))
-  : null;
-      
+    const pct = (target > 0) ? Math.max(0, Math.min(100, Math.round((best / target) * 100))) : null;
+
     // Subtext formatting matching log style
     if(exType === "cardio"){
       if(metric === "timeSec"){
@@ -3763,15 +3761,13 @@ const pctRaw = (target > 0)
     }
 
     // weightlifting
-const toGo = target - best;
-
-return {
-  title: goal?.title?.trim() || `${exName} ${Math.round(target)} lb`,
-  sub: (toGo <= 0)
-    ? `Current: ${Math.round(best)} lb • +${Math.abs(Math.round(toGo))} lb above goal`
-    : `Current: ${Math.round(best)} lb • ${Math.round(toGo)} lb to goal`,
-  pct // ✅ reuse the existing pct declared above
-};
+    const toGo = Math.max(0, target - best);
+    return {
+      title: goal?.title?.trim() || `${exName} ${Math.round(target)} lb`,
+      sub: `Current: ${Math.round(best)} lb • ${Math.round(toGo)} lb to goal`,
+      pct
+    };
+  }
 
   // Unknown types: keep legacy fallback (but avoids crashing)
   return { title: legacyTitle || "Goal", sub: legacySub, pct: legacyPct };
@@ -4059,54 +4055,23 @@ function goalsListNode(){
     return el("div", { class:"note", text:"No goals yet. Tap “Edit Goals” to add goals." });
   }
 
-  // local helpers
-  const clamp = (n,a,b)=>Math.max(a, Math.min(b,n));
-  const statusClass = (pctRaw)=>{
-    const p = Number(pctRaw) || 0;
-    if(p >= 100) return "good";
-    if(p >= 75) return "warn";
-    return "bad";
-  };
-
   return el("div", { class:"goalsList" }, goals.map(g => {
     const display = computeGoalDisplay(g);
     if(!display) return null;
 
-    // pctRaw can now exceed 100 (we changed strength_target weightlifting)
-    const pctRaw = (typeof display.pct === "number" && Number.isFinite(display.pct))
-      ? Math.max(0, Math.round(display.pct))
+    const pct = (typeof display.pct === "number" && Number.isFinite(display.pct))
+      ? Math.max(0, Math.min(100, Math.round(display.pct)))
       : null;
 
-    const pctFill = (pctRaw === null) ? null : clamp(pctRaw, 0, 100);
-    const stateClass = (pctRaw === null) ? "" : statusClass(pctRaw);
-    const isComplete = (pctRaw !== null && pctRaw >= 100);
-
-    const left = el("div", { class:"goalLeft" }, [
-      el("div", { class:"goalName", text: display.title || "Goal" }),
-      el("div", { class:"goalSubtext", text: display.sub || "" }),
-      (pctFill === null)
-        ? el("div", { style:"height:2px" })
-        : el("div", {
-            class:"goalBar",
-            role:"progressbar",
-            "aria-valuemin":"0",
-            "aria-valuemax":"100",
-            "aria-valuenow": String(pctFill)
-          }, [
-            el("div", { class:"goalBarFill", style:`width:${pctFill}%;` }),
-            el("div", { class:"goalTick" })
-          ])
+    return el("div", { class:"goalItem" }, [
+      el("div", {}, [
+        el("div", { style:"font-weight:900;", text: display.title || "Goal" }),
+        el("div", { class:"note", text: display.sub || "" })
+      ]),
+      (pct === null)
+        ? el("div", { class:"tag", text:"—" })
+        : el("div", { class:"tag good", text:`${pct}%` })
     ]);
-
-    const right = (pctRaw === null)
-      ? el("div", { class:"goalPct", text:"—" })
-      : el("div", { class:"goalPct", text:`${pctRaw}%` });
-
-    return el("div", {
-      class: "goalItem"
-        + (stateClass ? ` ${stateClass}` : "")
-        + (isComplete ? " complete" : "")
-    }, [ left, right ]);
   }).filter(Boolean));
 }
   // ----------------------------
@@ -4437,7 +4402,7 @@ cards.push(
   );
 
   return el("div", { class:"grid" }, cards);
-}},
+},
 
         ProteinHistory(){
         
