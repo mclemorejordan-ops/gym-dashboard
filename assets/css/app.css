@@ -2095,6 +2095,22 @@ button.mini.added{
   font-size: 12px;
   white-space: nowrap;
 }
+/* Goals V2: progress bar (replaces ring/radial visuals) */
+.goalBar{
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  overflow: hidden;
+}
+.goalBarFill{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: rgba(255,255,255,.70);
+  transition: width 420ms ease;
+}
 
 /* Simple editor blocks inside Modal (Home -> Edit Goals) */
 .goalEditRow{
