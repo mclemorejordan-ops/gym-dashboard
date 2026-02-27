@@ -3104,8 +3104,12 @@ const labels = (weekStartsOn === "sun")
   ? ["S","M","T","W","T","F","S"]
   : ["M","T","W","T","F","S","S"];
 
-labels.forEach(ch => {
-  dotLabels.appendChild(el("div", { class:"dotLbl", text: ch }));
+labels.forEach(ch => dotLabels.appendChild(el("div", { class:"dotLbl", text: ch })));
+
+const dots = el("div", { class:"homeWeekDots", style:"justify-content:center;" });
+trainedThisWeek.forEach((d) => {
+  const dot = el("div", { class:"dotDay" + (d.trained ? " on" : "") });
+  dots.appendChild(dot);
 });
 
 const dots = el("div", { class:"homeWeekDots", style:"justify-content:center;" });
@@ -3165,10 +3169,164 @@ trainedThisWeek.forEach((d) => {
   const paceKey = (workoutsDone >= expectedByNow) ? "on" : "behind";
   const paceLabel = (paceKey === "on") ? "Pace: On Track" : "Pace: Slightly Behind";
 
+     // ----------------------------
+// Coach Insight (dual-layer: Weekly Execution + Primary Goal)
+// Always includes one next action.
+// ----------------------------
+function pickPrimaryGoal(){
+  const goals = Array.isArray(state.profile?.goals) ? state.profile.goals : [];
+  if(!goals.length) return null;
+  return goals[0]; // simplest: first goal = primary
+}
+
+function inferGoalType(goal){
+  const type = (goal?.type || "").toString().trim();
+  if(type) return type;
+
+  // Infer from title for manual goals
+  const title = (goal?.title || goal?.name || "").toString().toLowerCase();
+
+  if(/\b(lose|cut)\b/.test(title) || /\bweight\b/.test(title)) return "weight_target";
+  if(/\b(bench|squat|deadlift|press|ohp)\b/.test(title)) return "strength_target";
+  if(/\b(workout|sessions?)\b/.test(title) && /\bweek\b/.test(title)) return "workouts_week";
+  if(/\b(5k|10k|run|cardio)\b/.test(title)) return "cardio_target";
+
+  return "manual";
+}
+
+function buildCoachInsight(){
+  const primary = pickPrimaryGoal();
+  const primaryTitle = (primary?.title || primary?.name || "").toString().trim();
+  const primaryType = inferGoalType(primary);
+
+  // Reliability: don’t pretend to know what we can’t know.
+  const hasWorkoutsData = true; // workoutsDone always computed
+  const hasProteinData = !!(proteinOn && proteinGoal > 0);
+  const hasWeightData = (wDeltaWeek !== null);
+
+  const remainingDays = Math.max(0, 6 - Math.min(6, Math.max(0, dayIdx)));
+  const remainingWorkouts = Math.max(0, workoutsGoal - workoutsDone);
+
+  // Weekly execution layer
+  const weeklyBehind = (paceKey === "behind");
+  const weeklyOnTrack = (paceKey === "on");
+
+  // Goal layer (simple, rule-based)
+  let goalState = "unknown";
+  if(primaryType === "weight_target"){
+    goalState = hasWeightData ? "known" : "needs_data";
+  } else if(primaryType === "strength_target"){
+    // Strength progress requires enough logs; we treat as needs_data if none this week.
+    goalState = (workoutsDone > 0) ? "known" : "needs_data";
+  } else if(primaryType === "workouts_week"){
+    goalState = "known";
+  } else if(primaryType === "cardio_target"){
+    goalState = (workoutsDone > 0) ? "known" : "needs_data";
+  } else {
+    goalState = primaryTitle ? "known" : "unknown";
+  }
+
+  // PRIORITY MATRIX:
+  // 1) If weekly execution is broken (behind), coach weekly.
+  // 2) Else if weekly ok, coach the primary goal bottleneck (protein/weight/strength).
+  // 3) Always finish with one small next action.
+
+  let line1 = "";
+  let line2 = "";
+  let action = "";
+
+  // --- Case 0: not enough signal to coach (very early week + no logs)
+  if(!hasWorkoutsData){
+    line1 = "I don’t have enough data to coach yet.";
+    line2 = "Log one workout to unlock a real plan.";
+    action = "Next: log your workout today.";
+    return { line1, line2, action };
+  }
+
+  // --- Case 1: Weekly execution behind (Foundation wins)
+  if(weeklyBehind){
+    const need = remainingWorkouts;
+    const days = remainingDays + 1; // include today
+    line1 = `You’re behind pace for ${workoutsGoal}/week — ${need} workout${need===1?"":"s"} left with ${days} day${days===1?"":"s"} remaining.`;
+
+    // Connect to goal (B) briefly
+    if(primaryTitle){
+      line2 = `That’s the main constraint for: ${primaryTitle}.`;
+    } else {
+      line2 = "Fix the week first — progress follows consistency.";
+    }
+
+    // Always one small next action
+    action = "Next: do a 35–45 min minimum session today (main lift + 2 accessories).";
+    return { line1, line2, action };
+  }
+
+  // --- Case 2: Weekly execution on track (now coach the primary goal)
+  if(weeklyOnTrack){
+    // If protein tracking exists and is weak, it often becomes the bottleneck for body comp goals.
+    if(hasProteinData && proteinGoalDays <= 2 && primaryType === "weight_target"){
+      line1 = "Training is on track — protein is the missing lever this week.";
+      line2 = `Goal days: ${proteinGoalDays}/7 at ${proteinGoal}g.`;
+      action = `Next: hit ${proteinGoal}g today (make it non-negotiable).`;
+      return { line1, line2, action };
+    }
+
+    // Weight goal + weight data
+    if(primaryType === "weight_target"){
+      if(!hasWeightData){
+        line1 = "You’re executing the week, but we can’t steer without weight data.";
+        line2 = primaryTitle ? `Goal: ${primaryTitle}.` : "Log one weigh-in to calibrate.";
+        action = "Next: log tomorrow morning’s weight (same time, same conditions).";
+        return { line1, line2, action };
+      }
+
+      // Weight trend present
+      line1 = "You’re on track this week.";
+      line2 = `Weight trend: ${wDeltaText}.`;
+      action = hasProteinData
+        ? `Next: repeat today’s structure and hit ${proteinGoal}g.`
+        : "Next: repeat today’s structure and stay consistent.";
+      return { line1, line2, action };
+    }
+
+    // Strength goal
+    if(primaryType === "strength_target"){
+      line1 = "You’re consistent this week — now we push performance.";
+      line2 = primaryTitle ? `Focus: ${primaryTitle}.` : "Focus: your primary lift.";
+      action = "Next: beat last time by +1 rep OR +2.5–5 lb on your top set.";
+      return { line1, line2, action };
+    }
+
+    // Cardio goal (simple)
+    if(primaryType === "cardio_target"){
+      line1 = "You’re on track this week — keep the engine improving.";
+      line2 = primaryTitle ? `Focus: ${primaryTitle}.` : "Focus: cardio consistency.";
+      action = "Next: add 10–15 minutes of easy cardio today (zone 2 pace).";
+      return { line1, line2, action };
+    }
+
+    // Workout-week goal or manual
+    line1 = "You’re on track this week.";
+    line2 = primaryTitle ? `Keep your focus on: ${primaryTitle}.` : "Keep momentum and don’t break the streak.";
+    action = "Next: lock in your next session time now (schedule it).";
+    return { line1, line2, action };
+  }
+
+  // --- Fallback (shouldn’t happen often)
+  line1 = "You’re moving in the right direction.";
+  line2 = primaryTitle ? `Focus: ${primaryTitle}.` : "Stay consistent.";
+  action = "Next: do one small win today (walk, stretch, or prep a high-protein meal).";
+  return { line1, line2, action };
+}
+
+const coach = buildCoachInsight();
+
   const weekLabel = weekStartsOn === "sun" ? "This Week (Sun–Sat)" : "This Week (Mon–Sun)";
 
   const openWeekDetails = () => {
   const weekEndISO = Dates.addDaysISO(weekStartISO, 6);
+
+
 
   // Build per-day rows (Mon..Sun)
   const rows = [];
@@ -3691,23 +3849,26 @@ el("div", { class:"homeRow", style:"justify-content:flex-end;" }, [
     ])
   );
 
-  // This Week (centered dots, summary + separate cards)
+  // This Week (dots + 3 metric cards + Coach Insight)
 cards.push(
   el("div", { class:"card" }, [
     el("div", { class:"homeRow" }, [
       el("div", {}, [
-        el("h2", { text:"This Week" }),
+        el("h2", { text:"This Week" })
       ]),
       el("button", { class:"btn", onClick: openWeekDetails }, ["View details"])
     ]),
 
     el("div", { style:"height:10px" }),
-     dotLabels,
-     el("div", { style:"height:6px" }),
-     dots,
-     el("div", { style:"height:12px" }),
 
-    // ✅ NEW: 3 separate metric cards
+    // Day labels above dots
+    dotLabels,
+    el("div", { style:"height:6px" }),
+    dots,
+
+    el("div", { style:"height:12px" }),
+
+    // 3 separate metric cards
     el("div", { class:"homeMetricCards" }, [
       el("button", {
         class:"homeMetricCard",
@@ -3752,11 +3913,13 @@ cards.push(
       ])
     ]),
 
+    // Coach Insight (replaces Consistency/Pace)
     el("div", { style:"height:12px" }),
     el("div", { class:"coachInsight" }, [
-    el("div", { class:"coachTitle", text:"Coach Insight" }),
-    el("div", { class:"coachText", text: coachInsight })
-     ])
+      el("div", { class:"coachTitle", text:"Coach Insight" }),
+      el("div", { class:"coachText", text: `${coach.line1}\n${coach.line2}`.trim() }),
+      el("div", { class:"coachAction", text: coach.action })
+    ])
   ])
 );
 
