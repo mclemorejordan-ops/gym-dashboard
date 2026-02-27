@@ -80,12 +80,52 @@ if(type === "weightlifting"){
     err.textContent = "";
   }
 
+    // -----------------------------
+  // Local fallbacks (module-safe)
+  // -----------------------------
+  function hasRoutineExerciseLogLocal(dateISO, routineExerciseId){
+    const logs = (state?.logs?.workouts || []);
+    return logs.some(e => e && e.dateISO === dateISO && e.routineExerciseId === routineExerciseId);
+  }
+
+  function isDayCompleteLocal(dateISO, dayObj){
+    const ex = (dayObj?.exercises || []);
+    if(ex.length === 0) return false;
+    return ex.every(rx2 => rx2?.id && hasRoutineExerciseLogLocal(dateISO, rx2.id));
+  }
+
+  function attendanceAddSafe(dateISO){
+    try{
+      if(typeof attendanceAdd === "function") attendanceAdd(dateISO);
+      // else: no-op (Attendance module not loaded in this scope)
+    }catch(_){}
+  }
+
+  function setNextNudgeSafe(payload){
+    try{
+      if(typeof setNextNudge === "function") setNextNudge(payload);
+      // else: no-op (Routine page helper not available here)
+    }catch(_){}
+  }
+
+  function refreshRoutineUISafe(){
+    try{
+      // repaint() used to be a Routine page inner function (often not global)
+      if(typeof repaint === "function") repaint();
+      else if(typeof renderView === "function") renderView();
+    }catch(_){}
+  }  
+  
   function afterSave(savedDateISO){
     Modal.close();
 
     // If the whole day is now logged, auto-complete + attendance
-    if(isDayComplete(savedDateISO, day)){
-      attendanceAdd(savedDateISO);
+    const dayComplete = (typeof isDayComplete === "function")
+      ? !!isDayComplete(savedDateISO, day)
+      : isDayCompleteLocal(savedDateISO, day);
+
+    if(dayComplete){
+      attendanceAddSafe(savedDateISO);
       showToast("Day completed ✅");
     }
 
@@ -95,21 +135,26 @@ if(type === "weightlifting"){
 
     // next unlogged AFTER current
     let next = null;
+
+    const hasLog = (typeof hasRoutineExerciseLog === "function")
+      ? (dISO, rid) => !!hasRoutineExerciseLog(dISO, rid)
+      : (dISO, rid) => hasRoutineExerciseLogLocal(dISO, rid);
+
     for(let i = curIdx + 1; i < list.length; i++){
-      if(!hasRoutineExerciseLog(savedDateISO, list[i].id)){ next = list[i]; break; }
+      if(!hasLog(savedDateISO, list[i].id)){ next = list[i]; break; }
     }
     // if none after, fallback to first unlogged anywhere
     if(!next){
-      next = list.find(x => !hasRoutineExerciseLog(savedDateISO, x.id)) || null;
+      next = list.find(x => !hasLog(savedDateISO, x.id)) || null;
     }
 
-    setNextNudge(next ? {
+    setNextNudgeSafe(next ? {
       dateISO: savedDateISO,
       dayOrder: day.order,
       nextRoutineExerciseId: next.id
     } : null);
 
-    repaint();
+    refreshRoutineUISafe();
   }
 
 function buildWeightliftingForm(){
