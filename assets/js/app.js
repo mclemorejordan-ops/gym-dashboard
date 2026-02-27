@@ -547,6 +547,21 @@ const Dates = {
     return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
   },
 
+  // Day difference between 2 ISO dates (b - a), ignoring time/DST.
+  // Example: diffDaysISO(weekStartISO, todayISO) => 0..6
+  diffDaysISO(aISO, bISO){
+    const a = this.isISO(aISO) ? aISO : this.todayISO();
+    const b = this.isISO(bISO) ? bISO : this.todayISO();
+
+    const toUTC = (iso) => {
+      const [y,m,d] = String(iso).split("-").map(n => Number(n));
+      return Date.UTC(y, (m||1)-1, d||1);
+    };
+
+    const ms = toUTC(b) - toUTC(a);
+    return Math.round(ms / 86400000);
+  },
+
   sameISO(a,b){ return String(a) === String(b); },
 
   // convenience: "Feb 15"
