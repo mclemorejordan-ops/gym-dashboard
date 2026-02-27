@@ -3730,7 +3730,7 @@ function computeGoalDisplay(goal){
       };
     }
 
-let pct = (target > 0)
+const pctRaw = (target > 0)
   ? Math.max(0, Math.round((best / target) * 100))
   : null;
       
