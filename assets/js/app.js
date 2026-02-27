@@ -3173,8 +3173,6 @@ function getExplicitWorkoutsWeekGoal(){
   const startISO = state.profile?.startDateISO || Dates.todayISO();
   const cycleLen = routine.days.length;
 
-  const coachStartClampedISO = (startISO > weekStartISO) ? startISO : weekStartISO;
-
   let planned = 0;
 
   for(let i=0;i<7;i++){
