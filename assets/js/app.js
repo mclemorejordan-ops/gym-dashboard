@@ -4082,16 +4082,129 @@ function goalsListNode(){
         return `${m}:${String(r).padStart(2,"0")}`;
       };
 
-      // Find last logged entry for this routineExerciseId (any type)
+        // Pull the most recent TWO entries for this routine exercise (so we can show +/- since last time)
       LogEngine.ensure();
-      const last = (state.logs?.workouts || [])
+
+      const _entries = (state.logs?.workouts || [])
         .filter(e => e && e.routineExerciseId === rx.id)
-        .sort((a,b) => (b.dateISO || "").localeCompare(a.dateISO || "") || (b.createdAt||0)-(a.createdAt||0))[0];
+        .sort((a,b) => (b.dateISO || "").localeCompare(a.dateISO || "") || (b.createdAt||0)-(a.createdAt||0));
+
+      const last = _entries[0] || null;
+      const prev = _entries[1] || null;
 
       let metaText = "No previous logs";
 
+      function fmtSignedNumber(n){
+        const v = Number(n) || 0;
+        if(!v) return "0";
+        return (v > 0 ? `+${v}` : `${v}`);
+      }
+
+      function deltaSuffix(type, lastEntry, prevEntry){
+        if(!lastEntry || !prevEntry) return "";
+
+        // Weightlifting: compare best set (weight first, then reps)
+        if(type === "weightlifting"){
+          const bestOf = (entry) => {
+            const sets = Array.isArray(entry?.sets) ? entry.sets : [];
+            let best = null;
+            for(const s of sets){
+              const w = Number(s.weight) || 0;
+              const r = Math.max(0, Math.floor(Number(s.reps) || 0));
+              if(!best || w > best.w || (w === best.w && r > best.r)){
+                best = { w, r };
+              }
+            }
+            return best;
+          };
+
+          const a = bestOf(lastEntry);
+          const b = bestOf(prevEntry);
+          if(!a || !b) return "";
+
+          const dw = Math.round((a.w - b.w) * 100) / 100;
+          if(dw){
+            return ` • ${fmtSignedNumber(dw)} lb`;
+          }
+
+          const dr = (a.r || 0) - (b.r || 0);
+          if(dr){
+            return ` • ${fmtSignedNumber(dr)} rep${Math.abs(dr) === 1 ? "" : "s"}`;
+          }
+
+          return "";
+        }
+
+        // Cardio: compare distance first (if present), otherwise time
+        if(type === "cardio"){
+          const sumA = lastEntry.summary || LogEngine.computeCardioSummary(lastEntry.sets || []);
+          const sumB = prevEntry.summary || LogEngine.computeCardioSummary(prevEntry.sets || []);
+          const distA = Number(sumA.distance) || 0;
+          const distB = Number(sumB.distance) || 0;
+          const tA = Number(sumA.timeSec) || 0;
+          const tB = Number(sumB.timeSec) || 0;
+
+          if(distA || distB){
+            const dd = Math.round((distA - distB) * 100) / 100;
+            if(dd){
+              return ` • ${fmtSignedNumber(dd)} dist`;
+            }
+          }
+
+          if(tA || tB){
+            const dt = Math.round(tA - tB);
+            if(dt){
+              const abs = Math.abs(dt);
+              const pretty = fmtTimeSec(abs);
+              return ` • ${dt > 0 ? "+" : "-"}${pretty}`;
+            }
+          }
+
+          return "";
+        }
+
+        // Core: compare total reps first (sets×reps) if present, otherwise time
+        if(type === "core"){
+          const first = (entry) => (Array.isArray(entry?.sets) ? entry.sets : [])[0] || {};
+          const a0 = first(lastEntry);
+          const b0 = first(prevEntry);
+
+          const setsA = Math.max(0, Math.floor(Number(a0.sets) || 0));
+          const repsA = Math.max(0, Math.floor(Number(a0.reps) || 0));
+          const timeA = Math.max(0, Math.floor(Number(a0.timeSec) || 0));
+
+          const setsB = Math.max(0, Math.floor(Number(b0.sets) || 0));
+          const repsB = Math.max(0, Math.floor(Number(b0.reps) || 0));
+          const timeB = Math.max(0, Math.floor(Number(b0.timeSec) || 0));
+
+          const totalRepsA = setsA * repsA;
+          const totalRepsB = setsB * repsB;
+
+          if(totalRepsA || totalRepsB){
+            const dr = totalRepsA - totalRepsB;
+            if(dr){
+              return ` • ${fmtSignedNumber(dr)} rep${Math.abs(dr) === 1 ? "" : "s"}`;
+            }
+          }
+
+          if(timeA || timeB){
+            const dt = timeA - timeB;
+            if(dt){
+              const abs = Math.abs(dt);
+              const pretty = fmtTimeSec(abs);
+              return ` • ${dt > 0 ? "+" : "-"}${pretty}`;
+            }
+          }
+
+          return "";
+        }
+
+        return "";
+      }
+
       if(last){
         const type = last.type || rx.type;
+        const delta = deltaSuffix(type, last, prev);
 
         // Weightlifting: show best set from last session
         if(type === "weightlifting"){
@@ -4105,7 +4218,7 @@ function goalsListNode(){
             }
           }
           if(best && best.w > 0){
-            metaText = best.r > 0 ? `Last: ${best.w} lb × ${best.r}` : `Last: ${best.w} lb`;
+            metaText = (best.r > 0 ? `Last: ${best.w} lb × ${best.r}` : `Last: ${best.w} lb`) + delta;
           } else {
             metaText = "No previous logs";
           }
@@ -4118,7 +4231,7 @@ function goalsListNode(){
           const t = Number(sum.timeSec) || 0;
           const inc = (sum.incline == null) ? "" : ` • Incline: ${sum.incline}`;
           if(dist > 0 || t > 0){
-            metaText = `Last: ${dist > 0 ? dist : "—"} • ${t > 0 ? fmtTimeSec(t) : "—"}${inc}`;
+            metaText = `Last: ${dist > 0 ? dist : "—"} • ${t > 0 ? fmtTimeSec(t) : "—"}${inc}${delta}`;
           } else {
             metaText = "No previous logs";
           }
@@ -4137,7 +4250,7 @@ function goalsListNode(){
           const detail = [repPart, timePart].filter(Boolean).join(" • ");
           const wPart = (w > 0) ? ` @ ${w}` : "";
 
-          metaText = detail ? `Last: ${detail}${wPart}` : "No previous logs";
+          metaText = detail ? `Last: ${detail}${wPart}${delta}` : "No previous logs";
         }
 
         // Fallback
