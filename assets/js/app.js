@@ -1935,6 +1935,12 @@ function hasRoutineExerciseLog(dateISO, routineExerciseId){
   return state.logs.workouts.some(e => e.dateISO === dateISO && e.routineExerciseId === routineExerciseId);
 }
 
+// Back-compat alias used by Home workoutStatus()
+// (keeps Home readable while reusing the canonical helper)
+function isExerciseTrained(dateISO, routineExerciseId){
+  return hasRoutineExerciseLog(dateISO, routineExerciseId);
+}
+
 function lifetimeMaxSet(type, exerciseId){
   if(type !== "weightlifting") return null;
   const entries = LogEngine.entriesForExercise(type, exerciseId);
