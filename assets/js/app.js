@@ -3059,8 +3059,8 @@ else root.appendChild(el("div", { class:"card" }, [
 // Coaching window (respects when user starts)
 // - User may start mid-week; insight + attendance should only consider start day → week end
 // ----------------------------
-const weekEndISO = Dates.addDaysISO(weekStartISO, 6);
 const userStartISO = state.profile?.startDateISO || todayISO;
+const weekEndISO = Dates.addDaysISO(weekStartISO, 6);   // ← keep ONE here
 
 // Clamp start into this week window so math never goes weird
 const coachStartClampedISO =
@@ -3068,11 +3068,9 @@ const coachStartClampedISO =
   (userStartISO > weekEndISO)   ? weekEndISO :
   userStartISO;
   
-  const startedMidWeek = (userStartISO > weekStartISO);
+const startedMidWeek = (userStartISO > weekStartISO);
 const remainingDaysInWindow = Math.max(0, Dates.diffDaysISO(todayISO, weekEndISO));
   
-  const weekEndISO = Dates.addDaysISO(weekStartISO, 6);
-
   // Coaching window start = later of (weekStartISO, user startDateISO)
   const userStartISO = state.profile?.startDateISO || todayISO;
   const coachStartISO = (String(userStartISO) > String(weekStartISO)) ? userStartISO : weekStartISO;
