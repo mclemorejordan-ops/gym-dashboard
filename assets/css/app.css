@@ -2249,17 +2249,30 @@ button.mini.added{
   background:rgba(255,255,255,.10);
 }
 
-/* Recent horizontal scroll — MOBILE SAFE (prevents viewport expansion) */
+/* =========================================================
+   Progress v2 — Recents mini-cards (MOBILE SAFE + NO PAGE EXPAND)
+   ========================================================= */
+
+/* ✅ Hard clamp Progress page to stop any horizontal growth */
+.progressPage{
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Recent horizontal scroll — MOBILE SAFE */
 .progressPage .progRecentScroll{
   display:flex;
   gap:10px;
 
   width:100%;
   max-width:100%;
+  min-width:0;
+
   overflow-x:auto;
   overflow-y:hidden;
 
   -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x: contain;
 
   padding:10px 2px 4px;
   scroll-snap-type:x mandatory;
@@ -2267,6 +2280,7 @@ button.mini.added{
   box-sizing:border-box;
 }
 
+/* Mini cards — fixed width, never allowed to force page width */
 .progressPage .progRecentCard{
   flex:0 0 auto;
 
@@ -2282,20 +2296,26 @@ button.mini.added{
   padding:12px;
 
   cursor:pointer;
+
+  /* ✅ critical: prevents inner content from expanding card width */
+  box-sizing:border-box;
+  overflow:hidden;
 }
-.progressPage .progRecentTitle{
-  font-weight:900;
-}
-.progressPage .progRecentBig{
-  font-size:18px;
-  font-weight:900;
-  margin-top:6px;
-}
+
+/* ✅ critical: prevents long titles/meta from expanding the row */
+.progressPage .progRecentTitle,
+.progressPage .progRecentBig,
 .progressPage .progRecentMeta{
-  font-size:12px;
-  color:rgba(255,255,255,.55);
-  margin-top:2px;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
+
+.progressPage .progRecentTitle{ font-weight:900; }
+.progressPage .progRecentBig{ font-size:18px; font-weight:900; margin-top:6px; }
+.progressPage .progRecentMeta{ font-size:12px; color:rgba(255,255,255,.55); margin-top:2px; }
+
 .progressPage .progRecentDelta{
   margin-top:8px;
   font-size:12px;
