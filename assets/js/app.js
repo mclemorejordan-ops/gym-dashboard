@@ -3497,13 +3497,27 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
     improveBadge = { text:"Low", kind:"warn" };
   }
 
-  // -----------------------------
+    // -----------------------------
   // UI construction (match your v3/v4 mock)
   // -----------------------------
   function badgeEl(b){
-    const kind = (b?.kind || "").toString().trim().toLowerCase(); // ✅ normalize for CSS selectors
+    const kind = (b?.kind || "").toString().trim().toLowerCase(); // keep pill styling stable
     const cls = "tag" + (kind ? (" " + kind) : "");
     return el("div", { class: cls, text: b?.text || "—" });
+  }
+
+  // ✅ Only bold the "Label:" prefix (e.g. "Best:")
+  function perfTextEl(line){
+    const s = String(line || "");
+    const idx = s.indexOf(":");
+    if(idx < 0) return el("div", { class:"weeklyPerfText", text: s });
+
+    const k = s.slice(0, idx + 1);   // include colon
+    const v = s.slice(idx + 1);      // remainder (includes leading space)
+    return el("div", { class:"weeklyPerfText" }, [
+      el("span", { class:"k", text: k }),
+      el("span", { class:"v", text: v })
+    ]);
   }
 
   const chips = el("div", { style:"display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;" }, [
@@ -3520,28 +3534,28 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
     el("div", { style:"height:10px" }),
 
     el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { class:"weeklyPerfText", text: bestLeft }),
+      perfTextEl(bestLeft),
       badgeEl(bestBadge)
     ]),
 
     el("div", { style:"height:8px" }),
 
     el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { class:"weeklyPerfText", text: improvedLeft }),
+      perfTextEl(improvedLeft),
       badgeEl(improvedBadge)
     ]),
 
     el("div", { style:"height:8px" }),
 
     el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { class:"weeklyPerfText", text: consistencyLeft }),
+      perfTextEl(consistencyLeft),
       badgeEl(consistencyBadge)
     ]),
 
     el("div", { style:"height:8px" }),
 
     el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { class:"weeklyPerfText", text: improveLeft }),
+      perfTextEl(improveLeft),
       badgeEl(improveBadge)
     ])
   ]);
