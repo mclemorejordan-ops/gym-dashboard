@@ -3512,48 +3512,49 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
   el("span", { class:"chip muted", text: (coachStartIdx > 0) ? "Mid-week start" : "Full week" })
 ]);
 
-   const weeklyPerfBox = el("div", { class:"perfCard" }, [
+     const weeklyPerfBox = el("div", { class:"perfCard" }, [
   el("div", { class:"perfHead", text:"Weekly Performance" }),
 
-    el("div", { style:"height:10px" }),
+  el("div", { style:"height:10px" }),
 
-    el("div", { class:"perfLine" }, [
-  el("div", {}, [
-    el("span", { class:"k", text:"Best:" }), " ",
-    el("span", { class:"v", text: bestLeft.replace(/^Best:\\s*/,"") })
+  el("div", { class:"perfLine" }, [
+    el("div", {}, [
+      el("span", { class:"k", text:"Best:" }), " ",
+      el("span", { class:"v", text: String(bestLeft || "").replace(/^Best:\s*/,"") })
+    ]),
+    badgeEl(bestBadge)
   ]),
-  badgeEl(bestBadge)
-]),
 
-    el("div", { style:"height:8px" }),
+  el("div", { style:"height:8px" }),
 
-   el("div", { class:"perfLine" }, [
-  el("div", {}, [
-    el("span", { class:"k", text:"Improved:" }), " ",
-    el("span", { class:"v", text: improvedLeft.replace(/^Improved:\\s*/,"") })
+  el("div", { class:"perfLine" }, [
+    el("div", {}, [
+      el("span", { class:"k", text:"Improved:" }), " ",
+      el("span", { class:"v", text: String(improvedLeft || "").replace(/^Improved:\s*/,"") })
+    ]),
+    badgeEl(improvedBadge)
   ]),
-  badgeEl(improvedBadge)
-]),
 
-    el("div", { style:"height:8px" }),
+  el("div", { style:"height:8px" }),
 
-    el("div", { class:"perfLine" }, [
-  el("div", {}, [
-    el("span", { class:"k", text:"Consistency:" }), " ",
-    el("span", { class:"v", text: consistencyLeft.replace(/^Consistency:\\s*/,"") })
+  el("div", { class:"perfLine" }, [
+    el("div", {}, [
+      el("span", { class:"k", text:"Consistency:" }), " ",
+      el("span", { class:"v", text: String(consistencyLeft || "").replace(/^Consistency:\s*/,"") })
+    ]),
+    badgeEl(consistencyBadge)
   ]),
-  badgeEl(consistencyBadge)
-]),
 
-    el("div", { style:"height:8px" }),
+  el("div", { style:"height:8px" }),
 
-    el("div", { class:"perfLine" }, [
-  el("div", {}, [
-    el("span", { class:"k", text:"Improve:" }), " ",
-    el("span", { class:"v", text: improveLeft.replace(/^Improve:\\s*/,"") })
-  ]),
-  badgeEl(improveBadge)
-]),
+  el("div", { class:"perfLine" }, [
+    el("div", {}, [
+      el("span", { class:"k", text:"Improve:" }), " ",
+      el("span", { class:"v", text: String(improveLeft || "").replace(/^Improve:\s*/,"") })
+    ]),
+    badgeEl(improveBadge)
+  ])
+]);
 
   // Days in window list + micro metric: sets logged / planned sets
   const dow = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
