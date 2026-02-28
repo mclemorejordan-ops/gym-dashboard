@@ -109,12 +109,17 @@ header{
     }
 
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
-      border: 1px solid var(--hair);
-      border-radius: var(--r);
-      box-shadow: var(--shadow);
-      padding: 14px;
-    }
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  padding: 14px;
+
+  /* ✅ prevents horizontal children from expanding the page on mobile */
+  overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+}
     .card h2{
         margin: 0 0 10px 0;
         font-size: 14px;
@@ -2202,37 +2207,30 @@ button.mini.added{
   cursor:pointer;
 }
 
-/* Recent horizontal scroll */
 /* Recent horizontal scroll — MOBILE SAFE (prevents viewport expansion) */
 .progRecentScroll{
   display:flex;
   gap:10px;
 
-  /* critical: constrain inside card */
   width:100%;
   max-width:100%;
   overflow-x:auto;
   overflow-y:hidden;
 
-  /* iOS smooth scrolling */
   -webkit-overflow-scrolling:touch;
 
-  /* prevents layout from widening */
   padding:10px 2px 4px;
   scroll-snap-type:x mandatory;
 
-  /* helps avoid accidental page-width growth */
   box-sizing:border-box;
 }
 
 .progRecentCard{
-  /* critical: do NOT allow flex item to stretch */
   flex:0 0 auto;
 
-  /* clamp card size to screen */
   width:240px;
-  max-width:78vw;     /* keeps it inside phone viewport */
-  min-width:200px;    /* still card-like */
+  max-width:78vw;
+  min-width:200px;
 
   scroll-snap-align:start;
 
