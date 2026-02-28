@@ -3501,7 +3501,7 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
   // UI construction (match your v3/v4 mock)
   // -----------------------------
   function badgeEl(b){
-  const cls = "chip" + (b?.kind ? (" " + b.kind) : "");
+  const cls = "tag" + (b?.kind ? (" " + b.kind) : "");
   return el("div", { class: cls, text: b?.text || "—" });
 }
 
