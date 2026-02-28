@@ -3534,25 +3534,63 @@ const proteinMetCount = activeRows.filter(r => r.pMet).length;
     deltaInWeek = round2(weightsInWeek[weightsInWeek.length-1] - weightsInWeek[0]);
   }
 
-  const summary = el("div", {}, [
+    // Weekly Performance (analytical, deterministic)
+  const remainingPlanned = Math.max(0, plannedRows.length - trainedPlannedCount);
+  const remainingProtein = Math.max(0, plannedRows.length - proteinMetPlannedCount);
+
+  const bestLine =
+    (trainedPlannedCount > 0)
+      ? `Best: ${trainedPlannedCount} planned workout${trainedPlannedCount === 1 ? "" : "s"} completed`
+      : (proteinOn && proteinMetPlannedCount > 0)
+        ? `Best: Protein goal hit ${proteinMetPlannedCount} day${proteinMetPlannedCount === 1 ? "" : "s"}`
+        : "Best: Week in motion — build momentum";
+
+  const improveLine =
+    (deltaInWeek === null)
+      ? "Improvement: Add a weigh-in this week to track trend"
+      : `Improvement: Weight trend ${deltaInWeek < 0 ? "↓" : (deltaInWeek > 0 ? "↑" : "•")} ${Math.abs(deltaInWeek).toFixed(1)} lb (in-week)`;
+
+  const needLine =
+    (remainingPlanned > 0)
+      ? `Need: ${remainingPlanned} planned day${remainingPlanned === 1 ? "" : "s"} left in this window`
+      : "Need: Recovery + consistency (you’ve hit the plan)";
+
+  const nextLine = (() => {
+    // Next planned day inside the visible window that is not rest (and ideally not already trained)
+    const nextPlanned = plannedRows.find(r => !r.trained) || plannedRows[0] || null;
+    if(nextPlanned){
+      const obj = anchoredRoutineDayForDate(nextPlanned.dISO);
+      const lbl = (obj && obj.label) ? String(obj.label) : "your next workout";
+      return `Next: ${lbl} — log your first set`;
+    }
+    return "Next: Log your first set — momentum beats perfect";
+  })();
+
+  const wChip = (deltaInWeek === null)
+    ? "Weight: —"
+    : `Weight: ${deltaInWeek < 0 ? "↓" : (deltaInWeek > 0 ? "↑" : "•")} ${Math.abs(deltaInWeek).toFixed(1)} lb`;
+
+  const weeklyPerf = el("div", {}, [
     el("div", { class:"note", text:`${weekLabel} • ${weekStartISO} → ${weekEndISO}` }),
     el("div", { style:"height:10px" }),
-    el("div", { class:"homeWeekMetrics" }, [
-      el("div", { class:"homeMini" }, [
-        el("div", { class:"lab", text:"Workouts" }),
-        el("div", { class:"val", text:`${workoutsDone} / ${thisWeekDenom}` })
-      ]),
-      el("div", { class:"homeMini" }, [
-        el("div", { class:"lab", text:"Trained Days" }),
-        el("div", { class:"val", text:`${trainedPlannedCount} / ${thisWeekDenom}` })
-      ]),
-      el("div", { class:"homeMini" }, [
-        el("div", { class:"lab", text:"Protein Goal Days" }),
-        el("div", { class:"val", text: proteinOn ? `${proteinMetPlannedCount} / ${thisWeekDenom}` : "Off" })
-      ])
-    ]),
+
+    // Title + lines
+    el("div", { style:"font-weight:920; font-size:15px; letter-spacing:.2px;", text:"Weekly Performance" }),
+    el("div", { style:"height:8px" }),
+
+    el("div", { class:"note", text: bestLine }),
+    el("div", { class:"note", text: improveLine }),
+    el("div", { class:"note", text: needLine }),
+    el("div", { class:"note", text: nextLine }),
+
     el("div", { style:"height:10px" }),
-    el("div", { class:"note", text:`Weight (in-week): ${deltaInWeek === null ? "—" : ((deltaInWeek < 0 ? "↓ " : "↑ ") + Math.abs(deltaInWeek).toFixed(1) + " lb")}` })
+
+    // Chips (compact, predictable)
+    el("div", { style:"display:flex; gap:8px; flex-wrap:wrap;" }, [
+      el("div", { class:"tag good", text:`Workouts: ${workoutsDone} / ${thisWeekDenom}` }),
+      el("div", { class:"tag", text: proteinOn ? `Protein: ${proteinMetPlannedCount} / ${thisWeekDenom}` : "Protein: Off" }),
+      el("div", { class:"tag", text: wChip })
+    ])
   ]);
 
   const dow = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -3589,7 +3627,7 @@ const right = el("div", { class: tagClass, text: tagText });
   Modal.open({
     title: "This Week — Details",
     bodyNode: el("div", {}, [
-      summary,
+      weeklyPerf,
       el("div", { style:"height:12px" }),
       list,
       el("div", { style:"height:14px" }),
