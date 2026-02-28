@@ -5453,7 +5453,7 @@ Progress(){
 
   const todayISO = Dates.todayISO();
 
-  // ✅ If you logged sets with a manual date override (including future dates),
+  // If you logged sets with a manual date override (including future dates),
   // default Progress "To" to the latest logged date so the chart/history populate.
   function latestWorkoutDateISO(){
     const arr = (state.logs?.workouts || []);
@@ -5526,10 +5526,10 @@ Progress(){
         type,
         currentId: exerciseId,
         onSelect: (nextId) => {
-          exerciseId = nextId;
+          exerciseId = nextId || null;
 
-          // Persist selection + recents (profile-only)
-          if(state.profile) ProgressUIEngine.setSelectedExerciseId(type, nextId);
+          // Persist selection (profile-only)
+          if(state.profile) ProgressUIEngine.setSelectedExerciseId(type, exerciseId);
 
           repaint(true);
         }
@@ -5541,7 +5541,7 @@ Progress(){
     el("div", { class:"chev", text:"▾" })
   ]);
 
-  // Custom date inputs
+  // Date inputs
   const fromInput = el("input", { type:"date", value: fromISO });
   const toInput   = el("input", { type:"date", value: toISO });
 
@@ -5751,7 +5751,7 @@ Progress(){
         : "Select…";
     }
 
-    // Stats + chart + table only if exercise selected
+    // Clear outputs
     statsHost.innerHTML = "";
     tableHost.innerHTML = "";
     chartNote.textContent = "";
@@ -5812,22 +5812,6 @@ Progress(){
         ]));
       });
     }
-  }
-
-  function bestsText(t, bests){
-    if(!bests) return "";
-    if(t === "weightlifting"){
-      const bw = bests.bestWeight != null ? `${Math.round(bests.bestWeight*10)/10} top` : "";
-      const brm = bests.best1RM != null ? `${Math.round(bests.best1RM*10)/10} est 1RM` : "";
-      const bv = bests.bestVolume != null ? `${Math.round(bests.bestVolume)} vol` : "";
-      return [bw, brm, bv].filter(Boolean)[0] || "";
-    }
-    if(t === "cardio"){
-      const bp = bests.bestPace != null ? `${formatTime(Math.round(bests.bestPace))} pace` : "";
-      return bp || "";
-    }
-    const bv = bests.bestVolume != null ? `${Math.round(bests.bestVolume)} vol` : "";
-    return bv || "";
   }
 
   // Helpers must stay INSIDE Progress()
@@ -5898,7 +5882,7 @@ Progress(){
     return String(v);
   }
 
-  // FIX: tableLine used by history + delete confirm
+  // tableLine used by history + delete confirm
   function tableLine(entry){
     try{
       if(!entry) return "—";
