@@ -4440,7 +4440,7 @@ function goalsListNode(){
     );
   })();
 
-  // This Week (dots + 3 metric cards + Coach Insight)
+  / This Week (dots + 3 metric cards + Coach Insight)
 cards.push(
   el("div", { class:"card" }, [
     el("div", { class:"homeRow" }, [
@@ -4508,6 +4508,9 @@ cards.push(
         el("div", { class:"homeMetricVal", text: proteinOn ? `${proteinGoalDays} / ${activeDaysTotal}` : "Off" })
       ])
     ]),
+
+
+  ])
 );
 
   // Goals
