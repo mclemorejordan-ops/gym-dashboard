@@ -2151,6 +2151,84 @@ button.mini.added{
 /* =========================================================
    Progress v2 — Tabs + Search + Redesigned Results
    ========================================================= */
+/* =========================================================
+   Progress Overview — Premium (SCOPED)
+   ========================================================= */
+
+.progressPage .progOverviewCard,
+.progressPage .progTopWinCard{
+  padding: 16px;
+}
+
+.progressPage .progOverKicker{
+  font-size: 11px;
+  letter-spacing: .35px;
+  color: rgba(255,255,255,.60);
+  font-weight: 850;
+}
+
+.progressPage .progOverHeadline{
+  margin-top: 6px;
+  font-size: 28px;
+  line-height: 1.05;
+  font-weight: 950;
+  letter-spacing: .2px;
+}
+
+.progressPage .progOverSub{
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(255,255,255,.66);
+  font-weight: 750;
+}
+
+.progressPage .progOverBtns{
+  margin-top: 12px;
+}
+
+/* Top Win row */
+.progressPage .progWinRow{
+  margin-top: 6px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.progressPage .progWinText{
+  min-width:0;
+}
+
+.progressPage .progWinTitle{
+  font-size: 16px;
+  font-weight: 950;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progressPage .progWinSub{
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgba(255,255,255,.66);
+  font-weight: 750;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* PR pill on the right */
+.progressPage .progWinPill{
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(122,162,255,.55);
+  background: rgba(122,162,255,.10);
+  color: rgba(255,255,255,.92);
+  font-weight: 950;
+  letter-spacing: .2px;
+}
 /* ✅ Progress-only clamp: prevent grid from expanding to max-content width */
 .progressPage.grid{
   grid-template-columns: 1fr;
