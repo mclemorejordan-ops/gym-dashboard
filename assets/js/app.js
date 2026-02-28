@@ -3519,28 +3519,28 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
     el("div", { style:"height:10px" }),
 
     el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { style:"font-weight:900;", text: bestLeft }),
+      el("div", { class:"weeklyPerfText", text: bestLeft }),
       badgeEl(bestBadge)
     ]),
 
     el("div", { style:"height:8px" }),
 
     el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { style:"font-weight:900;", text: improvedLeft }),
+      el("div", { class:"weeklyPerfText", text: improvedLeft }),
       badgeEl(improvedBadge)
     ]),
 
     el("div", { style:"height:8px" }),
 
     el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { style:"font-weight:900;", text: consistencyLeft }),
+      el("div", { class:"weeklyPerfText", text: consistencyLeft }),
       badgeEl(consistencyBadge)
     ]),
 
     el("div", { style:"height:8px" }),
 
     el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { style:"font-weight:900;", text: improveLeft }),
+      el("div", { class:"weeklyPerfText", text: improveLeft }),
       badgeEl(improveBadge)
     ])
   ]);
