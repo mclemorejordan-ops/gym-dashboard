@@ -5912,6 +5912,8 @@ Progress(){
             )
       ]);
     })()
+      ]);
+}
 
   function buildSearchPanel(cfg){
   const type = cfg.type;
