@@ -2151,7 +2151,19 @@ button.mini.added{
 /* =========================================================
    Progress v2 — Tabs + Search + Redesigned Results
    ========================================================= */
+/* ✅ Progress-only clamp: prevent grid from expanding to max-content width */
+.progressPage.grid{
+  grid-template-columns: 1fr;
+  min-width: 0;
+}
 
+.progressPage .card{
+  min-width: 0;
+}
+
+.progressPage .progRecentScroll{
+  min-width: 0;
+}
 /* Tabs */
 .progressPage .progTabs{
   display:flex;
