@@ -2693,10 +2693,18 @@ button.mini.added{
   line-height: 1;
   font-weight: 900;
 }
-/* Weekly Performance (Home Card) */
+/* Weekly Performance (Home Card + This Week Details) */
 .weeklyPerfText{
-  font-weight: 600;
+  font-weight: 500;          /* normal */
   font-size: 14px;
   line-height: 1.35;
   letter-spacing: .1px;
+}
+
+.weeklyPerfText .k{
+  font-weight: 900;          /* only "Best:" / "Improved:" / etc */
+}
+
+.weeklyPerfText .v{
+  font-weight: 500;          /* remainder stays normal */
 }
