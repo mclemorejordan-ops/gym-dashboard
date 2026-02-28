@@ -3505,42 +3505,40 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
     return el("div", { class: cls, text: b?.text || "—" });
   }
 
-  const chips = el("div", { style:"display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;" }, [
+  const chips = el("div", { class:"weekDetailsChips" }, [
     el("div", { class:"tag accent", text:`${coachStartClampedISO} → ${weekEndISO}` }),
     el("div", { class:"tag", text: (weekStartsOn === "sun") ? "Sun-start" : "Mon-start" }),
     el("div", { class:"tag", text: (coachStartIdx > 0) ? "Mid-week start" : "Full week" })
   ]);
 
-  const weeklyPerfBox = el("div", {
-    style:"margin-top:12px; border:1px solid rgba(255,255,255,.10); border-radius:18px; background:rgba(255,255,255,.05); padding:12px;"
-  }, [
+   const weeklyPerfBox = el("div", { class:"weekDetailsCard" }, [
     el("div", { class:"homeTodayKicker", text:"Weekly Performance" }),
 
     el("div", { style:"height:10px" }),
 
-    el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { style:"font-weight:900;", text: bestLeft }),
+    el("div", { class:"weekDetailsLine" }, [
+      el("div", { class:"weekDetailsLineText", text: bestLeft }),
       badgeEl(bestBadge)
     ]),
 
     el("div", { style:"height:8px" }),
 
-    el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { style:"font-weight:900;", text: improvedLeft }),
+    el("div", { class:"weekDetailsLine" }, [
+      el("div", { class:"weekDetailsLineText", text: improvedLeft }),
       badgeEl(improvedBadge)
     ]),
 
     el("div", { style:"height:8px" }),
 
-    el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { style:"font-weight:900;", text: consistencyLeft }),
+    el("div", { class:"weekDetailsLine" }, [
+      el("div", { class:"weekDetailsLineText", text: consistencyLeft }),
       badgeEl(consistencyBadge)
     ]),
 
     el("div", { style:"height:8px" }),
 
-    el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
-      el("div", { style:"font-weight:900;", text: improveLeft }),
+    el("div", { class:"weekDetailsLine" }, [
+      el("div", { class:"weekDetailsLineText", text: improveLeft }),
       badgeEl(improveBadge)
     ])
   ]);
@@ -3575,9 +3573,7 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
     return total;
   }
 
-  const daysBox = el("div", {
-    style:"margin-top:12px; border:1px solid rgba(255,255,255,.10); border-radius:18px; background:rgba(255,255,255,.04); padding:10px;"
-  }, [
+    const daysBox = el("div", { class:"weekDetailsCard soft" }, [
     el("div", { class:"homeTodayKicker", text:"Days in window" })
   ]);
 
@@ -3591,8 +3587,8 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
     const loggedSets = r.trained ? loggedSetsForISO(r.dISO) : 0;
     const micro = isRestDay ? "—" : `Sets: ${loggedSets} / ${plannedSets === null ? "—" : plannedSets}`;
 
-    const left = el("div", { style:"display:flex; flex-direction:column; gap:2px; min-width:0;" }, [
-      el("div", { style:"font-weight:920; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;", text: `${dow[weekdayIdx]} — ${dayLabel}` }),
+        const left = el("div", { class:"weekDetailsLeft" }, [
+      el("div", { class:"weekDetailsTitle", text: `${dow[weekdayIdx]} — ${dayLabel}` }),
       el("div", { class:"note", text: isRestDay ? "Recovery day" : `Planned • ${(Array.isArray(dayObj?.exercises) ? dayObj.exercises.length : 0)} exercises` })
     ]);
 
@@ -3603,9 +3599,7 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
 
     const right = el("div", { class: tagCls.trim(), text: tagText });
 
-    const row = el("div", {
-      style:"display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px; border:1px solid rgba(255,255,255,.06); background:rgba(255,255,255,.03); border-radius:16px; margin-top:10px;"
-    }, [
+       const row = el("div", { class:"weekDetailsRow" }, [
       el("div", { style:"flex:1 1 auto; min-width:0;" }, [left]),
       mid,
       right
