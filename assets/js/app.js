@@ -3086,18 +3086,36 @@ else root.appendChild(el("div", { class:"card" }, [
 
   // Status derives from logged sets (workout logs) for today's routine exercises
   function workoutStatus(){
-    if(!routine || !day || day.isRest) return { key:"rest", label:"Rest Day", tag:"🧘 Rest Day", kind:"" };
+    // No routine/day yet
+    if(!routine || !day){
+      return { key:"none", label:"Set a routine", tag:"Set a routine", kind:"", done:0, total:0 };
+    }
+
+    // Rest day
+    if(day.isRest){
+      return { key:"rest", label:"Rest Day", tag:"Rest Day", kind:"", done:0, total:0 };
+    }
+
     const ex = (day.exercises || []);
-    if(ex.length === 0) return { key:"none", label:"Not Started", tag:"🔘 Not Started", kind:"" };
+    const total = ex.length;
+
+    // No exercises planned
+    if(total === 0){
+      return { key:"not_started", label:"Ready", tag:"Ready", kind:"", done:0, total:0 };
+    }
 
     let doneCount = 0;
     for(const rx of ex){
-      if(rx?.id && isExerciseTrained(todayISO, rx.id)) doneCount++;
+      if(isExerciseTrained(todayISO, rx.id)) doneCount++;
     }
 
-    if(doneCount <= 0) return { key:"not_started", label:"Not Started", tag:"🔘 Not Started", kind:"" };
-    if(doneCount < ex.length) return { key:"in_progress", label:"In Progress", tag:"🟡 In Progress", kind:"warn" };
-    return { key:"complete", label:"Complete", tag:"🟢 Complete", kind:"good" };
+    if(doneCount >= total){
+      return { key:"complete", label:"Complete", tag:"Complete", kind:"good", done:doneCount, total:total };
+    }
+    if(doneCount > 0){
+      return { key:"in_progress", label:"In Progress", tag:"In Progress", kind:"warn", done:doneCount, total:total };
+    }
+    return { key:"not_started", label:"Ready", tag:"Ready", kind:"", done:0, total:total };
   }
 
   const status = workoutStatus();
