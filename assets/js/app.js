@@ -5794,31 +5794,38 @@ Progress(){
   const stats = PD.overviewLast7Days();
   const win = PD.topWinLast30Days();
 
+  const proteinText = (stats.proteinTotal > 0)
+    ? `${stats.proteinHit}/${stats.proteinTotal}`
+    : "Off";
+
   return el("div", { class:"grid" }, [
-    el("div", { class:"card" }, [
-      el("div", { class:"kicker", text:"Last 7 days" }),
-      el("div", { class:"big", text:`Workouts: ${stats.workouts}` }),
-      el("div", { class:"meta", text:`PRs: ${stats.prs} • Protein goal: ${stats.proteinHit}/${stats.proteinTotal}` }),
-      el("div", { class:"btnrow" }, [
+    // LAST 7 DAYS (premium)
+    el("div", { class:"card progOverviewCard" }, [
+      el("div", { class:"kicker progOverKicker", text:"LAST 7 DAYS" }),
+      el("div", { class:"progOverHeadline", text:`Workouts: ${stats.workouts}` }),
+      el("div", { class:"progOverSub", text:`PRs: ${stats.prs} • Protein goal: ${proteinText}` }),
+      el("div", { class:"btnrow progOverBtns" }, [
         el("button", { class:"btn primary", onClick: () => { Routes.go("weight"); } }, ["Add Weight"]),
         el("button", { class:"btn", onClick: () => { Routes.go("home"); } }, ["Log Workout"]),
         el("button", { class:"btn", onClick: () => { Routes.go("settings"); } }, ["Set Goal"])
       ])
     ]),
 
-    el("div", { class:"card" }, [
-      el("div", { class:"kicker", text:"Top win" }),
+    // TOP WIN (premium)
+    el("div", { class:"card progTopWinCard" }, [
+      el("div", { class:"kicker progOverKicker", text:"TOP WIN" }),
       win
-        ? el("div", { class:"row" }, [
-            el("div", {}, [
-              el("div", { class:"name", text: win.title }),
-              el("div", { class:"meta", text: win.sub })
+        ? el("div", { class:"progWinRow" }, [
+            el("div", { class:"progWinText" }, [
+              el("div", { class:"progWinTitle", text: win.title }),
+              el("div", { class:"progWinSub", text: win.sub })
             ]),
-            el("div", { class:"progBadge wl", text:"PR" })
+            el("div", { class:"progWinPill", text:"PR" })
           ])
         : el("div", { class:"note", text:"No recent PRs yet. Log a few sessions and this will populate." })
     ]),
 
+    // WATCHLIST (leave as-is for now)
     el("div", { class:"card" }, [
       el("div", { class:"kicker", text:"Watchlist" }),
       el("div", { class:"list", style:"border-top:none; margin-top:8px;" }, [
