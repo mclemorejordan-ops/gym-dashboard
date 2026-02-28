@@ -2693,3 +2693,10 @@ button.mini.added{
   line-height: 1;
   font-weight: 900;
 }
+/* Weekly Performance (Home Card) */
+.weeklyPerfText{
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.35;
+  letter-spacing: .1px;
+}
