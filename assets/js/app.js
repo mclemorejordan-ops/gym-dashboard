@@ -3501,9 +3501,9 @@ const remainingPlans = plannedDaysRemainingThisWeek();     // [{dateISO,label},.
   // UI construction (match your v3/v4 mock)
   // -----------------------------
   function badgeEl(b){
-    const cls = "tag" + (b?.kind ? (" " + b.kind) : "");
-    return el("div", { class: cls, text: b?.text || "—" });
-  }
+  const cls = "chip" + (b?.kind ? (" " + b.kind) : "");
+  return el("div", { class: cls, text: b?.text || "—" });
+}
 
   const chips = el("div", { style:"display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;" }, [
     el("div", { class:"tag accent", text:`${coachStartClampedISO} → ${weekEndISO}` }),
