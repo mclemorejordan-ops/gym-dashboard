@@ -469,7 +469,206 @@ select option{
       gap: 12px;
       flex-wrap: wrap;
     }
+          /* Home Today Card (enhanced) */
+    .homeTodayCard{
+      position: relative;
+      overflow: hidden;
+    }
+    .homeTodayTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .homeTodayKicker{
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1.1px;
+      color: rgba(255,255,255,.70);
+    }
+    .homeTodaySub{
+      margin-top: 4px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,.66);
+    }
+    .homeTodayTitle{
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: 920;
+      letter-spacing: .2px;
+      line-height: 1.08;
+    }
+    .homeTodayCta{
+      min-width: 132px;
+      border-radius: 14px;
+    }
 
+    .homeTodayProgress{ margin-top: 10px; }
+    .homeTodayProgress .bar{
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.10);
+      overflow: hidden;
+    }
+    .homeTodayProgress .fill{
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: rgba(124,92,255,.80);
+      box-shadow: 0 0 18px rgba(124,92,255,.22);
+      transition: width .26s ease;
+    }
+    .homeTodayProgress .metaRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .homeTodayProgress .meta{
+      font-size: 12px;
+      color: rgba(255,255,255,.66);
+      font-weight: 750;
+    }
+
+    /* Status pill with color aura */
+    .homeTodayStatus{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      font-weight: 900;
+      font-size: 12px;
+      white-space: nowrap;
+      position: relative;
+      overflow: visible;
+    }
+    .homeTodayStatus .dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.55);
+    }
+    .homeTodayStatus .aura{
+      position:absolute;
+      inset: -10px;
+      border-radius: 999px;
+      pointer-events:none;
+      filter: blur(14px);
+      opacity: .85;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.16), transparent 62%);
+    }
+
+    /* State themes */
+    .homeTodayCard.st-ready  .homeTodayProgress .fill{ background: rgba(78,161,255,.88); box-shadow: 0 0 18px rgba(78,161,255,.22); }
+    .homeTodayCard.st-progress .homeTodayProgress .fill{ background: rgba(255,176,32,.88); box-shadow: 0 0 18px rgba(255,176,32,.20); }
+    .homeTodayCard.st-complete .homeTodayProgress .fill{ background: rgba(55,214,122,.88); box-shadow: 0 0 18px rgba(55,214,122,.18); }
+
+    .homeTodayStatus.st-ready .dot{ background: rgba(78,161,255,.95); box-shadow: 0 0 16px rgba(78,161,255,.25); }
+    .homeTodayStatus.st-ready{ border-color: rgba(78,161,255,.26); }
+    .homeTodayStatus.st-ready .aura{ background: radial-gradient(circle at 50% 50%, rgba(78,161,255,.28), transparent 62%); }
+
+    .homeTodayStatus.st-progress .dot{ background: rgba(255,176,32,.95); box-shadow: 0 0 16px rgba(255,176,32,.22); }
+    .homeTodayStatus.st-progress{ border-color: rgba(255,176,32,.24); }
+    .homeTodayStatus.st-progress .aura{ background: radial-gradient(circle at 50% 50%, rgba(255,176,32,.24), transparent 62%); }
+
+    .homeTodayStatus.st-complete .dot{ background: rgba(55,214,122,.95); box-shadow: 0 0 16px rgba(55,214,122,.20); }
+    .homeTodayStatus.st-complete{ border-color: rgba(55,214,122,.26); }
+    .homeTodayStatus.st-complete .aura{ background: radial-gradient(circle at 50% 50%, rgba(55,214,122,.22), transparent 62%); }
+
+    .homeTodayStatus.st-rest .dot{ background: rgba(124,92,255,.95); box-shadow: 0 0 16px rgba(124,92,255,.20); }
+    .homeTodayStatus.st-rest{ border-color: rgba(124,92,255,.26); }
+    .homeTodayStatus.st-rest .aura{ background: radial-gradient(circle at 50% 50%, rgba(124,92,255,.22), transparent 62%); }
+
+    .homeTodayDivider{
+      height: 1px;
+      background: rgba(255,255,255,.10);
+      margin: 12px 0 12px;
+    }
+
+    /* Exercises: fixed 3 preview + smooth expand */
+    .homeTodayListWrap{ margin-top: 2px; }
+    .homeTodayListViewport{
+      position: relative;
+      overflow: hidden;
+      max-height: 236px;
+      transition: max-height .26s ease;
+      will-change: max-height;
+    }
+    .homeTodayListViewport.expanded{ max-height: 560px; }
+
+    .homeTodayFadeHint{
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height: 46px;
+      background: linear-gradient(180deg, rgba(11,15,23,0), rgba(11,15,23,.72));
+      pointer-events:none;
+    }
+
+    .homeTodayExRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 12px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+      box-shadow: 0 10px 26px rgba(0,0,0,.26);
+      margin-bottom: 10px;
+      transition: transform .12s ease, border-color .18s ease, background .18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .homeTodayExRow:active{ transform: scale(.99); }
+    .homeTodayExRow .name{
+      font-weight: 920;
+      letter-spacing: .15px;
+      font-size: 14px;
+    }
+    .homeTodayExRow .meta{
+      margin-top: 5px;
+      font-size: 12px;
+      color: rgba(255,255,255,.62);
+      line-height: 1.25;
+    }
+    .homeTodayExRow .pill{
+      align-self:center;
+      font-weight: 900;
+      font-size: 11px;
+      padding: 7px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.80);
+      white-space: nowrap;
+    }
+
+    .homeTodayExpandBtn{
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: rgba(255,255,255,.76);
+      font-weight: 900;
+      font-size: 12.5px;
+      padding: 10px 8px 4px;
+      cursor: pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .homeTodayExpandBtn .chev{
+      display:inline-block;
+      transform: rotate(0deg);
+      transition: transform .2s ease;
+      opacity: .95;
+    }
+    .homeTodayExpandBtn[aria-expanded="true"] .chev{ transform: rotate(180deg); }
     .dots{
       display:flex;
       gap: 8px;
