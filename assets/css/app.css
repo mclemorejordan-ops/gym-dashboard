@@ -98,23 +98,6 @@ header{
       color: var(--muted);
     }
 
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid var(--hair);
-      color: var(--text);
-      font-size: 13px;
-      user-select:none;
-      max-width: 52vw;
-      overflow:hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
     main{ padding-top: 10px; }
 
     .grid{
@@ -172,60 +155,6 @@ header{
 .btn.ghost{
   background: rgba(255,255,255,.05);
 }
-
-    .muted{ color: var(--muted); }
-    .kpi{
-      display:flex;
-      flex-direction:column;
-      gap: 4px;
-      padding: 8px 0 0 0;
-    }
-    .kpi .big{
-        font-size: 22px;
-        font-weight: 760;
-        letter-spacing: .2px;
-        color: var(--text); /* ensures no inheritance */
-      }
-    .kpi .small{
-        font-size: 13px;
-        color: var(--text); /* 🔥 changed to white */
-        line-height: 1.35;
-      }
-    /* Progress Overview (stacked like screenshot) */
-    .overviewList{
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      padding: 8px 0 0 0;
-    }
-    .overviewRow{
-      display:flex;
-      flex-direction:column;
-      gap: 6px;
-    }
-    .overviewLabel{
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 720;
-      letter-spacing: .22px;
-      text-transform: uppercase;
-    }
-    .overviewValue{
-      font-size: 22px;
-      font-weight: 820;
-      letter-spacing: .2px;
-      line-height: 1.15;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    @media (min-width: 640px){
-      .overviewList{
-        grid-template-columns: 1fr 1fr;
-        gap: 18px;
-      }
-      .overviewValue{ font-size: 24px; }
-    }
 
     .form{ display:grid; gap: 10px; }
     .row2{ display:grid; gap: 10px; }
