@@ -5837,54 +5837,37 @@ Progress(){
   function buildSearchPanel(cfg){
   const type = cfg.type;
 
-  // Compute data for this render
-  const recent = PD.recentCards(type, 8);
-  const hasQuery = !!(cfg.query && String(cfg.query).trim());
-  const results = hasQuery ? PD.searchCards(type, cfg.query, 50) : [];
+  // ----- Search input (stable node; no repaint per keystroke) -----
+  const input = el("input", {
+    type:"text",
+    value: cfg.query,
+    placeholder: (type === "cardio") ? "Search activity…" : "Search exercise…",
+    autocomplete:"off"
+  });
+
+  const clearBtn = el("button", {
+    class:"progClearBtn" + ((cfg.query && String(cfg.query).trim()) ? " show" : ""),
+    onClick: (e) => {
+      e.preventDefault();
+      input.value = "";
+      cfg.setQuery("");
+      updateUI();
+      input.focus();
+    }
+  }, ["×"]);
 
   const searchCard = el("div", { class:"card" }, [
     el("div", { class:"kicker", text: cfg.label }),
     el("div", { class:"progSearchV2", style:"margin-top:8px" }, [
       el("div", { class:"ico", text:"⌕" }),
-
-      (() => {
-        const input = el("input", {
-          type:"text",
-          value: cfg.query,
-          placeholder: (type === "cardio") ? "Search activity…" : "Search exercise…",
-          autocomplete:"off"
-        });
-
-        // Soft clear button (no ugly “x” box)
-        // We create it here so we can toggle visibility based on input value.
-        const clearBtn = el("button", {
-          class:"progClearBtn" + (hasQuery ? " show" : ""),
-          // Using a softer glyph than "✕" (still reads as clear)
-          // If you want a different glyph, tell me: "dot", "chevron", "backspace", etc.
-          onClick: () => {
-            cfg.setQuery("");
-            repaint();
-          }
-        }, ["⌫"]);
-
-        input.addEventListener("input", () => {
-          cfg.setQuery(input.value || "");
-          // Toggle clear visibility immediately (without extra repaint work)
-          const nowHas = !!(input.value && input.value.trim());
-          clearBtn.classList.toggle("show", nowHas);
-
-          // Keep your existing architecture (simple + safe): repaint to refresh results
-          repaint();
-        });
-
-        // Return a fragment-like array: input + clear button
-        // (We can’t use real fragments with your el() helper easily.)
-        return el("div", { style:"display:contents" }, [input, clearBtn]);
-      })()
+      input,
+      clearBtn
     ]),
     el("div", { class:"meta", style:"margin-top:8px", text: cfg.tips })
   ]);
 
+  // ----- Recent (static on this render) -----
+  const recent = PD.recentCards(type, 8);
   const recentCard = el("div", { class:"card" }, [
     el("div", { class:"progSectionHead" }, [
       el("div", { class:"kicker", text:"Recent" }),
@@ -5892,24 +5875,68 @@ Progress(){
     ]),
     (recent.length === 0)
       ? el("div", { class:"note", text:"No recent picks yet. Tap an item below to pin it here next time." })
-      : el("div", { class:"progRecentScroll" },
-          recent.map(c => buildMiniCard(type, c)))
+      : el("div", { class:"progRecentScroll" }, recent.map(c => buildMiniCard(type, c)))
   ]);
+
+  // ----- Results (dynamic, updated live) -----
+  const resultsCount = el("div", { class:"progCountPill", text:"0" });
+  const resultsHost = el("div", { class:"progResultsV2" });
+  const noteStart = el("div", { class:"note", style:"margin-top:10px", text:"Start typing to search exercises." });
+  const noteNone  = el("div", { class:"note", style:"margin-top:10px; display:none", text:"No matches. Try another name." });
 
   const resultsCard = el("div", { class:"card" }, [
     el("div", { class:"progSectionHead" }, [
       el("div", { class:"kicker", text:"Results" }),
-      el("div", { class:"progCountPill", text:String(results.length) })
+      resultsCount
     ]),
-
-    // ✅ collapsed until user types
-    (!hasQuery)
-      ? el("div", { class:"note", style:"margin-top:10px", text:"Start typing to search exercises." })
-      : (results.length === 0)
-        ? el("div", { class:"note", style:"margin-top:10px", text:"No matches. Try another name." })
-        : el("div", { class:"progResultsV2" },
-            results.map(c => buildResultCard(type, c)))
+    noteStart,
+    noteNone,
+    resultsHost
   ]);
+
+  function updateUI(){
+    const q = (cfg.query || "").trim();
+    const has = !!q;
+
+    // clear button visibility
+    clearBtn.classList.toggle("show", has);
+
+    // collapsed until typing
+    if(!has){
+      resultsCount.textContent = "0";
+      resultsHost.innerHTML = "";
+      resultsHost.style.display = "none";
+      noteNone.style.display = "none";
+      noteStart.style.display = "block";
+      return;
+    }
+
+    const results = PD.searchCards(type, q, 50);
+    resultsCount.textContent = String(results.length);
+
+    noteStart.style.display = "none";
+
+    if(results.length === 0){
+      resultsHost.innerHTML = "";
+      resultsHost.style.display = "none";
+      noteNone.style.display = "block";
+      return;
+    }
+
+    noteNone.style.display = "none";
+    resultsHost.style.display = "block";
+    resultsHost.innerHTML = "";
+    results.forEach(c => resultsHost.appendChild(buildResultCard(type, c)));
+  }
+
+  // Live search: update only results UI (NO repaint)
+  input.addEventListener("input", () => {
+    cfg.setQuery(input.value || "");
+    updateUI();
+  });
+
+  // Initial paint
+  updateUI();
 
   return el("div", { class:"grid" }, [searchCard, recentCard, resultsCard]);
 }
