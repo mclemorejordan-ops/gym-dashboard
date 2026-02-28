@@ -114,11 +114,6 @@ header{
   border-radius: var(--r);
   box-shadow: var(--shadow);
   padding: 14px;
-
-  /* ✅ prevents horizontal children from expanding the page on mobile */
-  overflow: hidden;
-  max-width: 100%;
-  box-sizing: border-box;
 }
     .card h2{
         margin: 0 0 10px 0;
@@ -2158,13 +2153,13 @@ button.mini.added{
    ========================================================= */
 
 /* Tabs */
-.progTabs{
+.progressPage .progTabs{
   display:flex;
   gap:8px;
   flex-wrap:wrap;
   margin-bottom:12px;
 }
-.progTabBtn{
+.progressPage .progTabBtn{
   padding:8px 12px;
   border-radius:14px;
   border:1px solid var(--line);
@@ -2173,13 +2168,13 @@ button.mini.added{
   font-size:13px;
   cursor:pointer;
 }
-.progTabBtn.active{
+.progressPage .progTabBtn.active{
   border-color:rgba(122,162,255,.55);
   box-shadow:0 0 0 2px rgba(122,162,255,.12) inset;
 }
 
 /* Search — Soft Glass (Balanced) */
-.progSearchV2{
+.progressPage .progSearchV2{
   display:flex;
   align-items:center;
   gap:10px;
@@ -2194,13 +2189,13 @@ button.mini.added{
   -webkit-backdrop-filter: blur(10px);
 }
 
-.progSearchV2 .ico{
+.progressPage .progSearchV2 .ico{
   opacity:.75;
   font-size:14px;
   flex:0 0 auto;
 }
 
-.progSearchV2 input{
+.progressPage .progSearchV2 input{
   flex:1 1 auto;
   border:none;
   outline:none;
@@ -2211,12 +2206,12 @@ button.mini.added{
   min-width:0;
 }
 
-.progSearchV2 input::placeholder{
+.progressPage .progSearchV2 input::placeholder{
   color:rgba(255,255,255,.45);
 }
 
 /* Soft clear button (no boxy X) */
-.progClearBtn{
+.progressPage .progClearBtn{
   flex:0 0 auto;
 
   width:30px;
@@ -2243,19 +2238,19 @@ button.mini.added{
   transition:opacity .14s ease, transform .14s ease, background .14s ease;
 }
 
-.progClearBtn.show{
+.progressPage .progClearBtn.show{
   opacity:1;
   pointer-events:auto;
   transform:scale(1);
 }
 
-.progClearBtn:active{
+.progressPage .progClearBtn:active{
   transform:scale(.98);
   background:rgba(255,255,255,.10);
 }
 
 /* Recent horizontal scroll — MOBILE SAFE (prevents viewport expansion) */
-.progRecentScroll{
+.progressPage .progRecentScroll{
   display:flex;
   gap:10px;
 
@@ -2272,7 +2267,7 @@ button.mini.added{
   box-sizing:border-box;
 }
 
-.progRecentCard{
+.progressPage .progRecentCard{
   flex:0 0 auto;
 
   width:240px;
@@ -2288,30 +2283,30 @@ button.mini.added{
 
   cursor:pointer;
 }
-.progRecentTitle{
+.progressPage .progRecentTitle{
   font-weight:900;
 }
-.progRecentBig{
+.progressPage .progRecentBig{
   font-size:18px;
   font-weight:900;
   margin-top:6px;
 }
-.progRecentMeta{
+.progressPage .progRecentMeta{
   font-size:12px;
   color:rgba(255,255,255,.55);
   margin-top:2px;
 }
-.progRecentDelta{
+.progressPage .progRecentDelta{
   margin-top:8px;
   font-size:12px;
   font-weight:900;
 }
-.progRecentDelta.good{ color:var(--good); }
-.progRecentDelta.warn{ color:var(--warn); }
-.progRecentDelta.flat{ color:rgba(255,255,255,.55); }
+.progressPage .progRecentDelta.good{ color:var(--good); }
+.progressPage .progRecentDelta.warn{ color:var(--warn); }
+.progressPage .progRecentDelta.flat{ color:rgba(255,255,255,.55); }
 
 /* Results cards */
-.progResultCard{
+.progressPage .progResultCard{
   border:1px solid rgba(255,255,255,.10);
   border-radius:18px;
   background:rgba(255,255,255,.03);
@@ -2319,69 +2314,69 @@ button.mini.added{
   margin-top:10px;
   cursor:pointer;
 }
-.progResultTop{
+.progressPage .progResultTop{
   display:flex;
   justify-content:space-between;
   gap:10px;
 }
-.progResultTitle{
+.progressPage .progResultTitle{
   font-weight:900;
 }
-.progResultSub{
+.progressPage .progResultSub{
   font-size:12px;
   color:rgba(255,255,255,.55);
   margin-top:2px;
 }
 
 /* Stats row */
-.progResultStats{
+.progressPage .progResultStats{
   display:flex;
   gap:8px;
   margin-top:10px;
 }
-.progStat{
+.progressPage .progStat{
   flex:1;
   border:1px solid rgba(255,255,255,.08);
   background:rgba(0,0,0,.18);
   padding:8px 10px;
   border-radius:14px;
 }
-.progStatLabel{
+.progressPage .progStatLabel{
   font-size:11px;
   text-transform:uppercase;
   letter-spacing:.18px;
   color:rgba(255,255,255,.45);
 }
-.progStatVal{
+.progressPage .progStatVal{
   font-weight:900;
   font-size:13px;
   margin-top:2px;
 }
 
 /* Trend pill */
-.progTrend{
+.progressPage .progTrend{
   font-weight:900;
   padding:8px 10px;
   border-radius:14px;
   border:1px solid rgba(255,255,255,.08);
   background:rgba(0,0,0,.18);
 }
-.progTrend.up{ color:var(--good); }
-.progTrend.down{ color:var(--warn); }
-.progTrend.flat{ color:rgba(255,255,255,.55); }
+.progressPage .progTrend.up{ color:var(--good); }
+.progressPage .progTrend.down{ color:var(--warn); }
+.progressPage .progTrend.flat{ color:rgba(255,255,255,.55); }
 
 /* Bottom actions */
-.progResultBottom{
+.progressPage .progResultBottom{
   display:flex;
   justify-content:space-between;
   align-items:center;
   margin-top:10px;
 }
-.progQuickBtns{
+.progressPage .progQuickBtns{
   display:flex;
   gap:8px;
 }
-.progQuickBtn{
+.progressPage .progQuickBtn{
   padding:8px 10px;
   border-radius:14px;
   border:1px solid rgba(255,255,255,.10);
