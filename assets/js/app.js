@@ -1867,7 +1867,14 @@ const ProgressUIEngine = {
       LogEngine.ensure();
       const { start, end } = this._sinceDays(6); // inclusive window: today + 6 days back => 7 days
       const w = (state.logs?.workouts || []).filter(e => e && e.dateISO >= start && e.dateISO <= end);
-      const workouts = w.length;
+
+    // ✅ Workouts = unique days with at least one workout log entry
+    const days = new Set();
+    for(const e of w){
+      const d = e?.dateISO;
+      if(d) days.add(d);
+    }
+    const workouts = days.size;
 
       // PRs: any entry where any PR flag is true
       let prs = 0;
