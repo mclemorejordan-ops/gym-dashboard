@@ -1936,6 +1936,64 @@ const ProgressUIEngine = {
       return null;
     },
 
+    watchlistOverview(cap){
+  LogEngine.ensure();
+  const out = [];
+  const limit = Math.max(0, Math.round(Number(cap || 2)));
+
+  // ---- window helpers ----
+  const last7 = this.overviewLast7Days(); // already consistent
+  const { start: start14, end: end14 } = this._sinceDays(13);
+
+  // ---- 1) Protein consistency (only if tracking enabled) ----
+  if(last7.proteinTotal > 0){
+    const missed = Math.max(0, (last7.proteinTotal || 0) - (last7.proteinHit || 0));
+    if(missed > 0){
+      out.push({
+        key: "protein",
+        title: "Protein below goal",
+        sub: `${missed} day${missed === 1 ? "" : "s"} below goal in the last 7 days`,
+        tone: "warn",
+        icon: "🍗",
+        right: "▼"
+      });
+    }
+  }
+
+  // ---- 2) Workouts pace (uses profile goal if set) ----
+  const wkGoal = Math.max(0, Math.round(Number(state.profile?.workoutsPerWeekGoal || 0)));
+  if(wkGoal > 0 && last7.workouts < wkGoal){
+    const behind = Math.max(0, wkGoal - last7.workouts);
+    out.push({
+      key: "workouts",
+      title: "Training volume",
+      sub: `Only ${last7.workouts}/${wkGoal} workouts in the last 7 days (${behind} behind goal)`,
+      tone: "warn",
+      icon: "🏋️",
+      right: "▼"
+    });
+  }
+
+  // ---- 3) Cardio gap (last 14 days) ----
+  const cardioCount14 = (state.logs?.workouts || []).some(e =>
+    e && e.type === "cardio" && e.dateISO >= start14 && e.dateISO <= end14
+  );
+  if(!cardioCount14){
+    out.push({
+      key: "cardio_gap",
+      title: "Cardio gap",
+      sub: "No cardio logged in the last 14 days",
+      tone: "flat",
+      icon: "🏃",
+      right: "—"
+    });
+  }
+
+  // Deterministic order (as pushed). Cap.
+  return out.slice(0, limit);
+},
+
+
     // Recent cards use ProgressUIEngine recents (if available)
     recentCards(type, cap){
       const t = String(type || "weightlifting");
@@ -5832,21 +5890,28 @@ Progress(){
         : el("div", { class:"note", text:"No recent PRs yet. Log a few sessions and this will populate." })
     ]),
 
-    // WATCHLIST (leave as-is for now)
-    el("div", { class:"card" }, [
-      el("div", { class:"kicker", text:"Watchlist" }),
-      el("div", { class:"list", style:"border-top:none; margin-top:8px;" }, [
-        el("div", { class:"item" }, [
-          el("div", { class:"left" }, [
-            el("div", { class:"name", text:"Leg volume" }),
-            el("div", { class:"small", text:"Missed day this week" })
-          ]),
-          el("div", { class:"right", text:"▼" })
-        ])
-      ])
-    ])
-  ]);
-}
+    // WATCHLIST (dynamic)
+    (() => {
+      const items = PD.watchlistOverview(2);
+    
+      return el("div", { class:"card" }, [
+        el("div", { class:"kicker", text:"Watchlist" }),
+    
+        (items.length === 0)
+          ? el("div", { class:"note", text:"Watchlist will populate as you log more sessions." })
+          : el("div", { class:"list", style:"border-top:none; margin-top:8px;" },
+              items.map(it =>
+                el("div", { class:"item" }, [
+                  el("div", { class:"left" }, [
+                    el("div", { class:"name", text: `${it.icon || "•"} ${it.title}` }),
+                    el("div", { class:"small", text: it.sub })
+                  ]),
+                  el("div", { class:"right", text: it.right || "—" })
+                ])
+              )
+            )
+      ]);
+    })()
 
   function buildSearchPanel(cfg){
   const type = cfg.type;
