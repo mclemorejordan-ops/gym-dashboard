@@ -1344,46 +1344,6 @@ lib.core = [
       const found = (state.exerciseLibrary?.[type] || []).find(x => x.id === exerciseId);
       return found?.name || fallback || "Unknown exercise";
     }
-   /********************
- * 4c) Protein (Today) Helpers (Step 5)
- * OPTION B: A date only exists if user logs >0g and saves
- ********************/
-
-// ✅ Read-only lookup (never creates/saves)
-function findProteinEntry(dateISO){
-  state.logs = state.logs || { workouts: [], weight: [], protein: [] };
-  state.logs.protein = state.logs.protein || [];
-  return state.logs.protein.find(x => x.dateISO === dateISO) || null;
-}
-
-// ✅ Write-path helper (creates ONLY when we truly need to save something)
-function ensureProteinEntry(dateISO){
-  state.logs = state.logs || { workouts: [], weight: [], protein: [] };
-  state.logs.protein = state.logs.protein || [];
-  let entry = state.logs.protein.find(x => x.dateISO === dateISO);
-  if(!entry){
-    entry = { dateISO, meals: [] }; // meals: [{ id, label, grams }]
-    state.logs.protein.push(entry);
-    Storage.save(state);
-  }
-  return entry;
-}
-
-// ✅ If an entry has no meals, remove the entire day so it doesn't appear in history
-function cleanupProteinEntryIfEmpty(dateISO){
-  state.logs = state.logs || { workouts: [], weight: [], protein: [] };
-  state.logs.protein = state.logs.protein || [];
-
-  const idx = state.logs.protein.findIndex(x => x.dateISO === dateISO);
-  if(idx < 0) return;
-
-  const entry = state.logs.protein[idx];
-  const meals = Array.isArray(entry?.meals) ? entry.meals : [];
-  if(meals.length === 0){
-    state.logs.protein.splice(idx, 1);
-    Storage.save(state);
-  }
-}
 
 /********************
  * 4c) Protein (Today) Helpers (Step 5)
