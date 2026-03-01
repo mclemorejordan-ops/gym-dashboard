@@ -75,6 +75,7 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
+  // Only handle same-origin requests
   if (url.origin !== self.location.origin) return;
 
   // Always fetch version.json fresh (never serve a cached version.json)
@@ -83,24 +84,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // ✅ NETWORK-FIRST for navigation so the newest index.html is used immediately
+  // ✅ NETWORK-FIRST for navigation so the newest index.html is used immediately when online
   if (req.mode === "navigate") {
     event.respondWith((async () => {
       const name = await computeCacheName();
       const cache = await caches.open(name);
 
       // Try fresh first
-      try{
+      try {
         const fresh = await fetch("./index.html", { cache: "no-store" });
-        if(fresh && fresh.ok){
+        if (fresh && fresh.ok) {
           await cache.put("./index.html", fresh.clone());
           return fresh;
         }
-      }catch(_){}
+      } catch (_) {}
 
       // Offline / fetch failed → cached shell
       const cached = await cache.match("./index.html");
-      if(cached) return cached;
+      if (cached) return cached;
 
       // Absolute last resort
       return new Response("Offline", {
@@ -110,4 +111,38 @@ self.addEventListener("fetch", (event) => {
     })());
     return;
   }
+
+  // ✅ CACHE-FIRST for same-origin static assets (JS/CSS/icons) so offline works
+  event.respondWith((async () => {
+    const name = await computeCacheName();
+    const cache = await caches.open(name);
+
+    // Try cache first
+    const cached = await cache.match(req);
+    if (cached) {
+      // Best-effort background refresh (keeps cache warm when online)
+      event.waitUntil((async () => {
+        try {
+          const fresh = await fetch(req);
+          if (fresh && fresh.ok) await cache.put(req, fresh.clone());
+        } catch (_) {}
+      })());
+      return cached;
+    }
+
+    // Otherwise fetch, then cache
+    try {
+      const fresh = await fetch(req);
+      if (fresh && fresh.ok) {
+        await cache.put(req, fresh.clone());
+      }
+      return fresh;
+    } catch (_) {
+      // If offline and not cached
+      return new Response("Offline", {
+        status: 503,
+        headers: { "Content-Type": "text/plain" }
+      });
+    }
+  })());
 });
