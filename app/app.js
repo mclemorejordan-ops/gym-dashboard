@@ -24,6 +24,20 @@ import {
 } from "./storage.js";
 
 
+import {
+  $, el, uid, pad2,
+  Dates,
+  bytesToNice, appStorageBytes,
+  showToast,
+  lockBodyScroll, unlockBodyScroll,
+  Modal, bindModalControls,
+  PopoverOpen, PopoverClose,
+  confirmModal
+} from "./ui.js";
+
+bindModalControls();
+
+
 
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
@@ -118,135 +132,6 @@ const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
   }
 });
 
-    /********************
-     * 2) Helpers
-     ********************/
-    const $ = (sel, root=document) => root.querySelector(sel);
-
-    const el = (tag, attrs={}, children=[]) => {
-      const n = document.createElement(tag);
-      for (const [k,v] of Object.entries(attrs)){
-        if(k === "class") n.className = v;
-        else if(k === "text") n.textContent = v;
-        else if(k === "html") n.innerHTML = v;
-        else if(k.startsWith("on") && typeof v === "function"){
-          n.addEventListener(k.slice(2).toLowerCase(), v);
-        } else {
-          n.setAttribute(k, v);
-        }
-      }
-      children.forEach(c => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
-      return n;
-    };
-
-    const uid = (prefix="id") => `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
-
-        const pad2 = (n) => String(n).padStart(2, "0");
-
-const Dates = {
-  // strict YYYY-MM-DD check
-  isISO(dateISO){
-    return typeof dateISO === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateISO);
-  },
-
-  // returns a Date at local midnight, or null if invalid
-  parseISO(dateISO){
-    if(!this.isISO(dateISO)) return null;
-    const d = new Date(dateISO + "T00:00:00");
-    return Number.isFinite(d.getTime()) ? d : null;
-  },
-
-  todayISO(){
-    const d = new Date();
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-  },
-
-  // weekStartsOn: "mon" | "sun"
-  startOfWeekISO(dateISO, weekStartsOn){
-    // ✅ guard: if we ever get garbage, fall back to today (prevents NaN/Invalid Date cascades)
-    const baseISO = this.isISO(dateISO) ? dateISO : this.todayISO();
-    const d = new Date(baseISO + "T00:00:00");
-
-    const dow = d.getDay(); // 0=Sun..6=Sat
-    const weekStart = (weekStartsOn === "sun") ? 0 : 1;
-
-    let diff = dow - weekStart;
-    if(diff < 0) diff += 7;
-
-    d.setDate(d.getDate() - diff);
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-  },
-
-  addDaysISO(dateISO, days){
-    const baseISO = this.isISO(dateISO) ? dateISO : this.todayISO();
-    const d = new Date(baseISO + "T00:00:00");
-    d.setDate(d.getDate() + (Number(days) || 0));
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-  },
-
-  sameISO(a,b){ return String(a) === String(b); },
-
-  // convenience: "Feb 15"
-  formatShort(dateISO){
-    const d = this.parseISO(dateISO);
-    if(!d) return "—";
-    return d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
-  }
-};
-        /********************
-     * Settings helpers (added)
-     ********************/
-    function bytesToNice(bytes){
-      const n = Number(bytes || 0);
-      if(!isFinite(n) || n <= 0) return "0 B";
-      const units = ["B","KB","MB","GB","TB"];
-      let v = n;
-      let i = 0;
-      while(v >= 1024 && i < units.length-1){
-        v /= 1024;
-        i++;
-      }
-      const dp = (i === 0) ? 0 : (v >= 10 ? 1 : 2);
-      return `${v.toFixed(dp)} ${units[i]}`;
-    }
-
-    function appStorageBytes(){
-      // Approximate localStorage usage for this origin
-      let total = 0;
-      try{
-        for(let i=0; i<localStorage.length; i++){
-          const k = localStorage.key(i);
-          const v = localStorage.getItem(k) || "";
-          total += (k ? k.length : 0) + v.length;
-        }
-      }catch(e){
-        // If storage is blocked, just report 0
-        total = 0;
-      }
-      // JS strings are ~2 bytes/char in UTF-16
-      return total * 2;
-    }
-
-    function confirmModal({ title="Confirm", message="Are you sure?", confirmText="Confirm", danger=false, onConfirm }){
-      const btnClass = danger ? "btn danger" : "btn primary";
-      Modal.open({
-        title,
-        bodyNode: el("div", {}, [
-          el("div", { class:"note", text: message }),
-          el("div", { style:"height:12px" }),
-          el("div", { class:"btnrow" }, [
-            el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]),
-            el("button", {
-              class: btnClass,
-              onClick: () => {
-                try{ if(typeof onConfirm === "function") onConfirm(); }
-                finally{ Modal.close(); }
-              }
-            }, [confirmText])
-          ])
-        ])
-      });
-    }
 
     function getTodayWorkout(){
       const routine = Routines.getActive();
@@ -1893,19 +1778,7 @@ function maybeShowNextNudge(dateISO, day){
   }
 }
 
-function showToast(message){
-  try{
-    const existing = document.getElementById("toastTemp");
-    if(existing) existing.remove();
-    const t = el("div", {
-      id:"toastTemp",
-      style:"position:fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 90; padding: 10px 12px; border-radius: 999px; background: rgba(16,20,30,.92); border: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.92); font-size: 12.5px; box-shadow: 0 18px 44px rgba(0,0,0,.55);"
-    }, [message]);
-    document.body.appendChild(t);
-    setTimeout(() => { try{ t.remove(); }catch(e){} }, 1100);
-  }catch(e){}
-}
-    /********************
+/********************
  * 🔥 Crash Failsafe (prevents blank UI)
  ********************/
 function __formatErr(err){
@@ -2019,289 +1892,12 @@ window.addEventListener("error", (ev) => {
 window.addEventListener("unhandledrejection", (ev) => {
   __fatal(ev?.reason || ev, "unhandledrejection");
 });
+
+
+
 /********************
- * 4g) Glass Dropdown (Popover) UI
- ********************/
-let __pop = null;
-
-// Tracks whether THIS popover session locked scroll (so we only unlock when appropriate)
-let __popoverLockedScroll = false;
-
-function PopoverEnsure(){
-  if(__pop) return __pop;
-
-  const host = el("div", { class:"popHost", id:"popHost" }, []);
-  const backdrop = el("div", { class:"popBackdrop", id:"popBackdrop" }, []);
-  const panel = el("div", { class:"popPanel", id:"popPanel" }, []);
-
-  backdrop.addEventListener("click", PopoverClose);
-
-  host.appendChild(backdrop);
-  host.appendChild(panel);
-  document.body.appendChild(host);
-
-  __pop = { host, panel };
-  return __pop;
-}
-
-function PopoverOpen(anchorEl, bodyNode){
-  const { host, panel } = PopoverEnsure();
-
-  panel.innerHTML = "";
-  if(bodyNode) panel.appendChild(bodyNode);
-
-  // Show first so we can compute panel size accurately
-  host.classList.add("show");
-  host.style.display = "block";
-
-  // ✅ Lock background scroll while popover is open (uses your existing iOS-safe lock)
-  // Only lock if nothing else already locked it.
-  if(!document.body.classList.contains("modalOpen")){
-    lockBodyScroll();
-    __popoverLockedScroll = true;
-  }else{
-    __popoverLockedScroll = false;
-  }
-
-  // Position under anchor, keep within viewport
-  const r = anchorEl.getBoundingClientRect();
-  const pad = 12;
-
-  const pw = panel.offsetWidth || Math.min(420, window.innerWidth - 24);
-
-  // default: left aligned to anchor, clamped to viewport
-  let left = r.left;
-  left = Math.max(pad, Math.min(left, window.innerWidth - pw - pad));
-
-  let top = r.bottom + 10;
-  const ph = panel.offsetHeight || 320;
-
-  // if it would go below, flip above anchor
-  if(top + ph > window.innerHeight - pad){
-    top = Math.max(pad, r.top - ph - 10);
-  }
-
-  panel.style.left = `${Math.round(left)}px`;
-  panel.style.top  = `${Math.round(top)}px`;
-}
-
-function PopoverClose(){
-  const p = PopoverEnsure();
-  p.host.classList.remove("show");
-  p.host.style.display = "none";   // ✅ actually hide it
-  p.panel.innerHTML = "";          // ✅ clear list so it doesn't linger
-
-  // ✅ Restore background scroll ONLY if this popover was the thing that locked it
-  if(__popoverLockedScroll){
-    __popoverLockedScroll = false;
-
-    // If a modal is open for any reason, don't unlock yet
-    const modalHost = document.getElementById("modalHost");
-    const modalIsOpen = !!(modalHost && modalHost.classList.contains("show"));
-
-    if(!modalIsOpen){
-      unlockBodyScroll();
-    }
-  }
-}
-
-    /********************
-     * 5) Modal
-     ********************/
-      let __modalScrollY = 0;
-
-function lockBodyScroll(){
-  __modalScrollY = window.scrollY || 0;
-
-  // iOS-safe lock: freeze body position
-  document.body.classList.add("modalOpen");
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${__modalScrollY}px`;
-  document.body.style.left = "0";
-  document.body.style.right = "0";
-  document.body.style.width = "100%";
-}
-
-function unlockBodyScroll(){
-  document.body.classList.remove("modalOpen");
-
-  // restore body scrolling
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.left = "";
-  document.body.style.right = "";
-  document.body.style.width = "";
-
-  window.scrollTo(0, __modalScrollY);
-}
-
-// ─────────────────────────────
-// Modal (production hardening)
-// - Focus is moved into the modal when opened
-// - Tab/Shift+Tab are trapped inside the modal
-// - Focus is restored to the triggering element when closed
-// ─────────────────────────────
-let __modalLastFocus = null;
-let __modalKeydownHandler = null;
-
-function __getModalFocusables(sheet){
-  if(!sheet) return [];
-  const nodes = sheet.querySelectorAll(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  );
-  return Array.from(nodes).filter(el => {
-    // visible + enabled
-    const style = window.getComputedStyle(el);
-    if(style.visibility === "hidden" || style.display === "none") return false;
-    if(el.hasAttribute("disabled")) return false;
-    return true;
-  });
-}
-
-const Modal = {
-  open({ title, bodyNode, center = true, size = "md" }){
-    const host  = $("#modalHost");
-    const body  = $("#modalBody");
-    const sheet = host.querySelector(".sheet");
-
-    // Remember last focused element (so we can restore on close)
-    __modalLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
-    $("#modalTitle").textContent = title || "Modal";
-
-    // Position mode
-    host.classList.toggle("center", !!center);
-
-    // Size mode
-    if(sheet){
-      sheet.classList.remove("sm", "md", "lg");
-      sheet.classList.add(size);
-    }
-
-    body.innerHTML = "";
-    if(bodyNode) body.appendChild(bodyNode);
-
-    host.classList.add("show");
-    host.setAttribute("aria-hidden", "false");
-
-    lockBodyScroll();
-
-    // Focus management: move focus into modal (prefer Close button)
-    const closeBtn = $("#modalClose");
-    const focusablesNow = __getModalFocusables(sheet);
-    const first = closeBtn || focusablesNow[0] || sheet;
-
-    // Ensure sheet is focusable if nothing else is
-    if(sheet && !sheet.hasAttribute("tabindex")) sheet.setAttribute("tabindex", "-1");
-
-    // Use next tick so DOM is fully ready
-    setTimeout(() => {
-      try { first && first.focus && first.focus(); } catch(e){}
-    }, 0);
-
-    // Trap Tab navigation inside modal
-    __modalKeydownHandler = (e) => {
-      if(!host.classList.contains("show")) return;
-
-      // ESC should still work via your existing listeners, but keep safe here too
-      if(e.key === "Escape"){
-        e.preventDefault();
-        Modal.close();
-        return;
-      }
-
-      if(e.key !== "Tab") return;
-
-      const focusables = __getModalFocusables(sheet);
-      if(focusables.length === 0){
-        e.preventDefault();
-        sheet && sheet.focus && sheet.focus();
-        return;
-      }
-
-      const active = document.activeElement;
-      const firstEl = focusables[0];
-      const lastEl  = focusables[focusables.length - 1];
-
-      // Shift+Tab on first -> wrap to last
-      if(e.shiftKey && active === firstEl){
-        e.preventDefault();
-        lastEl.focus();
-        return;
-      }
-
-      // Tab on last -> wrap to first
-      if(!e.shiftKey && active === lastEl){
-        e.preventDefault();
-        firstEl.focus();
-        return;
-      }
-    };
-
-    document.addEventListener("keydown", __modalKeydownHandler, true);
-  },
-
-  close(){
-    const host  = $("#modalHost");
-    const sheet = host.querySelector(".sheet");
-
-    host.classList.remove("show");
-    host.classList.remove("center");
-    host.setAttribute("aria-hidden", "true");
-
-    $("#modalBody").innerHTML = "";
-
-    // Reset size classes
-    if(sheet){
-      sheet.classList.remove("sm", "md", "lg");
-    }
-
-    unlockBodyScroll();
-
-    // Remove keydown trap
-    if(__modalKeydownHandler){
-      document.removeEventListener("keydown", __modalKeydownHandler, true);
-      __modalKeydownHandler = null;
-    }
-
-    // Restore focus back to what opened the modal (if still in DOM)
-    if(__modalLastFocus && document.contains(__modalLastFocus)){
-      try { __modalLastFocus.focus(); } catch(e){}
-    }
-    __modalLastFocus = null;
-  }
-};
-    (function bindModalControls(){
-  const closeBtn = $("#modalClose");
-  const backdrop = $("#modalBackdrop");
-
-  if(closeBtn){
-    closeBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      Modal.close();
-    });
-  }
-
-  if(backdrop){
-    backdrop.addEventListener("click", (e) => {
-      e.preventDefault();
-      Modal.close();
-    });
-  }
-
-  document.addEventListener("keydown", (e) => {
-    if(e.key === "Escape"){
-      const host = $("#modalHost");
-      if(host && host.classList.contains("show")){
-        Modal.close();
-      }
-    }
-  });
-})();
-
-    /********************
-     * 6) Router + Views
-     ********************/
+* 6) Router + Views
+********************/
 const Routes = {
   // Bottom nav (mobile-first)
   home: { label: "Home", nav:true },
