@@ -51,9 +51,20 @@ import {
 
 import { initRoutinesEngine } from "./routines.js";
 
+import { initLogs } from "./logs.js";
+
 
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
+
+const Logs = initLogs({ getState: () => state, Storage, uid });
+const {
+  findProteinEntry,
+  ensureProteinEntry,
+  cleanupProteinEntryIfEmpty,
+  getProteinForDate,
+  upsertMeal
+} = Logs.protein;
 
 // Provide live state ref to versioning module so it can flush safely before reload/update
 initVersioning({ getStateRef: () => state });
@@ -816,51 +827,6 @@ const { Routines, resolveExerciseName } = initRoutinesEngine({
   createRoutineFromTemplate
 });
 
-/********************
- * 4c) Protein (Today) Helpers (Step 5)
- * OPTION B: A date only exists if user logs >0g and saves
- ********************/
-
-// ✅ Read-only lookup (never creates/saves)
-function findProteinEntry(dateISO){
-  state.logs = state.logs || { workouts: [], weight: [], protein: [] };
-  state.logs.protein = state.logs.protein || [];
-  return state.logs.protein.find(x => x.dateISO === dateISO) || null;
-}
-
-// ✅ Write-path helper (creates ONLY when we truly need to save something)
-function ensureProteinEntry(dateISO){
-  state.logs = state.logs || { workouts: [], weight: [], protein: [] };
-  state.logs.protein = state.logs.protein || [];
-  let entry = state.logs.protein.find(x => x.dateISO === dateISO);
-  if(!entry){
-    entry = { dateISO, meals: [] }; // meals: [{ id, label, grams }]
-    state.logs.protein.push(entry);
-    Storage.save(state);
-  }
-  return entry;
-}
-
-// ✅ If an entry has no meals, remove the entire day so it doesn't appear in history
-function cleanupProteinEntryIfEmpty(dateISO){
-  state.logs = state.logs || { workouts: [], weight: [], protein: [] };
-  state.logs.protein = state.logs.protein || [];
-
-  const idx = state.logs.protein.findIndex(x => x.dateISO === dateISO);
-  if(idx < 0) return;
-
-  const entry = state.logs.protein[idx];
-  const meals = Array.isArray(entry?.meals) ? entry.meals : [];
-  if(meals.length === 0){
-    state.logs.protein.splice(idx, 1);
-    Storage.save(state);
-  }
-}
-
-// ⚠️ Keep for compatibility (but this DOES create). Use only for write paths.
-function getProteinForDate(dateISO){
-  return ensureProteinEntry(dateISO);
-}
 
 // ✅ Save/update a meal:
 // - If grams <= 0 → treat as "no log" and delete meal if it exists
