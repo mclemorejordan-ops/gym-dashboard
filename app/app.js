@@ -40,15 +40,21 @@ bindModalControls();
 
 import {
   initVersioning,
-  bindUpdatePill,
+  bindHeaderPills,
   setHeaderPills,
   checkForUpdates,
-  openVersionModal
+  registerServiceWorker,
+  openVersionModal,
+  applyUpdateNow,
+  __hasSwUpdateWaiting
 } from "./versioning.js";
 
 
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
+
+// Provide live state ref to versioning module so it can flush safely before reload/update
+initVersioning({ getStateRef: () => state });
 
 // Phase 2.2: Ensure debounced writes are not lost on iOS/tab close/background
 try{
@@ -1968,7 +1974,12 @@ function setChip(){
 
   renderNav();
   renderView();
+
+  // Versioning pills: bind once, then keep the UI current
   bindHeaderPills();
+  setHeaderPills();
+
+  // Keep throttled background check, but don't spam
   checkForUpdates();
 
   // ─────────────────────────────
