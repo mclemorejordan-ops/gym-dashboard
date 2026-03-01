@@ -1,20 +1,115 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-BEG1YYMSB5"></script>
+
+<!-- =========================================================
+     ANALYTICS (Google Analytics / gtag)
+     - Loads gtag.js and initializes GA tracking
+========================================================== -->
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-BEG1YYMSB5"></script>
 <script>
+
+/**************************************************************
+  GYM DASHBOARD / PERFORMANCE COACH — TABLE OF CONTENTS (TOC)
+  -------------------------------------------------------------
+  Use Ctrl/Cmd+F to jump to any section header below.
+
+  [00] Boot + Globals
+       - App constants, feature flags, small utilities
+
+  [01] State + Storage
+       - localStorage keys
+       - defaultState()
+       - loadState() / saveState()
+       - migrations / schema upgrades (if present)
+
+  [02] DOM Helpers + UI Utilities
+       - qs/qsa, createEl, formatters (dates/numbers)
+       - UI feedback (toast/snackbar)
+       - confirm dialogs / lightweight prompts
+
+  [03] Crash Failsafe (prevents blank UI)
+       - window.onerror / unhandledrejection handling
+       - overlay rendering + recovery guidance
+
+  [04] Navigation + View Routing
+       - active tab handling (Home / Routine / Log / Progress / Settings)
+       - renderView() / setView() patterns
+       - bottom nav click handlers
+
+  [04a] Home Dashboard (View)
+       - KPI widgets (streaks, totals)
+       - protein ring / daily summary
+       - attendance dots / recent sessions
+
+  [04b] Routine Editor (View)
+       - routine templates (PPL, Upper/Lower, etc.)
+       - day pills / exercise list UI
+       - add/edit/remove exercises
+       - persistence to state
+
+  [04c] Logging UI (Step 6 shell)
+       - workout session screen
+       - per-exercise set entry UI
+       - modal open/close for "Log Sets"
+
+  [04d] Log Engine + PR Engine (Step 6)
+       - LogEngine: add/update/delete session logs
+       - Set normalization (weight/reps)
+       - PR detection / best set / best volume (as implemented)
+       - Derived stats for history
+
+  [04e] Progress Helpers (Step 7)
+       - chart config + rendering (Chart.js)
+       - data series builders (weight over time, PRs, etc.)
+       - export / import (if present)
+
+  [05] Modals System
+       - modalHost, openModal(), closeModal()
+       - modal lifecycle hooks + accessibility toggles
+
+  [06] Settings (View + Helpers)
+       - app preferences
+       - storage usage / reset / backups
+       - version display / about
+
+  [07] Attendance Helpers (Step 9)
+       - mark attendance / streak logic
+       - calendar dot rendering rules
+       - missed-day rules (as implemented)
+
+  [08] PWA / Service Worker + Updates
+       - SW registration
+       - version.json update checks
+       - cache-busting / refresh prompts
+
+  [09] Event Wiring / App Init
+       - bind all listeners
+       - initial render
+       - hydration of state + first-time onboarding (if present)
+**************************************************************/
+
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
   gtag('config', 'G-BEG1YYMSB5');
 </script>
+
+<!-- =========================================================
+     APP META (charset, viewport, theme color)
+========================================================== -->
+  
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f17" />
 
-        <!-- 🔒 Production Content Security Policy -->
+<!-- =========================================================
+     SECURITY (Content Security Policy)
+     - Locks down what scripts/hosts the app can load
+========================================================== -->
+  
   <meta http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
@@ -28,7 +123,10 @@
         form-action 'self' https://formspree.io;
       ">
 
-  <!-- ✅ PWA manifest + icons -->
+<!-- =========================================================
+     PWA INSTALL (manifest + icons + iOS A2HS meta)
+========================================================== -->
+  
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icon.svg" />
@@ -49,10 +147,20 @@
                viewport-fit=cover">
 
 
-  <!-- Chart.js (used later in Progress/Weight) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- =========================================================
+     THIRD-PARTY LIBS
+     - Chart.js (used by Progress/Weight charts)
+========================================================== -->
+  
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <style>
+
+/* =========================================================
+   THEME TOKENS (colors, radii, shadows, glass)
+   - Single source of truth for the app look & feel
+========================================================= */
+    
 :root{
       --bg: #0b0f17;
       --panel: rgba(255,255,255,.06);
@@ -79,6 +187,10 @@
       --navH: 78px;
     }
 
+/* =========================================================
+   BASE RESET + GLOBAL PAGE STYLES
+========================================================= */
+    
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
 body{
@@ -94,6 +206,12 @@ body{
       -webkit-tap-highlight-color: transparent;
       min-height: 100dvh; /* better than 100vh for iPhone/PWA */
     }
+
+/* =========================================================
+   APP LAYOUT SHELL
+   - .app wrapper, sticky header, main spacing, max width
+========================================================= */    
+    
 .app{
       min-height: 100%;
       /* IMPORTANT: remove safe-area top here so HEADER can own it (looks seamless on iPhone) */
@@ -179,6 +297,11 @@ header{
       .grid.cols2{ grid-template-columns: 1fr 1fr; }
     }
 
+/* =========================================================
+   UI PRIMITIVES
+   - cards, headings, buttons, form controls
+========================================================= */
+    
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
       border: 1px solid var(--hair);
@@ -284,9 +407,10 @@ header{
     .row2{ display:grid; gap: 10px; }
     @media (min-width: 640px){ .row2{ grid-template-columns: 1fr 1fr; } }
 
-    /* ─────────────────────────────
-   Log Sets (Modal) — Compact + Sticky + Scroll
-   ───────────────────────────── */
+/* =========================================================
+   FEATURE: LOG SETS (MODAL)
+   - Sticky header, scrollable set list, active row highlight
+========================================================= */
 
 .logsetShell{
   display:flex;
@@ -514,7 +638,12 @@ select option{
       color: var(--muted);
       line-height: 1.35;
     }
-    /* Home Dashboard */
+
+/* =========================================================
+   VIEW: HOME DASHBOARD
+   - KPI cards, protein ring, attendance dots
+========================================================= */
+    
     .homeRow{
       display:flex;
       align-items:center;
@@ -656,7 +785,12 @@ select option{
       background: rgba(255,255,255,.10);
       margin: 10px 0;
     }
-        /* Progress */
+
+/* =========================================================
+   VIEW: PROGRESS
+   - Chart containers + canvas sizing
+========================================================= */
+    
     .chartWrap{
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.04);
@@ -671,7 +805,12 @@ select option{
     @media (min-width: 640px){
       canvas{ height: 320px; }
     }
-        /* Routine Editor */
+
+/* =========================================================
+   VIEW: ROUTINE EDITOR
+   - Day pills, exercise rows, editor layout
+========================================================= */
+    
     .pillrow{ display:flex; gap:8px; flex-wrap:wrap; }
     .pill{
       display:inline-flex;
@@ -2020,6 +2159,14 @@ button.mini.added{
 
 <body>
   <div class="app">
+
+<!-- =========================================================
+     APP CHROME
+     - Sticky header (title + status chip)
+     - main view mount (#viewRoot)
+     - bottom nav (#navbar)
+========================================================== -->
+
 <header>
   <div class="topbar">
     <div class="brand">
@@ -2045,7 +2192,11 @@ button.mini.added{
     <div class="navbar" id="navbar"></div>
   </div>
 
-  <!-- Modal Host -->
+<!-- =========================================================
+     MODAL SYSTEM
+     - Backdrop + modal sheet + dynamic modal body container
+========================================================== -->
+  
   <div class="modalHost" id="modalHost" aria-hidden="true">
     <div class="backdrop" id="modalBackdrop"></div>
     <div class="sheet" role="dialog" aria-modal="true">
@@ -2058,12 +2209,11 @@ button.mini.added{
   </div>
 
   <script>
-    /********************
-     * 1) State + Storage
-     ********************/
-// ─────────────────────────────
-// Storage + Versioning
-// ─────────────────────────────
+    
+<!-- =========================================================
+     State + Storage
+========================================================== -->    
+    
 const STORAGE_KEY = "gymdash:v1";
 
 // version.json is the single source of truth for version display + release notes
@@ -3829,6 +3979,8 @@ function totalProtein(dateISO){
   repaintProgress();
   return container;
 }
+
+// Tracks workout history + computes lifetime bests / PR flags per exercise.    
     /********************
      * 4d) Log Engine + PR Engine (Step 6)  ✅ FIXED
      ********************/
@@ -4285,7 +4437,14 @@ function lifetimeMaxSet(type, exerciseId){
   return best;
 }
 
-// Floating "Next →" nudge (transient UI only)
+
+/********************
+ * WORKOUT FLOW UX: Floating "Next →" Nudge
+ * - Helps user jump to the next exercise in today’s routine
+ * - Transient only (not persisted)
+ ********************/
+    
+    
 let __nextNudge = null; // { dateISO, dayOrder, nextRoutineExerciseId }
 function setNextNudge(n){ __nextNudge = n; }
 
@@ -4327,6 +4486,11 @@ function maybeShowNextNudge(dateISO, day){
   }
 }
 
+/********************
+ * UI FEEDBACK: Toasts
+ * - Tiny ephemeral messages (non-blocking)
+ ********************/
+    
 function showToast(message){
   try{
     const existing = document.getElementById("toastTemp");
@@ -4339,9 +4503,13 @@ function showToast(message){
     setTimeout(() => { try{ t.remove(); }catch(e){} }, 1100);
   }catch(e){}
 }
-    /********************
- * 🔥 Crash Failsafe (prevents blank UI)
- ********************/
+
+// ==========================================================
+// RUNTIME SAFETY NET
+// - If something throws during render, show an overlay instead
+// ==========================================================
+
+    
 function __formatErr(err){
   try{
     if(!err) return "Unknown error";
