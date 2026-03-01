@@ -1,83 +1,18 @@
 /********************
-     * 1) State + Storage
-     ********************/
-// ─────────────────────────────
-// Storage + Versioning
-// ─────────────────────────────
-const STORAGE_KEY = "gymdash:v1";
+ * 1) State + Storage (imported)
+ ********************/
+import {
+  STORAGE_KEY,
+  REMOTE_VERSION_URL,
+  SCHEMA_VERSION,
+  VERSION_LATEST_KEY,
+  VERSION_APPLIED_KEY,
+  VERSION_NOTES_KEY,
+  VERSION_BUILD_KEY,
+  DefaultState,
+  migrateState
+} from "./state.js";
 
-// version.json is the single source of truth for version display + release notes
-const REMOTE_VERSION_URL = "./version.json";
-
-// ─────────────────────────────
-// Schema versioning (production hardening)
-// ─────────────────────────────
-const SCHEMA_VERSION = 1;
-
-// Migrate/repair any saved state into the latest schema safely.
-// - Always merges into DefaultState() so new keys are never missing.
-// - Ensures critical containers are the right types.
-// - Lets you add future migrations without breaking old users.
-function migrateState(saved){
-  const base = DefaultState();
-
-  // If it's not a plain object, return defaults
-  if(!saved || typeof saved !== "object") return base;
-
-  // Merge onto defaults (so newly-added keys appear automatically)
-  const merged = Object.assign(base, saved);
-
-  // Normalize version
-  const v = (typeof merged.schemaVersion === "number") ? merged.schemaVersion : 0;
-
-  // Future migrations go here:
-  // if(v < 1){ ... set defaults/transform old fields ... }
-
-  // ✅ Hard guards for containers (prevents runtime crashes)
-  if(!Array.isArray(merged.routines)) merged.routines = [];
-  if(typeof merged.exerciseLibrary !== "object" || !merged.exerciseLibrary) merged.exerciseLibrary = { weightlifting:[], cardio:[], core:[] };
-  if(!Array.isArray(merged.exerciseLibrary.weightlifting)) merged.exerciseLibrary.weightlifting = [];
-  if(!Array.isArray(merged.exerciseLibrary.cardio)) merged.exerciseLibrary.cardio = [];
-  if(!Array.isArray(merged.exerciseLibrary.core)) merged.exerciseLibrary.core = [];
-  if(typeof merged.logs !== "object" || !merged.logs) merged.logs = { workouts:[], weight:[], protein:[] };
-  if(!Array.isArray(merged.logs.workouts)) merged.logs.workouts = [];
-  if(!Array.isArray(merged.logs.weight)) merged.logs.weight = [];
-  if(!Array.isArray(merged.logs.protein)) merged.logs.protein = [];
-  if(!Array.isArray(merged.attendance)) merged.attendance = [];
-
-  // Always stamp latest schema
-  merged.schemaVersion = SCHEMA_VERSION;
-
-  return merged;
-}
-
-// Version metadata only (does NOT affect user profile/state)
-const VERSION_LATEST_KEY   = "gymdash:latestVersion";     // last fetched version.json value
-const VERSION_APPLIED_KEY  = "gymdash:appliedVersion";    // last version applied on this device
-const VERSION_NOTES_KEY    = "gymdash:latestNotes";       // JSON stringified array of notes
-const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date string
-
-
-
-
-    const DefaultState = () => ({
-      schemaVersion: 1,
-      createdAt: Date.now(),
-      profile: null,
-      routines: [],
-      activeRoutineId: null,
-      exerciseLibrary: {
-        weightlifting: [],
-        cardio: [],
-        core: []
-      },
-      logs: {
-        workouts: [],
-        weight: [],
-        protein: []
-      },
-      attendance: []
-    });
 // ────────────────────────────
 // Auto Backup Vault (Rolling Snapshots - IndexedDB)
 // Keeps recent snapshots so users can restore if something goes wrong.
