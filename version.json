@@ -1,11 +1,7 @@
 {
-  "version": "2.8",
-  "buildDate": "2026-02-18",
+  "version": "2.8.1",
+  "buildDate": "2026-03-01",
   "notes": [
-    "New: 3D Preview toggle on the Routine Card (persisted preference)",
-    "Routine header layout redesigned (Start Today + toggle repositioned)",
-    "Week strip now shows calendar dates and routine labels",
-    "Rest days clearly labeled in weekly view",
-    "Improved layout responsiveness and visual consistency"
+    "Refactor: Extracted CSS and JS into external files (no functional change)"
   ]
 }
