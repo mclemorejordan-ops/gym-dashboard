@@ -325,8 +325,14 @@ const BackupVault = (() => {
   return { maybeSnapshot, forceSnapshot, list, get, clear, KEEP, THROTTLE_MS };
 })();
 
-const Storage = {
-  load(){
+const Storage = (() => {
+  // Phase 2.2: Debounced storage writes + flush safety (zero data loss)
+  const DEBOUNCE_MS = 250;
+
+  let _timer = null;
+  let _queuedState = null;
+
+  function load(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
       if(!raw) return DefaultState();
@@ -338,32 +344,80 @@ const Storage = {
     }catch(e){
       return DefaultState();
     }
-  },
+  }
 
-  save(state){
+  function _writeNow(s){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    // Auto-snapshot (non-blocking) — protects against bad imports/updates/resets
+    try{ BackupVault.maybeSnapshot(s, "save"); }catch(_){}
+  }
+
+  function save(state){
+    // Debounce: keep only the latest state reference and write later.
+    _queuedState = state;
+
+    if(_timer) clearTimeout(_timer);
+    _timer = setTimeout(() => {
+      flush(); // flush queued
+    }, DEBOUNCE_MS);
+  }
+
+  function flush(state){
+    // Allow explicit flush of a provided state, otherwise flush queued.
+    if(state) _queuedState = state;
+
+    if(!_queuedState) return false;
+
+    if(_timer){
+      clearTimeout(_timer);
+      _timer = null;
+    }
+
     try{
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      // Auto-snapshot (non-blocking) — protects against bad imports/updates/resets
-      try{ BackupVault.maybeSnapshot(state, "save"); }catch(_){}
+      _writeNow(_queuedState);
+      _queuedState = null;
+      return true;
     }catch(e){
       // QuotaExceededError or storage blocked in private modes
       console.warn("Storage.save failed:", e);
-      handleStorageWriteError(e);
+      try{ handleStorageWriteError(e); }catch(_){}
+      return false;
     }
-  },
+  }
 
-
-  reset(){
+  function reset(){
     try{
+      if(_timer){
+        clearTimeout(_timer);
+        _timer = null;
+      }
+      _queuedState = null;
       localStorage.removeItem(STORAGE_KEY);
     }catch(e){
       console.warn("Storage.reset failed:", e);
     }
   }
-};
+
+  return { load, save, flush, reset };
+})();
 
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
+
+// Phase 2.2: Ensure debounced writes are not lost on iOS/tab close/background
+try{
+  document.addEventListener("visibilitychange", () => {
+    if(document.visibilityState === "hidden"){
+      try{ Storage.flush(state); }catch(_){}
+    }
+  });
+  window.addEventListener("pagehide", () => {
+    try{ Storage.flush(state); }catch(_){}
+  });
+  window.addEventListener("beforeunload", () => {
+    try{ Storage.flush(state); }catch(_){}
+  });
+}catch(_){}
 
 /********************
  * Backup / Import (Step 10)
