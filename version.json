@@ -1,7 +1,7 @@
 {
-  "version": "2.8.2",
+  "version": "2.8.3",
   "buildDate": "2026-03-01",
   "notes": [
-    "Fix: Offline cold-start now caches and serves split assets (app.js/styles.css)"
+    "Perf/Safety: Debounced localStorage writes + flush on update/close (no data loss)"
   ]
 }
