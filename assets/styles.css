@@ -1421,7 +1421,7 @@ body.modalOpen{
 /* Square “3D” card */
 .c3dCard{
   position:absolute;
-  width: min(58vw, 190px);       /* ✅ smaller cards */
+  width: clamp(132px, 44vw, 168px);
   aspect-ratio: 1 / 1;
   border-radius: 18px;
 
