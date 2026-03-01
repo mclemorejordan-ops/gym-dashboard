@@ -2495,8 +2495,35 @@ button.mini.added{
   font-weight:900;
   cursor:pointer;
 }
+/* Watchlist — premium right-side pill (Progress-only) */
+.progressPage .wlPill{
+  flex:0 0 auto;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.90);
+  font-weight:950;
+  font-size:12px;
+  letter-spacing:.2px;
+}
 
-  /* ─────────────────────────────
+/* subtle tiers */
+.progressPage .wlPill.action{
+  border-color: rgba(122,162,255,.55);
+  background: rgba(122,162,255,.12);
+}
+.progressPage .wlPill.focus{
+  border-color: rgba(255,255,255,.14);
+  background: rgba(255,255,255,.07);
+}
+.progressPage .wlPill.optional{
+  border-color: rgba(255,255,255,.10);
+  background: rgba(0,0,0,.16);
+  color: rgba(255,255,255,.75);
+}
+
+/* ─────────────────────────────
    Onboarding vA (onbV1)
 ───────────────────────────── */
 .onbV1{
