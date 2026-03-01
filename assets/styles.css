@@ -39,6 +39,9 @@ body{
       -webkit-font-smoothing: antialiased;
       -webkit-tap-highlight-color: transparent;
       min-height: 100dvh; /* better than 100vh for iPhone/PWA */
+
+      overflow-x: hidden;   /* ✅ prevents “3D off expands width” horizontal overflow */
+      max-width: 100%;
     }
 .app{
       min-height: 100%;
@@ -1286,7 +1289,13 @@ body.modalOpen{
   gap: 12px;
   height: calc(100dvh - var(--headerH, 72px) - var(--navH) - env(safe-area-inset-bottom));
 }
-
+.routinePage,
+.routineFixed,
+.routineScroll{
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
 .routineFixed{
   flex: 0 0 auto;
   display:grid;
