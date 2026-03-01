@@ -45,6 +45,22 @@ function migrateState(saved){
   if(!Array.isArray(merged.logs.protein)) merged.logs.protein = [];
   if(!Array.isArray(merged.attendance)) merged.attendance = [];
 
+    // ✅ Ensure profile object exists (older installs had profile: null)
+if(!merged.profile || typeof merged.profile !== "object"){
+  merged.profile = Object.assign({}, base.profile);
+} else {
+  // merge onto base profile so new keys exist without wiping old values
+  merged.profile = Object.assign({}, base.profile, merged.profile);
+}
+
+// ✅ NEW: tracking toggles (do not overwrite existing user choices)
+if(typeof merged.profile.trackProtein !== "boolean"){
+  merged.profile.trackProtein = true;
+}
+if(typeof merged.profile.trackWeight !== "boolean"){
+  merged.profile.trackWeight = true;
+}
+
   // Always stamp latest schema
   merged.schemaVersion = SCHEMA_VERSION;
 
@@ -63,7 +79,17 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
     const DefaultState = () => ({
       schemaVersion: 1,
       createdAt: Date.now(),
-      profile: null,
+      profile: {
+      name: "",
+      proteinGoal: 0,
+      weekStartsOn: "mon",
+      hideRestDays: true,
+      show3DPreview: true,
+    
+      // ✅ NEW flags (default ON)
+      trackProtein: true,
+      trackWeight: true
+    },
       routines: [],
       activeRoutineId: null,
       exerciseLibrary: {
@@ -3082,6 +3108,16 @@ setHeaderPills();
         return;
       }
 
+// ✅ Route Guards for Disabled Modules
+if(currentRoute === "weight" && state.profile?.trackWeight === false){
+  navigate("home");
+  return;
+}
+
+if(currentRoute === "protein_history" && state.profile?.trackProtein === false){
+  navigate("home");
+  return;
+}
          if(currentRoute === "home") root.appendChild(Views.Home());
 else if(currentRoute === "routine") root.appendChild(Views.Routine());
 else if(currentRoute === "progress") root.appendChild(Views.Progress());
@@ -3105,6 +3141,10 @@ else root.appendChild(el("div", { class:"card" }, [
       Onboarding(){
         let hideRestDays = true;
         let selectedTpl = "ppl";
+        
+        // ✅ NEW: Tracking toggles (default ON)
+        let trackProtein = true;
+        let trackWeight = true;
 
         const errorBox = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
 
@@ -3130,8 +3170,39 @@ else root.appendChild(el("div", { class:"card" }, [
         renderTplCards();
 
         const nameInput = el("input", { type:"text", placeholder:"Jordan" });
-        const proteinInput = el("input", { type:"number", inputmode:"numeric", placeholder:"180", min:"0" });
 
+        const proteinInput = el("input", { 
+          type:"number", 
+          inputmode:"numeric", 
+          placeholder:"180", 
+          min:"0" 
+        });
+
+          el("div", { class:"row" }, [
+          el("div", { class:"note", text:"Track protein?" }),
+          proteinToggle
+        ]),
+        
+        el("div", { class:"row" }, [
+          el("div", { class:"note", text:"Track weight?" }),
+          weightToggle
+        ]),
+        
+        // ✅ Protein Toggle
+        const proteinToggle = el("div", { class:"switch on" });
+        proteinToggle.addEventListener("click", () => {
+          trackProtein = !trackProtein;
+          proteinToggle.classList.toggle("on", trackProtein);
+          proteinInput.parentElement.style.display = trackProtein ? "" : "none";
+        });
+        
+        // ✅ Weight Toggle
+        const weightToggle = el("div", { class:"switch on" });
+        weightToggle.addEventListener("click", () => {
+          trackWeight = !trackWeight;
+          weightToggle.classList.toggle("on", trackWeight);
+        });
+          
         const weekSelect = el("select", {});
         weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
         weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
@@ -3158,11 +3229,18 @@ else root.appendChild(el("div", { class:"card" }, [
 
           const profile = {
           name: cleanName,
-          proteinGoal: Math.round(cleanProtein),
+        
+          // ✅ Respect protein toggle
+          proteinGoal: trackProtein ? Math.round(cleanProtein) : 0,
+          trackProtein: !!trackProtein,
+        
+          // ✅ Weight toggle
+          trackWeight: !!trackWeight,
+        
           weekStartsOn,
           hideRestDays: !!hideRestDays,
         
-          // ✅ NEW: 3D Preview default (ON)
+          // Keep existing behavior
           show3DPreview: true
         };
 
@@ -3371,7 +3449,7 @@ el("div", { style:"height:10px" }),
 //   el("button", { class:"btn", onClick: () => navigate("routine") }, ["Open Routine"])
 // ])
 
-el("div", { class:"card" }, [
+(state.profile?.trackProtein !== false) && el("div", { class:"card" }, [
   el("h2", { text:"Protein" }),
   el("div", { class:"homeRow" }, [
     el("div", { class:"kpi" }, [
@@ -3424,7 +3502,7 @@ el("div", { class:"card" }, [
 ]),
               
 // ✅ NEW: Weight card (Weight tab replacement)
-          el("div", { class:"card" }, [
+          (state.profile?.trackWeight !== false) && el("div", { class:"card" }, [
             el("h2", { text:"Weight" }),
             el("div", { class:"kpi" }, [
               el("div", { class:"big", text: wLatest ? `${Number(wLatest.weight).toFixed(1)}` : "—" }),
