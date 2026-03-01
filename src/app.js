@@ -4447,87 +4447,88 @@ function setShow3DPreview(v){
     // ────────────────────────────
     // 3D Card Carousel (visual container)
     // ────────────────────────────
-// ✅ Only render the 3D carousel when enabled
-if(show3DPreview){
-  fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
-    (() => {
-      let down = false;
-      let startX = 0;
-      let dx = 0;
-      const THRESH = 55;
+// ✅ Always render the carousel container to prevent layout shift.
+// If 3D is disabled, we render a same-height placeholder stage.
+fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+  show3DPreview
+    ? (() => {
+        let down = false;
+        let startX = 0;
+        let dx = 0;
+        const THRESH = 55;
 
-      function onDown(e){
-        down = true;
-        startX = e.clientX;
-        dx = 0;
-        try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-      }
-      function onMove(e){
-        if(!down) return;
-        dx = e.clientX - startX;
-      }
-      function onEnd(){
-        if(!down) return;
-        down = false;
+        function onDown(e){
+          down = true;
+          startX = e.clientX;
+          dx = 0;
+          try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+        }
+        function onMove(e){
+          if(!down) return;
+          dx = e.clientX - startX;
+        }
+        function onEnd(){
+          if(!down) return;
+          down = false;
 
-        if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
-        else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
+          if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
+          else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
 
-        repaint();
-      }
-
-      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-      const c3d = el("div", {
-        class:"c3d",
-        onPointerDown: onDown,
-        onPointerMove: onMove,
-        onPointerUp: onEnd,
-        onPointerCancel: onEnd,
-        onLostPointerCapture: onEnd
-      }, []);
-
-      const offsets = [-2,-1,0,1,2];
-      offsets.forEach(off => {
-        const idx = (selectedIndex + off + 7) % 7;
-        const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
-
-        const abs = Math.abs(off);
-        const scale = (off === 0) ? 1 : (1 - abs * 0.10);
-        const x = off * 92;
-        const z = -(abs * 95);
-        const y = abs * 6;
-        const rot = off * -22;
-        const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
-
-        const chips = [];
-        chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
-        if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
-
-        const card = el("div", {
-          class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
-          style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
-        }, [
-          el("div", {}, [
-            el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
-            el("div", { class:"c3dLabel", text: d.label || "Day" }),
-            el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
-          ]),
-          el("div", { class:"c3dChips" }, chips)
-        ]);
-
-        card.addEventListener("click", () => {
-          selectedIndex = idx;
           repaint();
+        }
+
+        const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+        const c3d = el("div", {
+          class:"c3d",
+          onPointerDown: onDown,
+          onPointerMove: onMove,
+          onPointerUp: onEnd,
+          onPointerCancel: onEnd,
+          onLostPointerCapture: onEnd
+        }, []);
+
+        const offsets = [-2,-1,0,1,2];
+        offsets.forEach(off => {
+          const idx = (selectedIndex + off + 7) % 7;
+          const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
+
+          const abs = Math.abs(off);
+          const scale = (off === 0) ? 1 : (1 - abs * 0.10);
+          const x = off * 92;
+          const z = -(abs * 95);
+          const y = abs * 6;
+          const rot = off * -22;
+          const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
+
+          const chips = [];
+          chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
+          if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
+
+          const card = el("div", {
+            class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
+            style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+          }, [
+            el("div", {}, [
+              el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
+              el("div", { class:"c3dLabel", text: d.label || "Day" }),
+              el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+            ]),
+            el("div", { class:"c3dChips" }, chips)
+          ]);
+
+          card.addEventListener("click", () => {
+            selectedIndex = idx;
+            repaint();
+          });
+
+          c3d.appendChild(card);
         });
 
-        c3d.appendChild(card);
-      });
-
-      return c3d;
-    })()
-  ]));
-}
+        return c3d;
+      })()
+    : el("div", { class:"c3d", style:"opacity:0; pointer-events:none;", "aria-hidden":"true" }, [])
+]));
 
 fixedHost.appendChild(el("div", { class:"routineDayStrip" }, [
   ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
@@ -4549,10 +4550,8 @@ fixedHost.appendChild(el("div", { class:"routineDayStrip" }, [
     }, [
       el("div", { class:"dow", text: dow }),
       el("div", { class:"num", text: String(dayNum || "") }),
-      ...(show3DPreview 
-            ? [] 
-            : [el("div", { class:"lbl", text: dayLabel })]
-        ),
+      // ✅ Always render label to reserve space; hide it when 3D preview is ON
+el("div", { class:"lbl" + (show3DPreview ? " hidden" : ""), text: dayLabel }),
       el("div", { class:"dot" })
     ]);
   })
