@@ -1385,8 +1385,11 @@ body.modalOpen{
   display:flex;
   flex-direction:column;
   gap:10px;
-}
 
+  /* ✅ Smooth collapse/expand without layout glitches */
+  overflow: hidden;
+  transition: padding 180ms ease, margin 180ms ease, border 180ms ease;
+}
 /* 3D stage (cards area) */
 .c3d{
   position: relative;
@@ -1399,8 +1402,22 @@ body.modalOpen{
   touch-action: pan-y;
   user-select:none;
 }
+/* ✅ When 3D Preview is OFF: collapse the entire 3D stage so the list takes its space */
+.carouselCard.isCollapsed .c3d{
+  height: 0px;
+  opacity: 0;
+  pointer-events: none;
+}
 
-/* Square “3D” card */
+/* ✅ Remove the card “container space” too (padding/border/shadow/background) */
+.carouselCard.isCollapsed{
+  padding: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
 /* Square “3D” card */
 .c3dCard{
   position:absolute;
