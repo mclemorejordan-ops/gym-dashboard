@@ -1897,10 +1897,6 @@ function totalProtein(dateISO){
       return Math.round((Number(n) || 0) * 100) / 100;
     }
 
-    function round2(n){
-      return Math.round((Number(n) || 0) * 100) / 100;
-    }
-
     function formatTime(sec){
       const s = Math.max(0, Math.floor(Number(sec) || 0));
       const m = Math.floor(s / 60);
