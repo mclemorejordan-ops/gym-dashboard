@@ -3171,6 +3171,13 @@ else root.appendChild(el("div", { class:"card" }, [
 
         const nameInput = el("input", { type:"text", placeholder:"Jordan" });
 
+          const proteinInput = el("input", { 
+          type:"number", 
+          inputmode:"numeric", 
+          placeholder:"180", 
+          min:"0" 
+        });
+
         const proteinLabel = el("label", {}, [
           el("span", { text:"Protein goal (grams/day)" }),
           proteinInput
@@ -3180,8 +3187,14 @@ else root.appendChild(el("div", { class:"card" }, [
         const proteinToggle = el("div", { class:"switch on" });
         proteinToggle.addEventListener("click", () => {
           trackProtein = !trackProtein;
+        
           proteinToggle.classList.toggle("on", trackProtein);
           proteinLabel.style.display = trackProtein ? "" : "none";
+        
+          // ✅ Clear input when turning protein tracking OFF
+          if(!trackProtein){
+            proteinInput.value = "";
+          }
         });
         
         // ✅ Weight Toggle
