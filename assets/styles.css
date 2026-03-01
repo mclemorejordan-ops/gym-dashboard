@@ -496,25 +496,35 @@ select option{
     }
 
     .ringWrap{
-      width: 120px;
-      height: 120px;
-      border-radius: 999px;
-      position: relative;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      flex: 0 0 auto;
-    }
-    .ringWrap::before{
-      content:"";
-      position:absolute;
-      inset: 8px;
-      border-radius: 999px;
-      background: rgba(11,15,23,.95);
-      border: 1px solid rgba(255,255,255,.08);
-    }
+        width: 120px;
+        height: 120px;
+        border-radius: 999px;
+        position: relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border: 1px solid rgba(255,255,255,.10);
+        background: transparent;          /* ✅ remove glass tint behind gradient */
+        flex: 0 0 auto;
+        overflow: hidden;                 /* ✅ ensure clean clipping */
+      }
+      
+      .ringWrap::before{
+        content:"";
+        position:absolute;
+        inset: 8px;
+        border-radius: 999px;
+      
+        background: var(--bg);            /* ✅ fully opaque center */
+        border: 1px solid rgba(255,255,255,.08);
+      
+        z-index: 1;                       /* ✅ ensure above gradient */
+      }
+      
+      .ringText{
+        position: relative;
+        z-index: 2;                       /* stays above everything */
+      }
     .ringText{
       position: relative;
       z-index: 2;
