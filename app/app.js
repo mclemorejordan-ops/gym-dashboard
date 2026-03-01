@@ -2747,75 +2747,106 @@ function setHeaderPills(){
   }
 }
 
-async function checkForUpdates(){
+// Phase 2.1: rate-limit update checks (avoid fetch spam on SPA nav + online events)
+const UPDATE_CHECK_COOLDOWN_MS = 30_000; // 30s
+let __updateCheckInFlight = null;
+let __lastUpdateCheckAt = 0;
+let __lastUpdateResult = null;
+
+async function checkForUpdates(opts = {}){
+  const force = !!opts.force;
+
   // Fetch version.json (single source of truth for version + notes)
   if(!navigator.onLine){
     setHeaderPills();
-    return { ok:false, reason:"offline" };
+    __lastUpdateResult = { ok:false, reason:"offline" };
+    return __lastUpdateResult;
   }
-  try{
-    const url = `${REMOTE_VERSION_URL}?t=${Date.now()}`;
-    const res = await fetch(url, { cache: "no-store" });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
 
-    const latest = String(data?.version || "").trim() || null;
-    const notesRaw = Array.isArray(data?.notes) ? data.notes : [];
-    const notes = notesRaw
-      .map(x => String(x || "").trim())
-      .filter(Boolean)
-      .slice(0, 12); // keep it tight in UI
+  // If a check is already in flight, reuse it (prevents duplicate fetches)
+  if(__updateCheckInFlight) return __updateCheckInFlight;
 
-    const buildDate = String(data?.buildDate || data?.build || data?.date || "").trim() || null;
+  // Cooldown gate (skip repeated checks unless forced)
+  const now = Date.now();
+  if(!force && __lastUpdateResult && (now - __lastUpdateCheckAt) < UPDATE_CHECK_COOLDOWN_MS){
+    setHeaderPills();
+    return { ...__lastUpdateResult, throttled:true };
+  }
 
-    const prevLatest = __latestVersion;
+  __lastUpdateCheckAt = now;
 
-    if(latest){
-      __latestVersion = latest;
-      localStorage.setItem(VERSION_LATEST_KEY, latest);
+  __updateCheckInFlight = (async () => {
+    try{
+      const url = `${REMOTE_VERSION_URL}?t=${Date.now()}`;
+      const res = await fetch(url, { cache: "no-store" });
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
 
-      // First run: initialize applied version so modal has a baseline
-      if(!__appliedVersion){
-        __appliedVersion = latest;
-        localStorage.setItem(VERSION_APPLIED_KEY, latest);
+      const latest = String(data?.version || "").trim() || null;
+      const notesRaw = Array.isArray(data?.notes) ? data.notes : [];
+      const notes = notesRaw
+        .map(x => String(x || "").trim())
+        .filter(Boolean)
+        .slice(0, 12); // keep it tight in UI
+
+      const buildDate = String(data?.buildDate || data?.build || data?.date || "").trim() || null;
+
+      const prevLatest = __latestVersion;
+
+      if(latest){
+        __latestVersion = latest;
+        localStorage.setItem(VERSION_LATEST_KEY, latest);
+
+        // First run: initialize applied version so modal has a baseline
+        if(!__appliedVersion){
+          __appliedVersion = latest;
+          localStorage.setItem(VERSION_APPLIED_KEY, latest);
+        }
       }
+
+      // ✅ If version.json changed, re-register the SW with the new ?v= URL.
+      // This makes "version.json is the source of truth" actually trigger the update pipeline.
+      const versionChanged = !!(__latestVersion && __latestVersion !== prevLatest);
+
+      if(versionChanged){
+        // Ensure SW URL becomes ./sw.js?v=<latest>
+        try{ await registerServiceWorker(); }catch(_){}
+        // Ask the SW registration to check the server immediately
+        if(__swReg){
+          try{ await __swReg.update(); }catch(_){}
+        }
+      }
+
+      __latestNotes = notes;
+      localStorage.setItem(VERSION_NOTES_KEY, JSON.stringify(notes));
+
+      __latestBuildDate = buildDate;
+      if(buildDate) localStorage.setItem(VERSION_BUILD_KEY, buildDate);
+
+      setHeaderPills();
+
+      const result = {
+        ok:true,
+        latestVersion: __latestVersion,
+        appliedVersion: __appliedVersion,
+        notes: __latestNotes,
+        buildDate: __latestBuildDate,
+        swUpdateWaiting: __hasSwUpdateWaiting(),
+        swInstalling: __swInstalling
+      };
+
+      __lastUpdateResult = result;
+      return result;
+    }catch(e){
+      setHeaderPills();
+      __lastUpdateResult = { ok:false, reason:"fetch_failed" };
+      return __lastUpdateResult;
+    }finally{
+      __updateCheckInFlight = null;
     }
+  })();
 
-   // ✅ If version.json changed, re-register the SW with the new ?v= URL.
-// This makes "version.json is the source of truth" actually trigger the update pipeline.
-const versionChanged = !!(__latestVersion && __latestVersion !== prevLatest);
-
-if(versionChanged){
-  // Ensure SW URL becomes ./sw.js?v=<latest>
-  try{ await registerServiceWorker(); }catch(_){}
-  // Ask the SW registration to check the server immediately
-  if(__swReg){
-    try{ await __swReg.update(); }catch(_){}
-  }
-}
-
-
-
-    __latestNotes = notes;
-    localStorage.setItem(VERSION_NOTES_KEY, JSON.stringify(notes));
-
-    __latestBuildDate = buildDate;
-    if(buildDate) localStorage.setItem(VERSION_BUILD_KEY, buildDate);
-
-    setHeaderPills();
-    return {
-      ok:true,
-      latestVersion: __latestVersion,
-      appliedVersion: __appliedVersion,
-      notes: __latestNotes,
-      buildDate: __latestBuildDate,
-      swUpdateWaiting: __hasSwUpdateWaiting(),
-      swInstalling: __swInstalling
-    };
-  }catch(e){
-    setHeaderPills();
-    return { ok:false, reason:"fetch_failed" };
-  }
+  return __updateCheckInFlight;
 }
 
 async function registerServiceWorker(){
@@ -2933,7 +2964,7 @@ function openVersionModal(){
         el("button", {
           class:"btn",
           onClick: async () => {
-            const r = await checkForUpdates();
+            const r = await checkForUpdates({ force:true });
             showToast(r.ok ? "Checked version.json" : "Couldn’t check updates");
           }
         }, ["Check for updates"]),
@@ -2956,7 +2987,7 @@ function bindHeaderPills(){
 
   if(syncPill){
     syncPill.addEventListener("click", async () => {
-      await checkForUpdates();
+      await checkForUpdates({ force:true });
       openVersionModal();
     });
   }
