@@ -8,7 +8,15 @@
 
 const CACHE_PREFIX = "gymdash-shell-";
 let CACHE_NAME = `${CACHE_PREFIX}v1`; // fallback until we can read version.json
-const APP_SHELL = ["./", "./index.html"];
+
+const APP_SHELL = [
+  "./",
+  "./index.html",
+  "./assets/styles.css",
+  "./app/app.js",
+  "./manifest.webmanifest",
+  "./icon.svg"
+];
 
 async function computeCacheName(){
   // If we already have a derived cache name, reuse it.
