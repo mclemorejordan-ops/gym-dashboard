@@ -828,34 +828,6 @@ const { Routines, resolveExerciseName } = initRoutinesEngine({
 });
 
 
-// ✅ Save/update a meal:
-// - If grams <= 0 → treat as "no log" and delete meal if it exists
-// - If grams > 0 → create the day entry if missing and save
-function upsertMeal(dateISO, mealId, label, grams){
-  const cleanGrams = Math.max(0, Math.round(Number(grams) || 0));
-
-  // ✅ If user sets 0g, this means "do not keep an entry"
-  if(cleanGrams <= 0){
-    if(mealId) deleteMeal(dateISO, mealId); // safe: won't create a day
-    return null;
-  }
-
-  const p = ensureProteinEntry(dateISO);
-  p.meals = p.meals || [];
-
-  const idx = p.meals.findIndex(m => m.id === mealId);
-  const clean = {
-    id: mealId || uid("meal"),
-    label: (label || "").trim() || "Meal",
-    grams: cleanGrams
-  };
-
-  if(idx >= 0) p.meals[idx] = clean;
-  else p.meals.push(clean);
-
-  Storage.save(state);
-  return clean.id;
-}
 
 // ✅ Delete a meal without creating the day.
 // If last meal removed → delete the entire day entry.
