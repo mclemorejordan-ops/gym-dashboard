@@ -3103,10 +3103,11 @@ setHeaderPills();
       const root = $("#viewRoot");
       root.innerHTML = "";
 
-      if(!state.profile){
-        root.appendChild(Views.Onboarding());
-        return;
-      }
+      // ✅ Show onboarding if profile is missing OR name is not set
+if(!state.profile || !(state.profile.name || "").trim()){
+  root.appendChild(Views.Onboarding());
+  return;
+}
 
 // ✅ Route Guards for Disabled Modules
 if(currentRoute === "weight" && state.profile?.trackWeight === false){
