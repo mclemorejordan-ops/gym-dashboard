@@ -64,6 +64,21 @@ import { initBackup } from "./backup.js";
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
 
+const Backup = initBackup({
+  getState: () => state,
+  setState: (next) => { state = next; },
+  Storage,
+  BackupVault,
+  migrateState
+});
+
+const {
+  downloadTextFile,
+  exportBackupJSON,
+  validateImportedState,
+  importBackupJSON
+} = Backup;
+
 const Logs = initLogs({ getState: () => state, Storage, uid });
 
 const { LogEngine, removeWorkoutEntryById } = initWorkouts({ getState: () => state, Storage });
@@ -129,68 +144,7 @@ try{
   });
 }catch(_){}
 
-/********************
- * Backup / Import (Step 10)
- ********************/
-function downloadTextFile(filename, text, mime="application/json"){
-  const blob = new Blob([text], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 250);
-}
 
-function exportBackupJSON(){
-  // Keep export simple: full state snapshot
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    app: "gym-dashboard-dev",
-    data: state
-  };
-  return JSON.stringify(payload, null, 2);
-}
-
-function validateImportedState(obj){
-  // Accept either raw state or wrapped { data: state }
-  const imported = (obj && typeof obj === "object" && "data" in obj) ? obj.data : obj;
-
-  if(!imported || typeof imported !== "object") throw new Error("Invalid JSON object.");
-  if(typeof imported.schemaVersion !== "number") throw new Error("Invalid backup: missing schemaVersion.");
-
-  // Must contain expected top-level fields (loose validation)
-  if(!("profile" in imported)) throw new Error("Invalid backup: missing profile.");
-  if(!("routines" in imported)) throw new Error("Invalid backup: missing routines.");
-  if(!("exerciseLibrary" in imported)) throw new Error("Invalid backup: missing exerciseLibrary.");
-  if(!("logs" in imported)) throw new Error("Invalid backup: missing logs.");
-  if(!("attendance" in imported)) throw new Error("Invalid backup: missing attendance.");
-
-  return migrateState(imported);
-}
-
-function importBackupJSON(jsonText){
-  // Safety net: snapshot current state BEFORE overwrite (best-effort, non-blocking)
-  try{ BackupVault.forceSnapshot(state, "pre-import"); }catch(_){}
-
-  let parsed;
-  try{
-    parsed = JSON.parse(jsonText);
-  }catch(e){
-    throw new Error("Could not parse JSON. Make sure it’s valid.");
-  }
-
-  const importedState = validateImportedState(parsed);
-
-  // Overwrite local storage + live state
-  state = importedState;
-  Storage.save(state);
-
-  // Snapshot the newly imported state as well (best-effort)
-  try{ BackupVault.forceSnapshot(state, "post-import"); }catch(_){}
-}
 
 const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
   settings: {
