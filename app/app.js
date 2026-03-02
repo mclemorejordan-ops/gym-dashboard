@@ -58,6 +58,8 @@ import { initProgress } from "./progress.js";
 
 import { initAttendance } from "./attendance.js";
 
+import { initBackup } from "./backup.js";
+
 
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
