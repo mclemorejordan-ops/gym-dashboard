@@ -1183,37 +1183,6 @@ function totalProtein(dateISO){
 }
 
 
-
-function maybeShowNextNudge(dateISO, day){
-  const host = document.getElementById("floatNext");
-  const btn = document.getElementById("floatNextBtn");
-  if(!host || !btn) return;
-
-  const shouldShow = __nextNudge &&
-    __nextNudge.dateISO === dateISO &&
-    __nextNudge.dayOrder === day.order &&
-    __nextNudge.nextRoutineExerciseId;
-
-  host.classList.toggle("show", !!shouldShow);
-
-  if(shouldShow){
-    btn.onclick = () => {
-      const rxId = __nextNudge.nextRoutineExerciseId;
-      const node = document.getElementById(`rx_${rxId}`);
-      if(node){
-        node.scrollIntoView({ behavior:"smooth", block:"center" });
-        node.classList.remove("pulse");
-        void node.offsetWidth;
-        node.classList.add("pulse");
-      }
-      __nextNudge = null;
-      host.classList.remove("show");
-    };
-  }else{
-    btn.onclick = null;
-  }
-}
-
 /********************
  * 🔥 Crash Failsafe (prevents blank UI)
  ********************/
