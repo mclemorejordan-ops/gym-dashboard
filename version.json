@@ -1,7 +1,7 @@
 {
-  "version": "2.8.4",
+  "version": "2.8.5",
   "buildDate": "2026-03-01",
   "notes": [
-    "Settings Update"
+    "Fix: Service worker APP_SHELL syntax + ensure module shell cached for offline"
   ]
 }
