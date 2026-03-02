@@ -56,6 +56,8 @@ import { initLogs } from "./logs.js";
 import { initWorkouts } from "./workouts.js";
 import { initProgress } from "./progress.js";
 
+import { initAttendance } from "./attendance.js";
+
 
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
@@ -63,6 +65,27 @@ let state = Storage.load();
 const Logs = initLogs({ getState: () => state, Storage, uid });
 
 const { LogEngine, removeWorkoutEntryById } = initWorkouts({ getState: () => state, Storage });
+
+
+const Attendance = initAttendance({
+  getState: () => state,
+  Storage,
+  LogEngine,
+  el
+});
+
+const {
+  attendanceHas,
+  attendanceAdd,
+  attendanceRemove,
+  hasRoutineExerciseLog,
+  lifetimeMaxSet,
+  setNextNudge,
+  ensureFloatNext,
+  maybeShowNextNudge,
+  bindFloatNext,
+  clearNextNudge
+} = Attendance;
 
 const {
   formatTime,
@@ -1160,65 +1183,6 @@ function totalProtein(dateISO){
 }
 
 
-/********************
- * 4f) Routine/Attendance Helpers (NEW)
- ********************/
-
-// Attendance helpers (explicit add/remove for manual override scenarios)
-function attendanceHas(dateISO){
-  state.attendance = state.attendance || [];
-  return state.attendance.includes(dateISO);
-}
-function attendanceAdd(dateISO){
-  state.attendance = state.attendance || [];
-  if(!state.attendance.includes(dateISO)){
-    state.attendance.push(dateISO);
-    Storage.save(state);
-  }
-}
-function attendanceRemove(dateISO){
-  state.attendance = state.attendance || [];
-  const i = state.attendance.indexOf(dateISO);
-  if(i >= 0){
-    state.attendance.splice(i, 1);
-    Storage.save(state);
-  }
-}
-
-// Routine logging helpers (per-routine-exercise instance)
-function hasRoutineExerciseLog(dateISO, routineExerciseId){
-  LogEngine.ensure();
-  return state.logs.workouts.some(e => e.dateISO === dateISO && e.routineExerciseId === routineExerciseId);
-}
-
-function lifetimeMaxSet(type, exerciseId){
-  if(type !== "weightlifting") return null;
-  const entries = LogEngine.entriesForExercise(type, exerciseId);
-  let best = null;
-  for(const e of entries){
-    for(const s of (e.sets || [])){
-      const w = Number(s.weight) || 0;
-      const r = Math.max(0, Math.floor(Number(s.reps) || 0));
-      if(w <= 0 || r <= 0) continue;
-      if(!best) best = { weight: w, reps: r };
-      else if(w > best.weight) best = { weight: w, reps: r };
-      else if(w === best.weight && r > best.reps) best = { weight: w, reps: r };
-    }
-  }
-  return best;
-}
-
-// Floating "Next →" nudge (transient UI only)
-let __nextNudge = null; // { dateISO, dayOrder, nextRoutineExerciseId }
-function setNextNudge(n){ __nextNudge = n; }
-
-function ensureFloatNext(){
-  if(document.getElementById("floatNext")) return;
-  const host = el("div", { class:"floatNext", id:"floatNext" }, [
-    el("button", { class:"btn", id:"floatNextBtn" }, ["Next →"])
-  ]);
-  document.body.appendChild(host);
-}
 
 function maybeShowNextNudge(dateISO, day){
   const host = document.getElementById("floatNext");
