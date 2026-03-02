@@ -24,8 +24,11 @@ const APP_SHELL = [
   "./app/workouts.js",
   "./app/progress.js",
   "./app/attendance.js",
-  "./app/backup.js"
-   "./app/settings.js"
+  "./app/backup.js",
+  "./app/settings.js",
+
+  "./manifest.webmanifest",
+  "./icon.svg"
 ];
 
 async function computeCacheName(){
