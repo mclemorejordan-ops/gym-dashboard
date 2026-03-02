@@ -25,6 +25,7 @@ const APP_SHELL = [
   "./app/progress.js",
   "./app/attendance.js",
   "./app/backup.js"
+   "./app/settings.js"
 ];
 
 async function computeCacheName(){
