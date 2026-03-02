@@ -148,10 +148,17 @@ const {
   upsertMeal
 } = Logs.protein;
 
-// Router is initialized later (after Views exist), but Views need to reference these.
-let navigate = () => {};
-let renderView = () => {};
+const Router = initRouter({
+  renderNav,
+  renderHomeView,
+  renderRoutineView,
+  renderProgressView,
+  renderSettingsView,
+  setHeaderPills,
+  checkForUpdates
+});
 
+const { navigate, renderView } = Router;
 
 // Provide live state ref to versioning module so it can flush safely before reload/update
 initVersioning({ getStateRef: () => state });
@@ -4802,32 +4809,7 @@ const root = el("div", { class:"settingsWrap" }, [
         return root;
       }
     }; // ✅ end Views object
-
-// ─────────────────────────────
-// Router init (must be AFTER Views exist)
-// ─────────────────────────────
-function renderHomeView(){ return Views.Home(); }
-function renderRoutineView(){ return Views.Routine(); }
-function renderProgressView(){ return Views.Progress(); }
-
-// Settings is rendered by the settings module
-function __renderSettingsView(){ return renderSettingsView(); }
-
-const Router = initRouter({
-  renderNav,
-  renderHomeView,
-  renderRoutineView,
-  renderProgressView,
-  renderSettingsView: __renderSettingsView,
-  setHeaderPills,
-  checkForUpdates
-});
-
-// Fill the placeholders used by Views closures
-navigate = Router.navigate;
-renderView = Router.renderView;
-
-  Views.ExerciseLibraryManager = function(){
+    Views.ExerciseLibraryManager = function(){
   ExerciseLibrary.ensureSeeded();
 
   const ui = UIState.libraryManage;
@@ -5975,4 +5957,3 @@ if(coreItems.length){
 })().catch((e) => {
   __fatal(e, "boot");
 });
-
