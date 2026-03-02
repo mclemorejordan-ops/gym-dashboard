@@ -765,9 +765,7 @@ lib.core = [
       list(type){
         return (state.exerciseLibrary?.[type] || []);
       },
-            list(type){
-        return (state.exerciseLibrary?.[type] || []);
-      },
+
 
       // Category-only check (kept for UI filters, but add/update will enforce GLOBAL)
       existsByName(type, name, excludeId=null){
