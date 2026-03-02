@@ -12,22 +12,19 @@ let CACHE_NAME = `${CACHE_PREFIX}v1`; // fallback until we can read version.json
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./assets/styles.css",
 
-  // JS shell (required for offline to actually render UI)
-  "./app.js",
-
-  // Root modules app.js imports
-  "./state.js",
-  "./storage.js",
-  "./ui.js",
-  "./versioning.js",
-  "./routines.js",
-  "./logs.js",
-
-  // Phase 2.8 modules
-  "./workouts.js",
-  "./progress.js"
-  "./app/attendance.js"
+  "./app/app.js",
+  "./app/state.js",
+  "./app/storage.js",
+  "./app/ui.js",
+  "./app/versioning.js",
+  "./app/routines.js",
+  "./app/logs.js",
+  "./app/workouts.js",
+  "./app/progress.js",
+  "./app/attendance.js",
+  "./app/backup.js"
 ];
 
 async function computeCacheName(){
