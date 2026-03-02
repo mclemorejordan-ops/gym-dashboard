@@ -60,9 +60,28 @@ import { initAttendance } from "./attendance.js";
 
 import { initBackup } from "./backup.js";
 
+import { initSettings } from "./settings.js";
+
 
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
+
+const Settings = initSettings({
+  getState: () => state,
+  Storage,
+  Modal,
+  el,
+  $,
+  showToast,
+  appStorageBytes,
+  bytesToNice,
+  exportBackupJSON,
+  importBackupJSON,
+  downloadTextFile,
+  openVersionModal
+});
+
+const { renderSettingsView } = Settings;
 
 const Backup = initBackup({
   getState: () => state,
