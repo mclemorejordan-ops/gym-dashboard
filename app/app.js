@@ -62,6 +62,8 @@ import { initBackup } from "./backup.js";
 
 import { initSettings } from "./settings.js";
 
+import { initRouter } from "./router.js";
+
 
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
@@ -146,7 +148,17 @@ const {
   upsertMeal
 } = Logs.protein;
 
+const Router = initRouter({
+  renderNav,
+  renderHomeView,
+  renderRoutineView,
+  renderProgressView,
+  renderSettingsView,
+  setHeaderPills,
+  checkForUpdates
+});
 
+const { navigate, renderView } = Router;
 
 // Provide live state ref to versioning module so it can flush safely before reload/update
 initVersioning({ getStateRef: () => state });
@@ -1331,70 +1343,6 @@ function setChip(){
 }
 
 
-
-
-  function navigate(routeKey){
-  destroyProgressChart();
-  destroyWeightChart();
-
-  currentRoute = routeKey;
-
-  renderNav();
-  renderView();
-
-  // Versioning pills: bind once, then keep the UI current
-  bindHeaderPills();
-  setHeaderPills();
-
-  // Keep throttled background check, but don't spam
-  checkForUpdates();
-
-  // ─────────────────────────────
-  // GA4: SPA route tracking (page_view)
-  // ─────────────────────────────
-  try{
-    if(typeof gtag === "function"){
-      const label = (Routes?.[routeKey]?.label) || routeKey || "unknown";
-      const pagePath = "/" + String(routeKey || "unknown");
-
-      gtag("event", "page_view", {
-        page_title: label,
-        page_path: pagePath,
-        page_location: (location?.origin || "") + pagePath
-      });
-    }
-  }catch(e){
-    // never let analytics break navigation
-  }
-}
-
-
-    function renderView(){
-setChip();
-setHeaderPills();
-      const root = $("#viewRoot");
-      root.innerHTML = "";
-
-      if(!state.profile){
-        root.appendChild(Views.Onboarding());
-        return;
-      }
-
-         if(currentRoute === "home") root.appendChild(Views.Home());
-else if(currentRoute === "routine") root.appendChild(Views.Routine());
-else if(currentRoute === "progress") root.appendChild(Views.Progress());
-else if(currentRoute === "settings") root.appendChild(Views.Settings());
-else if(currentRoute === "weight") root.appendChild(Views.Weight());
-else if(currentRoute === "attendance") root.appendChild(Views.Attendance());
-else if(currentRoute === "routine_editor") root.appendChild(Views.RoutineEditor());
-else if(currentRoute === "exercise_library") root.appendChild(Views.ExerciseLibraryManager());
-else if(currentRoute === "protein_history") root.appendChild(Views.ProteinHistory());
-else root.appendChild(el("div", { class:"card" }, [
-  el("h2", { text:"Not found" }),
-  el("div", { class:"note", text:`Unknown route: ${currentRoute}` })
-]));
-
-    }
 
     /********************
      * 7) Views
