@@ -27,6 +27,7 @@ const APP_SHELL = [
   // Phase 2.8 modules
   "./workouts.js",
   "./progress.js"
+  "./app/attendance.js"
 ];
 
 async function computeCacheName(){
