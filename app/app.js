@@ -66,6 +66,24 @@ import { initSettings } from "./settings.js";
 // ✅ Load state AFTER Storage exists
 let state = Storage.load();
 
+
+// 1) Init Backup FIRST so we have the functions
+const Backup = initBackup({
+  getState: () => state,
+  setState: (next) => { state = next; },
+  Storage,
+  BackupVault,
+  migrateState
+});
+
+const {
+  downloadTextFile,
+  exportBackupJSON,
+  validateImportedState,
+  importBackupJSON
+} = Backup;
+
+// 2) Init Settings AFTER backup functions exist
 const Settings = initSettings({
   getState: () => state,
   Storage,
@@ -82,21 +100,6 @@ const Settings = initSettings({
 });
 
 const { renderSettingsView } = Settings;
-
-const Backup = initBackup({
-  getState: () => state,
-  setState: (next) => { state = next; },
-  Storage,
-  BackupVault,
-  migrateState
-});
-
-const {
-  downloadTextFile,
-  exportBackupJSON,
-  validateImportedState,
-  importBackupJSON
-} = Backup;
 
 const Logs = initLogs({ getState: () => state, Storage, uid });
 
